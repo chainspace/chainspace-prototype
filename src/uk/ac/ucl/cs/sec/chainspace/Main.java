@@ -8,7 +8,17 @@ import uk.ac.ucl.cs.sec.chainspace.examples.BankAccount;
 import java.io.IOException;
 import java.sql.SQLException;
 
+
+/**
+ * Main class.
+ */
 public class Main {
+
+
+    /**
+     *
+     */
+    public static Node[] nodeList;
 
     /**
      * Main method.
@@ -20,9 +30,9 @@ public class Main {
         try {
 
             test1();
-            //test2();
+            test2();
 
-        } catch (SQLException | ClassNotFoundException | IOException | ChainspaceException e) {
+        } catch (SQLException | ClassNotFoundException | IOException | AbortTransactionException e) {
             e.printStackTrace();
         }
 
@@ -34,9 +44,9 @@ public class Main {
      * @throws SQLException SQLException.
      * @throws ClassNotFoundException ClassNotFoundException.
      * @throws IOException IOException.
-     * @throws ChainspaceException ChainspaceException.
+     * @throws AbortTransactionException ChainspaceException.
      */
-    private static void test1() throws SQLException, ClassNotFoundException, IOException, ChainspaceException {
+    private static void test1() throws SQLException, ClassNotFoundException, IOException, AbortTransactionException {
         // init
         Gson gson = new GsonBuilder().create();
 
@@ -52,7 +62,7 @@ public class Main {
         // create transfer
         Transaction transfer = aliceAccount.sendMoney(sallyAccount, 8, checkerURL);
 
-        // instanciate the node
+        // instantiate the node
         Node node = new Node(1);
 
         // register objects
@@ -66,16 +76,35 @@ public class Main {
         node.shutdown();
     }
 
+
+
     /**
      * Test2. the transaction requires an input from each node.
      *
      * @throws SQLException SQLException.
      * @throws ClassNotFoundException ClassNotFoundException.
      * @throws IOException IOException.
-     * @throws ChainspaceException ChainspaceException.
+     * @throws AbortTransactionException ChainspaceException.
      */
-    /*
-    private static void test2() throws SQLException, ClassNotFoundException, IOException, ChainspaceException {
+    private static void test2() throws SQLException, ClassNotFoundException, IOException, AbortTransactionException {
+
+        /*
+            run nodes
+         */
+        nodeList = new Node[]{
+                new Node(10),
+                new Node(10),
+                new Node(10),
+                new Node(20),
+                new Node(20),
+                new Node(20),
+        };
+
+
+
+        /*
+            test a transaction
+         */
         // init
         Gson gson = new GsonBuilder().create();
 
@@ -91,34 +120,24 @@ public class Main {
         // create transfer
         Transaction transfer = aliceAccount.sendMoney(sallyAccount, 8, checkerURL);
 
-        // instanciate the nodes
-        Node node1 = new Node(10);
-        Node node2 = new Node(10);
-        Node node3 = new Node(10);
-        Node node4 = new Node(20);
-        Node node5 = new Node(20);
-        Node node6 = new Node(20);
-
-
         // register objects
-        node1.registerObject(aliceAccountJson);
-        node4.registerObject(sallyAccountJson);
+        nodeList[0].registerObject(aliceAccountJson);
+        nodeList[3].registerObject(sallyAccountJson);
 
         // apply transaction
-        node1.applyTransaction(gson.toJson(transfer));
-        node2.applyTransaction(gson.toJson(transfer));
-        node3.applyTransaction(gson.toJson(transfer));
-        node4.applyTransaction(gson.toJson(transfer));
-        node5.applyTransaction(gson.toJson(transfer));
-        node6.applyTransaction(gson.toJson(transfer));
 
-        // shut down the node
-        node1.shutdown();
-        node2.shutdown();
-        node3.shutdown();
-        node4.shutdown();
-        node5.shutdown();
-        node6.shutdown();
+        for (Node node: nodeList) {
+            node.applyTransaction(gson.toJson(transfer));
+        }
+
+        //nodeList[0].applyTransaction((gson.toJson(transfer)));
+
+
+        /*
+            shut down the node
+         */
+        for (Node node: nodeList) {
+            node.shutdown();
+        }
     }
-    */
 }

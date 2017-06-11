@@ -36,6 +36,7 @@ public class Node
      * @throws ClassNotFoundException ClassNotFound exception.
      */
     public Node(int shardID) throws SQLException, ClassNotFoundException {
+
         // init json converter
         gson = new GsonBuilder().create();
 
@@ -46,10 +47,10 @@ public class Node
 
         // create table for data storage
         String sql = "CREATE TABLE IF NOT EXISTS DATA (" +
-            "OBJ_ID   CHAR(64)   NOT NULL UNIQUE,"       +
-            "OBJ      TEXT       NOT NULL,"              +
-            "STATUS   INTEGER    NOT NULL"               +
-            ")";
+                "OBJ_ID   CHAR(64)   NOT NULL UNIQUE,"   +
+                "OBJ      TEXT       NOT NULL,"          +
+                "STATUS   INTEGER    NOT NULL"           +
+                ")";
         stmt.executeUpdate(sql);
     }
 
@@ -70,10 +71,14 @@ public class Node
      * @param obj the object to add to the database.
      * @throws SQLException SQL exception.
      */
-    public void registerObject(String obj) throws SQLException {
+    public void registerObject(String obj) {
         String sql = "INSERT INTO DATA (OBJ_ID,OBJ,STATUS) " +
                 "VALUES (" +obj.hashCode()+" , '" + obj + "', 1 );";
-        stmt.executeUpdate(sql);
+        try {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            // ignore, if the object already exist the do nothing.
+        }
     }
 
 
@@ -84,39 +89,45 @@ public class Node
      * @return the transaction's ID
      * @throws SQLException SQL exception.
      * @throws IOException IO exception
-     * @throws ChainspaceException chainspace exception.
+     * @throws AbortTransactionException chainspace exception.
      */
-    public int applyTransaction(String transactionJson) throws SQLException, IOException, ChainspaceException {
+    public int applyTransaction(String transactionJson) throws SQLException, IOException, AbortTransactionException {
+
+        // load transaction
+        Transaction transaction = gson.fromJson(transactionJson, Transaction.class);
 
         // check transaction's integrity
-        Transaction transaction = gson.fromJson(transactionJson, Transaction.class);
+        if (transaction.getInputsID()==null || transaction.getReferenceInputsID()==null ||
+                transaction.getOutputs()==null || transaction.getContractMethod()==null ||
+                transaction.getParameters()==null) {
+            throw new AbortTransactionException("Malformed transaction.");
+        }
 
         /*
             get input objects
+            TODO optimise query to DB: make a new query every loop is stupid.
          */
         String inputs [] = new String[transaction.getInputsID().length];
         for (int i = 0; i < transaction.getInputsID().length; i++) {
             String sql = "SELECT * FROM DATA WHERE OBJ_ID=" +transaction.getInputsID()[i];
             ResultSet rs = stmt.executeQuery(sql);
 
-            if (!rs.isBeforeFirst() ) {
-                throw new ChainspaceException("Input " +transaction.getInputsID()[i]+ " not in the database.");
+            // check if the object is in the database.
+            if (! rs.isBeforeFirst() ) {
+                // if it's not, ask other shards
+                inputs[i] = getInputFromOthers(transaction.getInputsID()[i]);
             }
+            else {
+                // check if local objects are active:
+                /*
+                if (rs.getInt("STATUS") != 1) {
+                    throw new AbortTransactionException("Input " + transaction.getInputsID()[i] + " not active.");
+                }
+                */
 
-            // check objects are active:
-            /*
-            if (rs.getInt("STATUS") != 1) {
-                throw new ChainspaceException("Input: " +transaction.getInputsID()[i]+ "not active.");
+                // set inputs
+                inputs[i] = rs.getString("OBJ");
             }
-            */
-
-            // verify that object is actif
-            if (! isObjectActive(transaction.getInputsID()[i])) {
-                throw new ChainspaceException("Input " +transaction.getInputsID()[i]+ " not active.");
-            }
-
-            // set inputs
-            inputs[i] = rs.getString("OBJ");
         }
 
         /*
@@ -127,30 +138,34 @@ public class Node
             String sql = "SELECT * FROM DATA WHERE OBJ_ID=" +transaction.getReferenceInputsID()[i];
             ResultSet rs = stmt.executeQuery(sql);
 
+            // check if the object is in the database.
             if (!rs.isBeforeFirst() ) {
-                throw new ChainspaceException("Input " +transaction.getReferenceInputsID()[i]+ " not in the database.");
+                // if it's not, ask other shards
+                inputs[i] = getInputFromOthers(transaction.getReferenceInputsID()[i]);
             }
+            else {
+                // check if local objects are active:
+                /*
+                if (rs.getInt("STATUS") != 1) {
+                    throw new AbortTransactionException("Input " +transaction.getReferenceInputsID()[i]+ "not active.");
+                }
+                */
 
-            // check objects are active:
-            /*
-            if (rs.getInt("STATUS") != 1) {
-                throw new ChainspaceException("Input: " +transaction.getReferenceInputsID()[i]+ "not active.");
+                // set reference inputs
+                referenceInputs[i] = rs.getString("OBJ");
             }
-            */
-
-            // verify that object is actif
-            if (! isObjectActive(transaction.getReferenceInputsID()[i])) {
-                throw new ChainspaceException("Input " +transaction.getReferenceInputsID()[i]+ " not active.");
-            }
-
-            // set reference inputs
-            referenceInputs[i] = rs.getString("OBJ");
         }
 
         // call the checker
         if (! callChecker(transaction, inputs, referenceInputs)) {
-            throw new ChainspaceException("The checker declined the transaction.");
+            throw new AbortTransactionException("The checker declined the transaction.");
         }
+
+        // check if objects are active
+        if (! (areObjectActive(transaction.getInputsID()) && areObjectActive(transaction.getReferenceInputsID())) ) {
+            throw new AbortTransactionException("Input not active.");
+        }
+
 
         // make input object inactive
         for (int i = 0; i < transaction.getInputsID().length; i++) {
@@ -166,6 +181,53 @@ public class Node
         // return
         return transaction.hashCode();
 
+    }
+
+    /**
+     * give input object from input ID
+     * @param inputID the object ID to look for.
+     * @return the actual object corresponding to the ID.
+     * @throws SQLException
+     */
+    public String serveInput(int inputID) throws SQLException {
+        // look in db
+        String sql = "SELECT * FROM DATA WHERE OBJ_ID=" +inputID;
+        ResultSet rs = stmt.executeQuery(sql);
+
+        // check if the object is in the database.
+        if (! rs.isBeforeFirst() ) {
+            // if it's not, ask other shards
+            return null;
+        }
+        else {
+            return rs.getString("OBJ");
+        }
+    }
+
+    /**
+     * Ask other shards for a give input.
+     *
+     * @param inputID an object ID.
+     * @return the input object corresponding to the input ID.
+     * @throws AbortTransactionException AbortTransactionException.
+     */
+    private String getInputFromOthers(int inputID) throws AbortTransactionException, UnsupportedEncodingException {
+
+        // TODO request input from other shards
+        for (Node node: Main.nodeList) {
+            String input = null;
+            try {
+                input = node.serveInput(inputID);
+            } catch (SQLException e) {
+                // ignore, node may be down.
+            }
+            if (input != null && input.hashCode() == inputID) {
+                return input;
+            }
+        }
+
+        // if no-one answered correctly
+        throw new AbortTransactionException("Input " +inputID + " does not exist");
     }
 
 
@@ -234,10 +296,10 @@ public class Node
 
     /**
      * TODO BFT
-     * @param objectID  the object ID to lock.
+     * @param objectsID  the objects ID to lock.
      * @return whether the object has been locked and the transaction can proceed.
      */
-    private boolean isObjectActive (int objectID) {
+    private boolean areObjectActive (int[] objectsID) {
 
         return true;
 

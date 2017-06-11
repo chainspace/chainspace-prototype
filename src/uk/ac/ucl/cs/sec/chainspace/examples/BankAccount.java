@@ -2,9 +2,7 @@ package uk.ac.ucl.cs.sec.chainspace.examples;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
-import org.json.simple.JSONObject;
-import uk.ac.ucl.cs.sec.chainspace.ChainspaceObject;
+import org.json.JSONObject;
 import uk.ac.ucl.cs.sec.chainspace.Transaction;
 
 import java.io.IOException;
@@ -57,9 +55,7 @@ public class BankAccount {
         JSONObject json = new JSONObject();
         StringWriter out = new StringWriter();
         json.put("amount", amount);
-        try { json.writeJSONString(out); }
-        catch (IOException e) { e.printStackTrace(); }
-        String parameters = out.toString();
+        String parameters = json.toString();
 
         // set outputs
         BankAccount newSender = new BankAccount(
@@ -78,10 +74,10 @@ public class BankAccount {
         // set transaction
         return new Transaction(
                 checkerURL,
-            new int[]{gson.toJson(this).hashCode(), gson.toJson(account).hashCode()},
-            new int[]{},
+                new int[]{gson.toJson(this).hashCode(), gson.toJson(account).hashCode()},
+                new int[]{},
                 parameters,
-            new String[]{newSenderJson, newReceiverJson}
+                new String[]{newSenderJson, newReceiverJson}
         );
     }
 
