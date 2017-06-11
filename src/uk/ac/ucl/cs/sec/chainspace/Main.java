@@ -11,13 +11,15 @@ import java.sql.SQLException;
 
 /**
  * Main class.
+ * This class run two tests ( test1() and test2() ) testing chainspace. They rely on the example client BankTransaction,
+ * and the python checker bank_transfer_checker.py should be running.
  */
 public class Main {
 
 
-    /**
-     *
-     */
+    /*
+     This list keeps all the node instances that are used for test2(). See below.
+      */
     public static Node[] nodeList;
 
     /**
@@ -29,7 +31,17 @@ public class Main {
 
         try {
 
+            /*
+            This first test execute a transaction in the case where the system is composed of a single node. Therefore,
+            all input objects are kept by the same database.
+             */
             test1();
+
+            /*
+            This second test suppose six nodes, grouped into two shards. The transaction is submitted to all the nodes.
+            Each node process the transaction and ask to the other nodes if they are missing some inputs.
+            (We suppose that all nodes included in the same shard are sharing the same database).
+             */
             test2();
 
         } catch (SQLException | ClassNotFoundException | IOException | AbortTransactionException e) {
@@ -70,6 +82,7 @@ public class Main {
         node.registerObject(sallyAccountJson);
 
         // apply transaction
+        // Note that the transaction is first changed to JSON: nodes accept only transaction in JSON format.
         node.applyTransaction(gson.toJson(transfer));
 
         // shut down the node
@@ -88,9 +101,7 @@ public class Main {
      */
     private static void test2() throws SQLException, ClassNotFoundException, IOException, AbortTransactionException {
 
-        /*
-            run nodes
-         */
+        // run nodes
         nodeList = new Node[]{
                 new Node(10),
                 new Node(10),
@@ -100,11 +111,6 @@ public class Main {
                 new Node(20),
         };
 
-
-
-        /*
-            test a transaction
-         */
         // init
         Gson gson = new GsonBuilder().create();
 
@@ -130,12 +136,7 @@ public class Main {
             node.applyTransaction(gson.toJson(transfer));
         }
 
-        //nodeList[0].applyTransaction((gson.toJson(transfer)));
-
-
-        /*
-            shut down the node
-         */
+        // shut down the node
         for (Node node: nodeList) {
             node.shutdown();
         }

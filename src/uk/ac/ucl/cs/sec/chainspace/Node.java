@@ -19,9 +19,6 @@ import java.io.*;
 import java.sql.*;
 
 
-/**
- *
- */
 public class Node
 {
     // instance variables
@@ -77,13 +74,13 @@ public class Node
         try {
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            // ignore, if the object already exist the do nothing.
+            // ignore, if the object already exist, then do nothing.
         }
     }
 
 
     /**
-     * Apply a chanspace transaction.
+     * Apply a chainspace transaction.
      *
      * @param transactionJson A JSON representation of a chainspace transaction
      * @return the transaction's ID
@@ -103,10 +100,8 @@ public class Node
             throw new AbortTransactionException("Malformed transaction.");
         }
 
-        /*
-            get input objects
-            TODO optimise query to DB: make a new query every loop is stupid.
-         */
+        // get input objects
+        // TODO optimise query to DB: make a new query every loop is stupid.
         String inputs [] = new String[transaction.getInputsID().length];
         for (int i = 0; i < transaction.getInputsID().length; i++) {
             String sql = "SELECT * FROM DATA WHERE OBJ_ID=" +transaction.getInputsID()[i];
@@ -130,9 +125,7 @@ public class Node
             }
         }
 
-        /*
-            get reference input objects
-         */
+        // get reference input objects
         String referenceInputs [] = new String[transaction.getReferenceInputsID().length];
         for (int i = 0; i < transaction.getReferenceInputsID().length; i++) {
             String sql = "SELECT * FROM DATA WHERE OBJ_ID=" +transaction.getReferenceInputsID()[i];
@@ -187,7 +180,7 @@ public class Node
      * give input object from input ID
      * @param inputID the object ID to look for.
      * @return the actual object corresponding to the ID.
-     * @throws SQLException
+     * @throws SQLException SQLException.
      */
     public String serveInput(int inputID) throws SQLException {
         // look in db
@@ -213,7 +206,11 @@ public class Node
      */
     private String getInputFromOthers(int inputID) throws AbortTransactionException, UnsupportedEncodingException {
 
-        // TODO request input from other shards
+        /*
+        At the moment nodes are not running as web service, all node instances are kept in a table in Main.
+        In the future, nodes will query each other through post request, after having load a config providing the
+        addr of all other nodes and shards.
+         */
         for (Node node: Main.nodeList) {
             String input = null;
             try {
@@ -242,9 +239,7 @@ public class Node
      */
     private boolean callChecker(Transaction transaction, String[] inputs, String[] referenceInputs) throws IOException {
 
-        /*
-            create transaction in JSON for checker
-         */
+        // create transaction in JSON for checker
         JSONObject transactionForChecker = new JSONObject();
         // contract method
         transactionForChecker.put("contractMethod", transaction.getContractMethod());
@@ -270,9 +265,7 @@ public class Node
         transactionForChecker.put("outputs", outputsForChecker);
 
 
-        /*
-            make post request
-         */
+        // make post request
         String url                  = transaction.getContractMethod();
         HttpClient httpClient       = HttpClientBuilder.create().build();
         StringEntity postingString  = new StringEntity(transactionForChecker.toString());
@@ -281,21 +274,20 @@ public class Node
         post.setHeader("Content-type", "application/json");
 
 
-        /*
-            get response
-         */
+        // get response
         HttpResponse response   = httpClient.execute(post);
         String responseString   = new BasicResponseHandler().handleResponse(response);
         JSONObject responseJson = new JSONObject(responseString);
 
         // return
-        if (responseJson.getString("status").equals("OK")) { return true;}
-        else { return false; }
+        return responseJson.getString("status").equals("OK");
     }
 
 
     /**
+     *
      * TODO BFT
+     *
      * @param objectsID  the objects ID to lock.
      * @return whether the object has been locked and the transaction can proceed.
      */
