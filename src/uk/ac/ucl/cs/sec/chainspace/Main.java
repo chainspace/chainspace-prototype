@@ -102,6 +102,7 @@ public class Main {
     private static void test2() throws SQLException, ClassNotFoundException, IOException, AbortTransactionException {
 
         // run nodes
+        // Nodes should not run like this: each node should be an independent webservice.
         nodeList = new Node[]{
                 new Node(10),
                 new Node(10),
