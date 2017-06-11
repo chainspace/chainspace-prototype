@@ -3,8 +3,14 @@ package uk.ac.ucl.cs.sec.chainspace;
 import java.util.Arrays;
 
 
+/**
+ * Class representing a Chainspace transaction.
+ * This class is here to facilitate testing, but node could deal directly with a JSON transaction representation and
+ * therefore we could suppress this class.
+ */
 public class Transaction {
 
+    // instance variables
     private String    contractMethod;
     private int[]     inputsID;
     private int[]     referenceInputsID;

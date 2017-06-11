@@ -42,11 +42,14 @@ public class Node
         gson = new GsonBuilder().create();
 
         // load driver and connect to the database
+        // at the moment, the shardID is only used to determine which data the node can access.
+        // (nodes of the same shards shares the same DB)
         Class.forName("org.sqlite.JDBC");
         connection = DriverManager.getConnection("jdbc:sqlite:shard" +shardID+ ".db");
         stmt = connection.createStatement();
 
         // create table for data storage
+        // OBJ_ID is theoretically 32 bytes, here set to 64 but could be reduced.
         String sql = "CREATE TABLE IF NOT EXISTS DATA (" +
                 "OBJ_ID   CHAR(64)   NOT NULL UNIQUE,"   +
                 "OBJ      TEXT       NOT NULL,"          +
@@ -268,7 +271,7 @@ public class Node
         }
         transactionForChecker.put("outputs", outputsForChecker);
 
-
+        
         // make post request
         String url                  = transaction.getContractMethod();
         HttpClient httpClient       = HttpClientBuilder.create().build();
@@ -276,7 +279,6 @@ public class Node
         HttpPost post               = new HttpPost(url);
         post.setEntity(postingString);
         post.setHeader("Content-type", "application/json");
-
 
         // get response
         HttpResponse response   = httpClient.execute(post);
