@@ -19,6 +19,10 @@ import java.io.*;
 import java.sql.*;
 
 
+/**
+ * Chainspace node instance.
+ * TODO This class shoud run as a webservice.
+ */
 public class Node
 {
     // instance variables
