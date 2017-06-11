@@ -5,8 +5,6 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 import uk.ac.ucl.cs.sec.chainspace.Transaction;
 
-import java.io.StringWriter;
-
 /**
  * This class is an example of chainspace client representing a simple bank transfer. Note that to apply a transaction
  * to the nodes, the transaction has to be in JSON format. Therefore, the clients do not need to be in JAVA.
@@ -29,20 +27,11 @@ public class BankAccount {
         this.amount    = amount;
     }
 
-    public String getAccountId() {
+    private String getAccountId() {
         return accountId;
     }
-
-    public int getAmount() {
+    private int getAmount() {
         return amount;
-    }
-
-    public void setAccountId(String accountId) {
-        this.accountId = accountId;
-    }
-
-    public void setAmount(int amount) {
-        this.amount = amount;
     }
 
     public Transaction sendMoney(BankAccount account, int amount, String checkerURL) {
@@ -54,7 +43,6 @@ public class BankAccount {
 
         // set parameters
         JSONObject json = new JSONObject();
-        StringWriter out = new StringWriter();
         json.put("amount", amount);
         String parameters = json.toString();
 

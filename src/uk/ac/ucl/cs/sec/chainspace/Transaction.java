@@ -34,23 +34,19 @@ public class Transaction {
         this.outputs            = outputs;
     }
 
-    public String getContractMethod() {
+    String getContractMethod() {
         return contractMethod;
     }
-
-    public int[] getInputsID() {
+    int[] getInputsID() {
         return inputsID;
     }
-
-    public int[] getReferenceInputsID() {
+    int[] getReferenceInputsID() {
         return referenceInputsID;
     }
-
-    public String getParameters() {
+    String getParameters() {
         return parameters;
     }
-
-    public String[] getOutputs() {
+    String[] getOutputs() {
         return outputs;
     }
 

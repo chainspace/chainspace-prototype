@@ -20,7 +20,7 @@ public class Main {
     /*
      This list keeps all the node instances that are used for test2(). See below.
       */
-    public static Node[] nodeList;
+    static Node[] nodeList;
 
     /**
      * Main method.
@@ -124,7 +124,7 @@ public class Main {
         String sallyAccountJson  = gson.toJson(sallyAccount);
 
         // create transfer
-        Transaction transfer = aliceAccount.sendMoney(sallyAccount, 8, checkerURL);
+        Transaction transfer = aliceAccount.sendMoney(sallyAccount, 5, checkerURL);
 
         // register objects
         nodeList[0].registerObject(aliceAccountJson);
