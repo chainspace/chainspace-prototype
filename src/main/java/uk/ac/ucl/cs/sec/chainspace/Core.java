@@ -115,7 +115,7 @@ class Core {
      * callChecker
      * This method format a packet and call the checker in order to verify the transaction.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked") // these warning are caused by a bug in org.json.simple.JSONArray
     private boolean callChecker(Transaction transaction, String[] inputs, String[] referenceInputs) throws IOException {
 
         // get checker URL
