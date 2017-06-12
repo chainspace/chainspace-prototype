@@ -9,6 +9,7 @@ import java.sql.*;
  *
  *
  */
+// TODO: provide a way to gently close the connection to the database
 class DatabaseConnector {
 
     // instance variables

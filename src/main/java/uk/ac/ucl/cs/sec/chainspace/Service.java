@@ -14,6 +14,7 @@ import static spark.Spark.*;
  *
  *
  */
+// TODO: provide a way to gently shutdown the service
 class Service {
 
     // instance variables
@@ -32,8 +33,15 @@ class Service {
         // run one core
         this.core = new Core(nodeID);
 
+        // start service on given port
+        int port = 3000 + nodeID;
+        port(port);
+
         // add routes
         addRoutes();
+
+        // print init message
+        printInitMessage(port);
     }
 
 
@@ -43,30 +51,21 @@ class Service {
     private void addRoutes() {
 
         // returns a json containing the node ID
-        path("/api", () -> path("/1.0", () -> {
+        path("/api", () -> {
+            path("/1.0", () -> {
 
-            // return node ID
-            get("/node_id", this::returnNodeID);
+                // return node ID
+                get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
 
-            // debug : add an object to the database
-            post("/debug_load", this::debugLoadRequest);
+                // debug : add an object to the database
+                post("/debug_load", this::debugLoadRequest);
 
-            // process a transaction
-            post("/process_transaction", this::processTransactionRequest);
+                // process a transaction
+                post("/process_transaction", this::processTransactionRequest);
 
-        }));
+            });
+        });
 
-    }
-
-
-    /**
-     * returnNodeID
-     * Return the node ID in json format.
-     */
-    private String returnNodeID(Request request, Response response) {
-        JSONObject json = new JSONObject();
-        json.put("Node ID", nodeID);
-        return json.toString();
     }
 
 
@@ -146,6 +145,14 @@ class Service {
         return responseJson.toString();
     }
 
+
+    /**
+     * printInitMessage
+     * Print on the console an init message.
+     */
+    private void printInitMessage(int port) {
+        System.out.println("\nNode service #" +nodeID+ " is running on port " +port+ " ...");
+    }
 
     /**
      * printRequestDetails
