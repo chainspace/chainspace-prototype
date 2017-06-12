@@ -4,6 +4,11 @@ package uk.ac.ucl.cs.sec.chainspace;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 
+
+/**
+ *
+ *
+ */
 class DatabaseConnector {
 
     // instance variables
@@ -63,7 +68,6 @@ class DatabaseConnector {
         }
         // if it's not, ask other shards
         else {
-            // TODO: if the current node does not hold the object, ask other nodes for it.
             return null;
         }
     }

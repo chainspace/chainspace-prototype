@@ -4,7 +4,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 
-public class Utils {
+class Utils {
 
     static String hash(String input) throws NoSuchAlgorithmException {
 
@@ -16,6 +16,7 @@ public class Utils {
     }
 
 
+    /*
     public static boolean verifyHash(String object, String hashedValue) throws NoSuchAlgorithmException {
 
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -26,4 +27,5 @@ public class Utils {
         return hexhash.equals(hashedValue);
 
     }
+    */
 }

@@ -1,7 +1,5 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -40,7 +38,7 @@ class Service {
         this.nodeID = nodeID;
 
         // init the database connection
-        databaseConnector = new DatabaseConnector(nodeID);
+        this.databaseConnector = new DatabaseConnector(nodeID);
 
         // add routes
         addRoutes();
@@ -201,6 +199,7 @@ class Service {
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
             inputs[i] = databaseConnector.getObject(transaction.getInputIDs()[i]);
             if (inputs[i] == null) {
+                // TODO: if the current node does not hold the object, ask other nodes for it.
                 throw new AbortTransactionException("Object doesn't exist.");
             }
         }
@@ -211,6 +210,7 @@ class Service {
         for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
             referenceInputs[i] = databaseConnector.getObject(transaction.getReferenceInputIDs()[i]);
             if (referenceInputs[i] == null) {
+                // TODO: if the current node does not hold the object, ask other nodes for it.
                 throw new AbortTransactionException("Object doesn't exist.");
             }
         }
