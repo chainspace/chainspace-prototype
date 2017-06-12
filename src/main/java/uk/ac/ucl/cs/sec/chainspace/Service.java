@@ -24,31 +24,23 @@ import static spark.Spark.*;
  *
  *
  */
-public class Service {
+class Service {
 
     // instance variables
-    private Connection connection;
     private int nodeID;
+    private DatabaseConnector databaseConnector;
 
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    public Service(int nodeID) throws ClassNotFoundException, SQLException {
+    Service(int nodeID) throws ClassNotFoundException, SQLException {
 
         // store the node's ID
         this.nodeID = nodeID;
 
-        // init the databse connection
-        Class.forName("org.sqlite.JDBC");
-        this.connection = DriverManager.getConnection("jdbc:sqlite:node" + nodeID + ".sqlite");
-        Statement statement = connection.createStatement();
-        String sql = "CREATE TABLE IF NOT EXISTS data (" +
-                "object_id CHAR(32) NOT NULL UNIQUE," +
-                "object TEXT NOT NULL," +
-                "status INTEGER NOT NULL)";
-        statement.executeUpdate(sql);
-        statement.close();
+        // init the database connection
+        databaseConnector = new DatabaseConnector(nodeID);
 
         // add routes
         addRoutes();
@@ -60,20 +52,18 @@ public class Service {
     private void addRoutes() {
 
         // returns a json containing the node ID
-        path("/api", () -> {
-            path("/1.0", () -> {
+        path("/api", () -> path("/1.0", () -> {
 
-                // return node ID
-                get("/node_id", this::returnNodeID);
+            // return node ID
+            get("/node_id", this::returnNodeID);
 
-                // debug : add an object to the database
-                post("/debug_load", this::debugLoad);
+            // debug : add an object to the database
+            post("/debug_load", this::debugLoad);
 
-                // process a transaction
-                post("/process_transaction", this::processTransactionRequest);
+            // process a transaction
+            post("/process_transaction", this::processTransactionRequest);
 
-            });
-        });
+        }));
 
     }
 
@@ -104,7 +94,7 @@ public class Service {
         JSONObject responseJson = new JSONObject();
         try {
             // add object to db
-            registerObject(request.body());
+            databaseConnector.saveObject(request.body());
 
             // create json response
             responseJson.put("status", "OK");
@@ -124,24 +114,6 @@ public class Service {
         // send
         response.type("application/json");
         return responseJson.toString();
-
-    }
-
-    /**
-     * registerObject
-     * Debug method that blindly insert an object into the database if it does not already exist.
-     */
-    private void registerObject(String object) throws NoSuchAlgorithmException {
-
-        String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
-        PreparedStatement statement;
-        try {
-            statement = connection.prepareStatement(sql);
-            statement.setString(1, Utils.hash(object));
-            statement.setString(2, object);
-            statement.executeUpdate();
-            statement.close();
-        } catch (SQLException ignored) {} // ignore: happens if object already exists
 
     }
 
@@ -224,17 +196,23 @@ public class Service {
         }
 
         // get input objects
-        // TODO: optimise database query
+        // TODO: optimise database query (one query instead of looping)
         String[] inputs = new String[transaction.getInputIDs().length];
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            inputs[i] = getObject(transaction.getInputIDs()[i]);
+            inputs[i] = databaseConnector.getObject(transaction.getInputIDs()[i]);
+            if (inputs[i] == null) {
+                throw new AbortTransactionException("Object doesn't exist.");
+            }
         }
 
         // get reference input objects
-        // TODO: optimise database query
+        // TODO: optimise database query (one query instead of looping)
         String[] referenceInputs = new String[transaction.getReferenceInputIDs().length];
         for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
-            referenceInputs[i] = getObject(transaction.getReferenceInputIDs()[i]);
+            referenceInputs[i] = databaseConnector.getObject(transaction.getReferenceInputIDs()[i]);
+            if (referenceInputs[i] == null) {
+                throw new AbortTransactionException("Object doesn't exist.");
+            }
         }
 
         // call the checker
@@ -248,44 +226,18 @@ public class Service {
 
 
         // make input (consumed) objects inactive
+        // TODO: optimise database query (one query instead of looping)
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            String sql = "UPDATE data SET status = 0 WHERE object_id = ?";
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setString(1, transaction.getInputIDs()[i]);
-            statement.executeUpdate();
-            statement.close();
+            databaseConnector.setObjectInactive(transaction.getInputIDs()[i]);
         }
 
         // register new objects
         for (int i = 0; i < transaction.getOutputs().length; i++) {
-            registerObject(transaction.getOutputs()[i]);
+            databaseConnector.saveObject(transaction.getOutputs()[i]);
         }
 
     }
 
-    /**
-     * getObject
-     * retrieve an a given object from the database.
-     */
-    private String getObject(String objectID) throws SQLException, AbortTransactionException {
-
-        // prepare query
-        String sql = "SELECT * FROM data WHERE object_id = ?";
-        PreparedStatement statement = connection.prepareStatement(sql);
-        statement.setString(1, objectID);
-        ResultSet resultSet = statement.executeQuery();
-
-        // check if the object is in the database.
-        if (resultSet.isBeforeFirst()) {
-            return resultSet.getString("object");
-        }
-        // if it's not, ask other shards
-        else {
-            // TODO: if the current node does not hold the object, ask other nodes for it.
-            throw new AbortTransactionException("Object doesn't exist.");
-        }
-
-    }
 
     /**
      * callChecker
@@ -326,10 +278,9 @@ public class Service {
         transactionForChecker.put("outputs", outputsForChecker);
 
         // make post request
-        String url = checkerURL;
         HttpClient httpClient = HttpClientBuilder.create().build();
         StringEntity postingString = new StringEntity(transactionForChecker.toString());
-        HttpPost post = new HttpPost(url);
+        HttpPost post = new HttpPost(checkerURL);
         post.setEntity(postingString);
         post.setHeader("Content-type", "application/json");
 
