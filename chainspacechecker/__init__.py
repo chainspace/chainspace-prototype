@@ -1,1 +1,0 @@
-"""ChainSpace checker library."""
