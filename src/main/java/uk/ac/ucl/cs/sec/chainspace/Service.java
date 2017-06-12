@@ -1,7 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -12,64 +12,210 @@ import org.json.JSONObject;
 import org.json.simple.JSONArray;
 import spark.Request;
 import spark.Response;
-import spark.Spark;
 
 import java.io.IOException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 
 import static spark.Spark.*;
 
-import static spark.route.HttpMethod.post;
 
 /**
- * Created by mus on 12/06/17.
+ *
+ *
  */
 public class Service {
-    private Gson gson;
+
+    // instance variables
     private Connection connection;
     private int nodeID;
 
+    /**
+     * Constructor
+     * Runs a node service and init a database.
+     */
     public Service(int nodeID) throws ClassNotFoundException, SQLException {
+
+        // store the node's ID
         this.nodeID = nodeID;
 
-        this.gson = new GsonBuilder().create();
-
+        // init the databse connection
         Class.forName("org.sqlite.JDBC");
         this.connection = DriverManager.getConnection("jdbc:sqlite:node" + nodeID + ".sqlite");
-        initialiseDatabase();
-
-        addRoutes();
-    }
-
-    private void initialiseDatabase() throws SQLException {
         Statement statement = connection.createStatement();
         String sql = "CREATE TABLE IF NOT EXISTS data (" +
                 "object_id CHAR(32) NOT NULL UNIQUE," +
                 "object TEXT NOT NULL," +
-                "status INTEGER NOT NULL" +
-                ")";
+                "status INTEGER NOT NULL)";
         statement.executeUpdate(sql);
+        statement.close();
+
+        // add routes
+        addRoutes();
     }
 
+    /**
+     * routes for the web service
+     */
     private void addRoutes() {
-        get("/api/1.0/node_id", (request, response) -> {
-            JSONObject json = new JSONObject();
-            json.put("node_id", nodeID);
-            return json.toString();
+
+        // returns a json containing the node ID
+        path("/api", () -> {
+            path("/1.0", () -> {
+
+                // return node ID
+                get("/node_id", this::returnNodeID);
+
+                // debug : add an object to the database
+                post("/debug_load", this::debugLoad);
+
+                // process a transaction
+                post("/process_transaction", this::processTransactionRequest);
+
+            });
         });
-        post("/api/1.0/process_transaction", (request, response) -> processTransactionRequest(request, response));
+
     }
 
-    private String processTransactionRequest(Request request, Response response) throws NoSuchAlgorithmException, SQLException, AbortTransactionException, IOException {
-        Transaction transaction = Transaction.fromJson(request.body());
-        processTransaction(transaction);
-        return null;
+    /**
+     * returnNodeID
+     * Return the node ID in json format.
+     */
+    private String returnNodeID(Request request, Response response) {
+        JSONObject json = new JSONObject();
+        json.put("Node ID", nodeID);
+        return json.toString();
     }
 
-    private void processTransaction(Transaction transaction) throws AbortTransactionException, SQLException, NoSuchAlgorithmException, IOException {
+
+
+    /*
+        DEBUG:
+        The following are debug methods to add objects to the database.
+     */
+
+    /**
+     * debugLoad
+     * Debug method to quickly add an object to the node database. It returns the corresponding object ID.
+     */
+    private String debugLoad(Request request, Response response) {
+
+        // register objects & create response
+        JSONObject responseJson = new JSONObject();
+        try {
+            // add object to db
+            registerObject(request.body());
+
+            // create json response
+            responseJson.put("status", "OK");
+            responseJson.put("objectID", Utils.hash(request.body()));
+            response.status(200);
+        }
+        catch (Exception e) {
+            // create json response
+            responseJson.put("status", "ERROR");
+            responseJson.put("message", e.getMessage());
+            response.status(500);
+        }
+
+        // print request
+        printRequestDetails(request, responseJson.toString());
+
+        // send
+        response.type("application/json");
+        return responseJson.toString();
+
+    }
+
+    /**
+     * registerObject
+     * Debug method that blindly insert an object into the database if it does not already exist.
+     */
+    private void registerObject(String object) throws NoSuchAlgorithmException {
+
+        String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
+        PreparedStatement statement;
+        try {
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, Utils.hash(object));
+            statement.setString(2, object);
+            statement.executeUpdate();
+            statement.close();
+        } catch (SQLException ignored) {} // ignore: happens if object already exists
+
+    }
+
+    /**
+     * printRequestDetails
+     * Print on the console some details about the incoming request.
+     */
+    private void printRequestDetails(Request request, String response) {
+        System.out.println("\nNode service #" +nodeID+ " [POST] @" +request.url()+ " from " +request.ip());
+        System.out.println("\trequest content: " + request.body());
+        System.out.println("\tresponse content: " + response);
+    }
+
+
+
+    /*
+        PROCESS TRANSACTION
+        The following methods are the actual Chainspace's core that process incoming transactions.
+     */
+
+
+    /**
+     * processTransactionRequest
+     * This method receives a json transaction, processes it, and responds with the transaction ID.
+     */
+    private String processTransactionRequest(Request request, Response response) {
+
+        // process the transaction & create response
+        JSONObject responseJson = new JSONObject();
+        try {
+
+            // get the transaction as java object
+            Transaction transaction;
+            try {
+                transaction = Transaction.fromJson(request.body());
+            }
+            catch (Exception e) {
+                throw new AbortTransactionException("Malformed Transaction.");
+            }
+
+            // process the transaction
+            processTransaction(transaction);
+
+            // create json response
+            responseJson.put("status", "OK");
+            responseJson.put("transactionID", transaction.getID());
+            response.status(200);
+        }
+        catch (Exception e) {
+            // create json  error response
+            responseJson.put("status", "ERROR");
+            responseJson.put("message", e.getMessage());
+            response.status(400);
+        }
+
+        // print request
+        printRequestDetails(request, responseJson.toString());
+
+        // send
+        response.type("application/json");
+        return responseJson.toString();
+    }
+
+    /**
+     * processTransaction
+     * This method processes a transaction object, call the checker, and store the outputs in the database if everything
+     * goes fine.
+     */
+    private void processTransaction(Transaction transaction)
+            throws AbortTransactionException, SQLException, NoSuchAlgorithmException, IOException
+    {
+
         // check transaction's integrity
+        // all fields must be present. For instance, if a transaction has no parameters, and empty field should be sent
         if (transaction.getInputIDs() == null
                 || transaction.getReferenceInputIDs() == null
                 || transaction.getOutputs() == null
@@ -78,12 +224,14 @@ public class Service {
         }
 
         // get input objects
+        // TODO: optimise database query
         String[] inputs = new String[transaction.getInputIDs().length];
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
             inputs[i] = getObject(transaction.getInputIDs()[i]);
         }
 
         // get reference input objects
+        // TODO: optimise database query
         String[] referenceInputs = new String[transaction.getReferenceInputIDs().length];
         for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
             referenceInputs[i] = getObject(transaction.getReferenceInputIDs()[i]);
@@ -94,74 +242,94 @@ public class Service {
             throw new AbortTransactionException("The checker declined the transaction.");
         }
 
+
         // check if objects are active
-        //if (!(areObjectActive(transaction.getInputIDs()) && areObjectActive(transaction.getReferenceInputIDs())) ) {
-        //    throw new AbortTransactionException("Input not active.");
-        //}
+        // TODO: check that all inputs are active.
 
 
-        // make input object inactive
+        // make input (consumed) objects inactive
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
             String sql = "UPDATE data SET status = 0 WHERE object_id = ?";
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, transaction.getInputIDs()[i]);
             statement.executeUpdate();
-            connection.commit();
+            statement.close();
         }
 
         // register new objects
         for (int i = 0; i < transaction.getOutputs().length; i++) {
             registerObject(transaction.getOutputs()[i]);
         }
+
     }
 
+    /**
+     * getObject
+     * retrieve an a given object from the database.
+     */
     private String getObject(String objectID) throws SQLException, AbortTransactionException {
+
+        // prepare query
         String sql = "SELECT * FROM data WHERE object_id = ?";
         PreparedStatement statement = connection.prepareStatement(sql);
         statement.setString(1, objectID);
         ResultSet resultSet = statement.executeQuery();
 
         // check if the object is in the database.
-        if (!resultSet.isBeforeFirst()) {
-            // if it's not, ask other shards
-            throw new AbortTransactionException("Object doesn't exist.");
-        }
-        else {
+        if (resultSet.isBeforeFirst()) {
             return resultSet.getString("object");
         }
+        // if it's not, ask other shards
+        else {
+            // TODO: if the current node does not hold the object, ask other nodes for it.
+            throw new AbortTransactionException("Object doesn't exist.");
+        }
+
     }
+
+    /**
+     * callChecker
+     * This method format a packet and call the checker in order to verify the transaction.
+     */
     private boolean callChecker(Transaction transaction, String[] inputs, String[] referenceInputs) throws IOException {
+
+        // get checker URL
+        // TODO: at the moment the checker URL is hardcoded, this should be loaded from a config file
+        String checkerURL = "http://127.0.0.1:5001/bank/transfer";
+
         // create transaction in JSON for checker
         JSONObject transactionForChecker = new JSONObject();
         // contract method
-        transactionForChecker.put("contractMethod", "http://127.0.0.1:5001/bank/transfer");
+        transactionForChecker.put("contractID", transaction.getContractID());
         // parameters
         transactionForChecker.put("parameters", new JSONObject(transaction.getParameters()));
+
         // inputs
         JSONArray inputsForChecker = new JSONArray();
         for (String input : inputs) {
             inputsForChecker.add(new JSONObject(input));
         }
         transactionForChecker.put("inputs", inputsForChecker);
+
         // reference inputs
         JSONArray referenceInputsForChecker = new JSONArray();
         for (String referenceInput : referenceInputs) {
             referenceInputsForChecker.add(new JSONObject(referenceInput));
         }
         transactionForChecker.put("referenceInputs", referenceInputsForChecker);
+
         // outputs
         JSONArray outputsForChecker = new JSONArray();
-        for (String output : transaction.getOutputs()) {
-            outputsForChecker.add(new JSONObject(output));
+        for (Object output : transaction.getOutputs()) {
+            outputsForChecker.add(new JSONObject(output.toString()));
         }
         transactionForChecker.put("outputs", outputsForChecker);
 
-
         // make post request
-        String url                  = "http://127.0.0.1:5001/bank/transfer";
-        HttpClient httpClient       = HttpClientBuilder.create().build();
-        StringEntity postingString  = new StringEntity(transactionForChecker.toString());
-        HttpPost post               = new HttpPost(url);
+        String url = checkerURL;
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        StringEntity postingString = new StringEntity(transactionForChecker.toString());
+        HttpPost post = new HttpPost(url);
         post.setEntity(postingString);
         post.setHeader("Content-type", "application/json");
 
@@ -172,19 +340,7 @@ public class Service {
 
         // return
         return responseJson.getString("status").equals("OK");
+
     }
 
-    private void registerObject(String object) throws SQLException, NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        digest.update(object.getBytes());
-        byte[] hash = digest.digest();
-        String hexhash = String.format("%064x", new java.math.BigInteger(1, hash));
-
-        String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
-        PreparedStatement statement = connection.prepareStatement(sql);
-        statement.setString(1, hexhash);
-        statement.setString(2, object);
-        statement.executeUpdate();
-        connection.commit();
-    }
 }
