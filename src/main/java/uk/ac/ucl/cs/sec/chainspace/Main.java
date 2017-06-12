@@ -6,9 +6,16 @@ import java.sql.SQLException;
 
 public class Main {
 
-    public static void main(String[] args) throws SQLException, ClassNotFoundException {
+    public static void main(String[] args) {
 
-        new Service(1);
+        try {
+
+            // run chainspace service
+            new Service(1);
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
     }
 
