@@ -115,6 +115,7 @@ class Core {
      * callChecker
      * This method format a packet and call the checker in order to verify the transaction.
      */
+    @SuppressWarnings("unchecked")
     private boolean callChecker(Transaction transaction, String[] inputs, String[] referenceInputs) throws IOException {
 
         // get checker URL

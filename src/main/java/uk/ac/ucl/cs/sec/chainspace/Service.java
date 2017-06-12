@@ -51,20 +51,18 @@ class Service {
     private void addRoutes() {
 
         // returns a json containing the node ID
-        path("/api", () -> {
-            path("/1.0", () -> {
+        path("/api", () -> path("/1.0", () -> {
 
-                // return node ID
-                get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
+            // return node ID
+            get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
 
-                // debug : add an object to the database
-                post("/debug_load", this::debugLoadRequest);
+            // debug : add an object to the database
+            post("/debug_load", this::debugLoadRequest);
 
-                // process a transaction
-                post("/process_transaction", this::processTransactionRequest);
+            // process a transaction
+            post("/process_transaction", this::processTransactionRequest);
 
-            });
-        });
+        }));
 
     }
 
