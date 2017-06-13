@@ -2,11 +2,21 @@ package uk.ac.ucl.cs.sec.chainspace;
 
 import java.sql.SQLException;
 
-/**
- * Created by mus on 12/06/17.
- */
+
+
 public class Main {
-    public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        Service service = new Service(1);
+
+    public static void main(String[] args) {
+
+        try {
+
+            // run chainspace service
+            new Service(1);
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
+
 }
