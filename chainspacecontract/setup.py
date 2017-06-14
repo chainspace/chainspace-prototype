@@ -7,5 +7,6 @@ setup(
     packages = ['chainspacecontract'],
     install_requires = [
         'flask',
+        'requests',
     ],
 )
