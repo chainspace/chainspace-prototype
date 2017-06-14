@@ -5,12 +5,12 @@ from chainspacecontract import ChainspaceContract
 contract = ChainspaceContract('bank_unauthenticated')
 
 
-#@contract.method('init')
-#def init():
-#    return (
-#        {'name': 'alice', 'balance': 10},
-#        {'name': 'bob', 'balance': 10},
-#    )
+@contract.method('init')
+def init():
+    return (
+        {'name': 'alice', 'balance': 10},
+        {'name': 'bob', 'balance': 10},
+    )
 
 
 @contract.method('transfer')
