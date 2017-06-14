@@ -31,12 +31,17 @@ class ChainspaceContract(object):
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            def function_wrapper(*args):
-                return jsonify({'success': function(*args)})
+            def function_wrapper(*args, **kwargs):
+                return jsonify({'success': function(*args, **kwargs)})
 
             @self.flask_app.route('/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
-                return function_wrapper(*(request.json['inputs'] + request.json['outputs']), **request.json['parameters'])
+                args = request.json['inputs']
+                if len(request.json['outputs']) > 1:
+                    args.append(tuple(request.json['outputs']))
+                else:
+                    args.append(request.json['outputs'][0])
+                return function_wrapper(*args, **request.json['parameters'])
 
             return function_wrapper
 
@@ -46,8 +51,8 @@ class ChainspaceContract(object):
         def method_decorator(function):
             self.methods[method_name] = function
 
-            def function_wrapper(*args):
-                return function(*args)
+            def function_wrapper(*args, **kwargs):
+                return function(*args, **kwargs)
 
             return function_wrapper
 
@@ -55,7 +60,7 @@ class ChainspaceContract(object):
 
 
 def get_standard_checker(function):
-    def checker(*args):
-        return function(*args[:-1]) == args[-1]
+    def checker(*args, **kwargs):
+        return function(*args[:-1], **kwargs) == args[-1]
 
     return checker
