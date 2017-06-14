@@ -10,15 +10,15 @@ class ChainspaceContract(object):
         self.methods = {}
         self.checkers = {}
 
-    def _populate_empty_checkers():
+    def _populate_empty_checkers(self):
         for method_name, function in self.methods.iteritems():
             if method_name not in self.checkers:
                 self.checkers[method_name] = get_standard_checker(function)
 
-    def run():
+    def run(self):
         self.run_checker_service()
 
-    def run_checker_service():
+    def run_checker_service(self):
         self.flask_app.run()
 
     def checker(self, method_name):
