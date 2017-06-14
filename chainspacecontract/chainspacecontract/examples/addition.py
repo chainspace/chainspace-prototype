@@ -1,3 +1,5 @@
+from chainspacecontract import ChainspaceContract
+
 contract = ChainspaceContract('addition')
 
 @contract.method('init')

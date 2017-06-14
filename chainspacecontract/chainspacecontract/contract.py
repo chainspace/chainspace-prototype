@@ -12,7 +12,7 @@ class ChainspaceContract(object):
 
     def checker(self, method_name):
         def checker_decorator(function):
-            @self.flask_app('/' + method_name, methods=['POST'])
+            @self.flask_app('/' + method_name, methods=['GET'])
             def method_request():
                 return function(request.data) # TODO: fix
             def function_wrapper(*args):
