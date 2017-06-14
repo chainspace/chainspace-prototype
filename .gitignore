@@ -3,5 +3,6 @@ out
 *.iml
 venv
 target
-.pyc
+*.pyc
 .cache
+*.egg-info
