@@ -27,7 +27,7 @@ class ChainspaceContract(object):
 
             @self.flask_app('/' + method_name, methods=['GET'])
             def checker_request():
-                return function(*(request.json['inputs'] + request.json['outputs']))
+                return function(*(request.json['inputs'] + request.json['outputs']), **request.json['parameters'])
 
             def function_wrapper(*args):
                 return jsonify({'success': function(*args)})
