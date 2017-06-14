@@ -13,24 +13,30 @@ class ChainspaceContract(object):
     def _populate_empty_checkers(self):
         for method_name, function in self.methods.iteritems():
             if method_name not in self.checkers:
+                standard_checker = get_standard_checker(function)
                 self.checkers[method_name] = get_standard_checker(function)
+
+                @self.checker(method_name)
+                def checker(*args, **kwargs):
+                    return standard_checker(*args, **kwargs)
 
     def run(self):
         self.run_checker_service()
 
     def run_checker_service(self):
+        self._populate_empty_checkers()
         self.flask_app.run()
 
     def checker(self, method_name):
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            @self.flask_app('/' + method_name, methods=['POST'])
-            def checker_request():
-                return function(*(request.json['inputs'] + request.json['outputs']), **request.json['parameters'])
-
             def function_wrapper(*args):
                 return jsonify({'success': function(*args)})
+
+            @self.flask_app.route('/' + method_name, methods=['POST'], endpoint=method_name)
+            def checker_request():
+                return function_wrapper(*(request.json['inputs'] + request.json['outputs']), **request.json['parameters'])
 
             return function_wrapper
 
