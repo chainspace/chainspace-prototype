@@ -9,7 +9,6 @@ import java.sql.*;
  *
  *
  */
-// TODO: provide a way to gently close the connection to the database
 class DatabaseConnector {
 
     // instance variables
@@ -21,16 +20,41 @@ class DatabaseConnector {
      */
     DatabaseConnector(int nodeID) throws SQLException, ClassNotFoundException {
 
-        //
+        // create database connection
         Class.forName("org.sqlite.JDBC");
         this.connection = DriverManager.getConnection("jdbc:sqlite:node" + nodeID + ".sqlite");
         Statement statement = connection.createStatement();
+
+        // create table to store objects
         String sql = "CREATE TABLE IF NOT EXISTS data (" +
                 "object_id CHAR(32) NOT NULL UNIQUE," +
                 "object TEXT NOT NULL," +
                 "status INTEGER NOT NULL)";
         statement.executeUpdate(sql);
+
+        // create table to store logs
+        sql = "CREATE TABLE IF NOT EXISTS logs (" +
+                "transaction_id CHAR(32) NOT NULL UNIQUE," +
+                "transactionJson TEXT NOT NULL)";
+        statement.executeUpdate(sql);
+
+        // create table to store logs head
+        sql = "CREATE TABLE IF NOT EXISTS head (" +
+                "ID INTEGER PRIMARY KEY," +
+                "digest CHAR(32) NOT NULL UNIQUE)";
+        statement.executeUpdate(sql);
+
+        // close statement
         statement.close();
+    }
+
+
+    /**
+     * close
+     * Gently shut down the database connection
+     */
+    void close() throws SQLException {
+        this.connection.close();
     }
 
 
@@ -58,7 +82,7 @@ class DatabaseConnector {
      */
     String getObject(String objectID) throws SQLException {
         // prepare query
-        String sql = "SELECT * FROM data WHERE object_id = ?";
+        String sql = "SELECT object FROM data WHERE object_id = ? LIMIT 1";
         PreparedStatement statement = connection.prepareStatement(sql);
         statement.setString(1, objectID);
         ResultSet resultSet = statement.executeQuery();
@@ -83,5 +107,56 @@ class DatabaseConnector {
         statement.setString(1, objectID);
         statement.executeUpdate();
         statement.close();
+    }
+
+    /**
+     * logTransaction
+     * Add transaction to the logs.
+     */
+    // TODO: optimise requests (only one executeUpdate)
+    void logTransaction(String transactionJson) throws NoSuchAlgorithmException, SQLException {
+
+        // add transaction to the logs
+        String sql = "INSERT INTO logs (transaction_id, transactionJson) VALUES (?, ?)";
+        PreparedStatement statement;
+        statement = connection.prepareStatement(sql);
+        statement.setString(1, Utils.hash(transactionJson));
+        statement.setString(2, transactionJson);
+        statement.executeUpdate();
+        statement.close();
+
+        // update head
+        updateHead(transactionJson);
+
+    }
+
+    /**
+     * updateHead
+     * Update the logs' head.
+     */
+    private void updateHead(String transactionJson) throws SQLException, NoSuchAlgorithmException {
+
+        // get the previous head
+        String sql = "SELECT digest FROM head ORDER BY ID DESC LIMIT 1";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery();
+        statement.close();
+
+        // insert new head
+        sql = "INSERT INTO head (ID, digest) VALUES (null, ?)";
+        statement = connection.prepareStatement(sql);
+
+        // check if there is at least one head in the table
+        if (resultSet.isBeforeFirst()) {
+            String newHead = Utils.hash( resultSet.getString("digest") + "|" + transactionJson);
+            statement.setString(1, newHead);
+        }
+        // if not, simply had a hash of the transaction
+        else {
+            statement.setString(1, Utils.hash(transactionJson));
+        }
+        statement.executeUpdate();
+        statement.close();
+
     }
 }

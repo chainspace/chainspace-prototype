@@ -11,7 +11,8 @@ public class Main {
         try {
 
             // run chainspace service
-            new Service(1);
+            new NodeService(1);
+            new NodeService(2);
 
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();

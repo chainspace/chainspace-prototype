@@ -25,7 +25,7 @@ class Transaction {
         return gson.fromJson(json, Transaction.class);
     }
 
-    private String toJson() {
+    String toJson() {
         Gson gson = new GsonBuilder().create();
         return gson.toJson(this);
     }

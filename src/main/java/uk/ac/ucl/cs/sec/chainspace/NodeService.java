@@ -3,29 +3,28 @@ package uk.ac.ucl.cs.sec.chainspace;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 
 import java.sql.SQLException;
-
-import static spark.Spark.*;
 
 
 /**
  *
  *
  */
-// TODO: provide a way to gently shutdown the service
-class Service {
+class NodeService {
 
     // instance variables
     private int nodeID;
     private Core core;
 
+
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    Service(int nodeID) throws SQLException, ClassNotFoundException {
+    NodeService(int nodeID) throws SQLException, ClassNotFoundException {
 
         // save node ID
         this.nodeID = nodeID;
@@ -35,32 +34,38 @@ class Service {
 
         // start service on given port
         int port = 3000 + nodeID;
-        port(port);
-
-        // add routes
-        addRoutes();
+        addRoutes(Service.ignite().port(port));
 
         // print init message
         printInitMessage(port);
     }
 
+    /**
+     * finalize
+     * Gently shut down the node's core when the garbage collector is called.
+     */
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        this.core.close();
+    }
 
     /**
      * routes for the web service
      */
-    private void addRoutes() {
+    private void addRoutes(Service service) {
 
         // returns a json containing the node ID
-        path("/api", () -> path("/1.0", () -> {
+        service.path("/api", () -> service.path("/1.0", () -> {
 
             // return node ID
-            get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
+            service.get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
 
             // debug : add an object to the database
-            post("/debug_load", this::debugLoadRequest);
+            service.post("/debug_load", this::debugLoadRequest);
 
             // process a transaction
-            post("/process_transaction", this::processTransactionRequest);
+            service.post("/process_transaction", this::processTransactionRequest);
 
         }));
 

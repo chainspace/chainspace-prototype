@@ -22,6 +22,12 @@ class Core {
 
     // instance variables
     private DatabaseConnector databaseConnector;
+    private Cache cache;
+
+
+    // TODO: load cache depth from config
+    private static final int CACHE_DEPTH = 10;
+
 
     /**
      * Constructor
@@ -29,9 +35,21 @@ class Core {
      */
     Core(int nodeID) throws ClassNotFoundException, SQLException {
 
+        // init cache
+        this.cache = new Cache(CACHE_DEPTH);
+
         // init the database connection
         this.databaseConnector = new DatabaseConnector(nodeID);
 
+    }
+
+
+    /**
+     * close
+     * Gently shutdown the core
+     */
+    void close() throws SQLException {
+        this.databaseConnector.close();
     }
 
 
@@ -41,8 +59,8 @@ class Core {
      */
     void debugLoad(String object) throws NoSuchAlgorithmException {
 
-            // add object to the datbase
-            databaseConnector.saveObject(object);
+            // add object to the database
+            this.databaseConnector.saveObject(object);
 
     }
 
@@ -55,6 +73,9 @@ class Core {
     void processTransaction(Transaction transaction)
             throws AbortTransactionException, SQLException, NoSuchAlgorithmException, IOException
     {
+
+        // check if the transaction is in the cache (has recently been processed)
+        if (this.cache.isInCache(transaction.toJson())) { return; }
 
         // check transaction's integrity
         // all fields must be present. For instance, if a transaction has no parameters, and empty field should be sent
@@ -69,7 +90,7 @@ class Core {
         // TODO: optimise database query (one query instead of looping)
         String[] inputs = new String[transaction.getInputIDs().length];
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            inputs[i] = databaseConnector.getObject(transaction.getInputIDs()[i]);
+            inputs[i] = this.databaseConnector.getObject(transaction.getInputIDs()[i]);
             if (inputs[i] == null) {
                 // TODO: if the current node does not hold the object, ask other nodes for it.
                 throw new AbortTransactionException("Object doesn't exist.");
@@ -80,7 +101,7 @@ class Core {
         // TODO: optimise database query (one query instead of looping)
         String[] referenceInputs = new String[transaction.getReferenceInputIDs().length];
         for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
-            referenceInputs[i] = databaseConnector.getObject(transaction.getReferenceInputIDs()[i]);
+            referenceInputs[i] = this.databaseConnector.getObject(transaction.getReferenceInputIDs()[i]);
             if (referenceInputs[i] == null) {
                 // TODO: if the current node does not hold the object, ask other nodes for it.
                 throw new AbortTransactionException("Object doesn't exist.");
@@ -94,19 +115,23 @@ class Core {
 
 
         // check if objects are active
+        // This is the part where we call BFTSmart
         // TODO: check that all inputs are active.
 
 
         // make input (consumed) objects inactive
         // TODO: optimise database query (one query instead of looping)
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            databaseConnector.setObjectInactive(transaction.getInputIDs()[i]);
+            this.databaseConnector.setObjectInactive(transaction.getInputIDs()[i]);
         }
 
         // register new objects
         for (int i = 0; i < transaction.getOutputs().length; i++) {
-            databaseConnector.saveObject(transaction.getOutputs()[i]);
+            this.databaseConnector.saveObject(transaction.getOutputs()[i]);
         }
+
+        // update logs
+        this.databaseConnector.logTransaction(transaction.toJson());
 
     }
 
