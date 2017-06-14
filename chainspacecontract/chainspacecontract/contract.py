@@ -25,7 +25,7 @@ class ChainspaceContract(object):
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            @self.flask_app('/' + method_name, methods=['GET'])
+            @self.flask_app('/' + method_name, methods=['POST'])
             def checker_request():
                 return function(*(request.json['inputs'] + request.json['outputs']), **request.json['parameters'])
 
