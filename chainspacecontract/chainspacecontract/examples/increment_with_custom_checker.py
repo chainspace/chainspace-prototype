@@ -1,19 +1,23 @@
+"""A simple smart contract which keeps track of an integer that can be
+incremented, with a custom checker."""
+
 from chainspacecontract import ChainspaceContract
 
 contract = ChainspaceContract('addition')
+
 
 @contract.method('init')
 def init():
     return 0
 
+
 @contract.method('increment')
-def increment(input_object):
-    return input_object + 1
+def increment(integer):
+    return integer + 1
 
 @contract.checker('increment')
-def increment_checker(input_object, output_object):
-    return increment(input_object) == output_object
+def increment_checker(integer, output):
+    return increment(integer) == output
 
 if __name__ == '__main__':
-    # if --checker is specified, run checker, otherwise run client
     contract.run()
