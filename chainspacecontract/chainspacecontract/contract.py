@@ -14,7 +14,6 @@ class ChainspaceContract(object):
         for method_name, function in self.methods.iteritems():
             if method_name not in self.checkers:
                 standard_checker = get_standard_checker(function)
-                self.checkers[method_name] = get_standard_checker(function)
 
                 @self.checker(method_name)
                 def checker(*args, **kwargs):
