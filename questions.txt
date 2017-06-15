@@ -1,3 +1,0 @@
-Is there a leader in the SBAC protocol, how is it elected?
-Do output shards need to be in the intershard consensus protocol?
-How do shards know if objects in other shards are active?
