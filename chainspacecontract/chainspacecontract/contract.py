@@ -13,11 +13,7 @@ class ChainspaceContract(object):
     def _populate_empty_checkers(self):
         for method_name, function in self.methods.iteritems():
             if method_name not in self.checkers:
-                standard_checker = get_standard_checker(function)
-
-                @self.checker(method_name)
-                def checker(*args, **kwargs):
-                    return standard_checker(*args, **kwargs)
+                self.register_standard_checker(method_name, function)
 
     def run(self):
         self.run_checker_service()
@@ -58,8 +54,7 @@ class ChainspaceContract(object):
         return method_decorator
 
 
-def get_standard_checker(function):
-    def checker(*args, **kwargs):
-        return function(*args[:-1], **kwargs) == args[-1]
-
-    return checker
+    def register_standard_checker(self, method_name, function):
+        @self.checker(method_name)
+        def checker(*args, **kwargs):
+            return function(*args[:-1], **kwargs) == args[-1]
