@@ -31,6 +31,7 @@ class Cache extends ArrayList<String> {
         String digest = Utils.hash(input);
 
         // if the transaction is already in the cash, return true
+        // TODO: method toArray() as complexity O(n), making the binarySearch useless here
         if( Arrays.binarySearch(this.toArray(), digest) != -1 ) {return true;}
 
         // otherwise update cache and return false

@@ -34,7 +34,7 @@ class DatabaseConnector {
 
         // create table to store logs
         sql = "CREATE TABLE IF NOT EXISTS logs (" +
-                "transaction_id CHAR(32) NOT NULL UNIQUE," +
+                "transaction_id CHAR(32) NOT NULL," +
                 "transactionJson TEXT NOT NULL)";
         statement.executeUpdate(sql);
 
@@ -62,13 +62,13 @@ class DatabaseConnector {
      * registerObject
      * Debug method that blindly insert an object into the database if it does not already exist.
      */
-    void saveObject(String object) throws NoSuchAlgorithmException {
+    void saveObject(String transactionID, String object) throws NoSuchAlgorithmException {
 
         String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
         PreparedStatement statement;
         try {
             statement = connection.prepareStatement(sql);
-            statement.setString(1, Utils.hash(object));
+            statement.setString(1, Utils.hash(transactionID +"|"+ object));
             statement.setString(2, object);
             statement.executeUpdate();
             statement.close();
@@ -95,6 +95,23 @@ class DatabaseConnector {
         else {
             return null;
         }
+    }
+
+
+    /**
+     * isObjectInactive
+     * Return true iff the object is in the database and is inactive.
+     */
+    boolean isObjectInactive(String objectID) throws SQLException {
+        // prepare query
+        String sql = "SELECT status FROM data WHERE object_id = ? LIMIT 1";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setString(1, objectID);
+        ResultSet resultSet = statement.executeQuery();
+
+        // check if the object is in the database and if it is active.
+        // if the object status is unknown, return false
+        return resultSet.isBeforeFirst() && resultSet.getInt("status") == 0;
     }
 
     /**

@@ -1,11 +1,18 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 
 
@@ -112,21 +119,33 @@ class NodeService {
      */
     private String processTransactionRequest(Request request, Response response) {
 
+        // get json request
+        JSONObject requestJson = new JSONObject(request.body());
+
+        // broadcast transaction to other nodes
+        try {
+            broadcastTransaction(request.body());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } // ignore failures
+
         // process the transaction & create response
         JSONObject responseJson = new JSONObject();
         try {
 
-            // get the transaction as java object
+            // get the transaction and the key-value store as java objects
             Transaction transaction;
+            Store store;
             try {
-                transaction = Transaction.fromJson(request.body());
+                transaction = Transaction.fromJson(requestJson.getJSONObject("transaction"));
+                store = Store.fromJson(requestJson.getJSONArray("store"));
             }
             catch (Exception e) {
-                throw new AbortTransactionException("Malformed Transaction.");
+                throw new AbortTransactionException("Malformed transaction or key-value store.");
             }
 
             // process the transaction
-            core.processTransaction(transaction);
+            core.processTransaction(transaction, store);
 
             // create json response
             responseJson.put("status", "OK");
@@ -138,6 +157,8 @@ class NodeService {
             responseJson.put("status", "ERROR");
             responseJson.put("message", e.getMessage());
             response.status(400);
+
+            e.printStackTrace();
         }
 
         // print request
@@ -150,12 +171,32 @@ class NodeService {
 
 
     /**
+     * broadcastTransaction
+     * Broadcast the transaction to other nodes.
+     */
+    private void broadcastTransaction(String body) throws IOException {
+
+        // debug: avoid infinite loop
+        if (this.nodeID == 2) { return; }
+
+        // make post request
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        StringEntity postingString = new StringEntity(body);
+        HttpPost post = new HttpPost("http://127.0.0.1:3002/api/1.0/process_transaction");
+        post.setEntity(postingString);
+        post.setHeader("Content-type", "application/json");
+        httpClient.execute(post);
+    }
+
+
+    /**
      * printInitMessage
      * Print on the console an init message.
      */
     private void printInitMessage(int port) {
         System.out.println("\nNode service #" +nodeID+ " is running on port " +port+ " ...");
     }
+
 
     /**
      * printRequestDetails

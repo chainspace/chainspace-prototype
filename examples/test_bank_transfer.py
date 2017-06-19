@@ -6,7 +6,9 @@
 ##################################################################################
 from json                   import loads, dumps
 from threading              import Thread
-from bank_transfer_checker  import app            as app_checker
+from hashlib                import sha256
+from binascii               import hexlify
+from bank_transfer_checker  import app          as app_checker
 import pytest
 import requests
 
@@ -47,6 +49,13 @@ Example_malformed_transfer = {
     "parameters"        : {"amount":8},
     "outputs"           : [Sally_account_new, Alice_account_new]
 }
+
+
+##################################################################################
+# Hash 
+##################################################################################
+def H(x):
+    return hexlify(sha256(x).digest())
 
 
 ##################################################################################
@@ -102,17 +111,25 @@ def test_transaction():
     t1.start()
 
     try:
+        """
         # add Alice's account to DB
-        r = requests.post(r"http://127.0.0.1:4567/api/1.0/debug_load", data = dumps(Sally_account))
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Sally_account))
         assert loads(r.text)["status"] == "OK"
         ID1 = loads(r.text)["objectID"]
 
         # add Sally's account to DB
-        r = requests.post(r"http://127.0.0.1:4567/api/1.0/debug_load", data = dumps(Alice_account))
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Alice_account))
         assert loads(r.text)["status"] == "OK"
         ID2 = loads(r.text)["objectID"]
 
-        # define transfer
+        # get ID of output objects
+        # NOTE: hardcoded values; python H(x) does not return the same hash than Java...
+        ID3 = "6b88d14940c1294227c2be03fd0affd4fcb8af3a54165d3a51fc1a5d49aaabbd"
+        ID4 = "b1405ffcf16294c76367c056610d89ab7cd9da267ee3183cf471e523e91c386b"
+        """
+
+        # set transaction
+        """
         T = {
             "contractID"        : 10,
             "inputIDs"          : [ID1, ID2],
@@ -120,9 +137,35 @@ def test_transaction():
             "parameters"        : dumps({"amount":8}),
             "outputs"           : [dumps(Sally_account_new), dumps(Alice_account_new)]
         }
+        """
+
+        ID1 = "7308c63e4ff99491af54005258e73bccb320edfa2a1a1aab293f051ca63ea64d"
+        ID2 = "3cdff76fc23e30ed617d6188170cf111c844b343f4f6ac7d2e0d6794814859e3"
+        ID3 = "0701d1f317e8fecd6ac59f71c662e33bd0aaef8a5784ba4a0bfceb5b48c01e41"
+        ID4 = "57435d7c4b49b34ec02c425af4ccdc8b92b2841d2956c5a22d86105f08c37f8d"
+
+        T = {
+            "contractID"        : 10,
+            "inputIDs"          : [ID1, ID2],
+            "referenceInputIDs" : [],
+            "parameters"        : dumps({"amount":8}),
+            "outputIDs"         : [ID3, ID4]
+        }
+
+
+        # set key-value store
+        store = [
+            {"key": ID1, "value": Sally_account},
+            {"key": ID2, "value": Alice_account},
+            {"key": ID3, "value": Sally_account_new},
+            {"key": ID4, "value": Alice_account_new},
+        ]
+
+        # pack transaction
+        packet = {"transaction": T, "store": store};
 
         # sumbit the transaction to the ledger
-        r = requests.post(r"http://127.0.0.1:4567/api/1.0/process_transaction", data = dumps(T))
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/process_transaction", data = dumps(packet))
         assert loads(r.text)["status"] == "OK"
 
     finally:
