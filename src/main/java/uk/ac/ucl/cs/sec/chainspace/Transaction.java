@@ -2,6 +2,8 @@ package uk.ac.ucl.cs.sec.chainspace;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.json.JSONObject;
+
 import java.security.NoSuchAlgorithmException;
 
 
@@ -10,22 +12,22 @@ class Transaction {
     private String[] inputIDs;
     private String[] referenceInputIDs;
     private String   parameters;
-    private String[] outputs;
+    private String[] outputIDs;
 
-    Transaction(int contractID, String[] inputIDs, String[] referenceInputIDs, String parameters, String[] outputs) {
+    Transaction(int contractID, String[] inputIDs, String[] referenceInputIDs, String parameters, String[] outputIDs) {
         this.contractID = contractID;
         this.inputIDs = inputIDs;
         this.referenceInputIDs = referenceInputIDs;
         this.parameters = parameters;
-        this.outputs = outputs;
+        this.outputIDs = outputIDs;
     }
 
-    static Transaction fromJson(String json) {
+    static Transaction fromJson(JSONObject json) {
         Gson gson = new GsonBuilder().create();
-        return gson.fromJson(json, Transaction.class);
+        return gson.fromJson(json.toString(), Transaction.class);
     }
 
-    private String toJson() {
+    String toJson() {
         Gson gson = new GsonBuilder().create();
         return gson.toJson(this);
     }
@@ -46,8 +48,8 @@ class Transaction {
         return parameters;
     }
 
-    String[] getOutputs() {
-        return outputs;
+    String[] getOutputIDs() {
+        return outputIDs;
     }
 
     String getID() throws NoSuchAlgorithmException {

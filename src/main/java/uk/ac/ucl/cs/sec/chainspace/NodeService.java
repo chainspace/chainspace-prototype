@@ -1,31 +1,37 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
-
-import static spark.Spark.*;
 
 
 /**
  *
  *
  */
-// TODO: provide a way to gently shutdown the service
-class Service {
+class NodeService {
 
     // instance variables
     private int nodeID;
     private Core core;
 
+
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    Service(int nodeID) throws SQLException, ClassNotFoundException {
+    NodeService(int nodeID) throws SQLException, ClassNotFoundException {
 
         // save node ID
         this.nodeID = nodeID;
@@ -35,32 +41,38 @@ class Service {
 
         // start service on given port
         int port = 3000 + nodeID;
-        port(port);
-
-        // add routes
-        addRoutes();
+        addRoutes(Service.ignite().port(port));
 
         // print init message
         printInitMessage(port);
     }
 
+    /**
+     * finalize
+     * Gently shut down the node's core when the garbage collector is called.
+     */
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        this.core.close();
+    }
 
     /**
      * routes for the web service
      */
-    private void addRoutes() {
+    private void addRoutes(Service service) {
 
         // returns a json containing the node ID
-        path("/api", () -> path("/1.0", () -> {
+        service.path("/api", () -> service.path("/1.0", () -> {
 
             // return node ID
-            get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
+            service.get("/node_id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
 
             // debug : add an object to the database
-            post("/debug_load", this::debugLoadRequest);
+            service.post("/debug_load", this::debugLoadRequest);
 
             // process a transaction
-            post("/process_transaction", this::processTransactionRequest);
+            service.post("/process_transaction", this::processTransactionRequest);
 
         }));
 
@@ -107,21 +119,33 @@ class Service {
      */
     private String processTransactionRequest(Request request, Response response) {
 
+        // get json request
+        JSONObject requestJson = new JSONObject(request.body());
+
+        // broadcast transaction to other nodes
+        try {
+            broadcastTransaction(request.body());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } // ignore failures
+
         // process the transaction & create response
         JSONObject responseJson = new JSONObject();
         try {
 
-            // get the transaction as java object
+            // get the transaction and the key-value store as java objects
             Transaction transaction;
+            Store store;
             try {
-                transaction = Transaction.fromJson(request.body());
+                transaction = Transaction.fromJson(requestJson.getJSONObject("transaction"));
+                store = Store.fromJson(requestJson.getJSONArray("store"));
             }
             catch (Exception e) {
-                throw new AbortTransactionException("Malformed Transaction.");
+                throw new AbortTransactionException("Malformed transaction or key-value store.");
             }
 
             // process the transaction
-            core.processTransaction(transaction);
+            core.processTransaction(transaction, store);
 
             // create json response
             responseJson.put("status", "OK");
@@ -133,6 +157,8 @@ class Service {
             responseJson.put("status", "ERROR");
             responseJson.put("message", e.getMessage());
             response.status(400);
+
+            e.printStackTrace();
         }
 
         // print request
@@ -145,12 +171,32 @@ class Service {
 
 
     /**
+     * broadcastTransaction
+     * Broadcast the transaction to other nodes.
+     */
+    private void broadcastTransaction(String body) throws IOException {
+
+        // debug: avoid infinite loop
+        if (this.nodeID == 2) { return; }
+
+        // make post request
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        StringEntity postingString = new StringEntity(body);
+        HttpPost post = new HttpPost("http://127.0.0.1:3002/api/1.0/process_transaction");
+        post.setEntity(postingString);
+        post.setHeader("Content-type", "application/json");
+        httpClient.execute(post);
+    }
+
+
+    /**
      * printInitMessage
      * Print on the console an init message.
      */
     private void printInitMessage(int port) {
         System.out.println("\nNode service #" +nodeID+ " is running on port " +port+ " ...");
     }
+
 
     /**
      * printRequestDetails
