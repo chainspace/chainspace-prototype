@@ -16,11 +16,23 @@ class TestIncrement(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={'inputs': [1], 'outputs': [2], 'parameters': {}})
+        response = requests.post('http://127.0.0.1:5000/increment', json={
+            'inputs': [1],
+            'outputs': [2],
+            'parameters': {},
+            'reference_inputs': [],
+            'returns': {},
+        })
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={'inputs': [1], 'outputs': [3], 'parameters': {}})
+        response = requests.post('http://127.0.0.1:5000/increment', json={
+            'inputs': [1],
+            'outputs': [3],
+            'parameters': {},
+            'reference_inputs': [],
+            'returns': {},
+        })
         response_json = response.json()
         self.assertFalse(response_json['success'])
 
@@ -32,11 +44,23 @@ class TestIncrement(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={'inputs': [1], 'outputs': [2], 'parameters': {}})
+        response = requests.post('http://127.0.0.1:5000/increment', json={
+            'inputs': [1],
+            'outputs': [2],
+            'parameters': {},
+            'reference_inputs': [],
+            'returns': {},
+        })
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={'inputs': [1], 'outputs': [3], 'parameters': {}})
+        response = requests.post('http://127.0.0.1:5000/increment', json={
+            'inputs': [1],
+            'outputs': [3],
+            'parameters': {},
+            'reference_inputs': [],
+            'returns': {},
+        })
         response_json = response.json()
         self.assertFalse(response_json['success'])
 
@@ -49,17 +73,21 @@ class TestIncrement(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/transfer', json={
-        'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
-        'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 15}],
-        'parameters': {'amount': 5}
+            'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
+            'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 15}],
+            'parameters': {'amount': 5},
+            'reference_inputs': [],
+            'returns': {},
         })
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/transfer', json={
-        'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
-        'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 16}],
-        'parameters': {'amount': 5}
+            'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
+            'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 16}],
+            'parameters': {'amount': 5},
+            'reference_inputs': [],
+            'returns': {},
         })
         response_json = response.json()
         self.assertFalse(response_json['success'])

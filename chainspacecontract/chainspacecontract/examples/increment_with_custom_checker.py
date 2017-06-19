@@ -8,16 +8,22 @@ contract = ChainspaceContract('addition')
 
 @contract.method('init')
 def init():
-    return 0
+    return {
+        'outputs': (0,)
+    }
 
 
 @contract.method('increment')
-def increment(integer):
-    return integer + 1
+def increment(inputs, reference_inputs, parameters):
+    return {
+        'outputs': (inputs[0] + 1,)
+    }
+
 
 @contract.checker('increment')
-def increment_checker(integer, output):
-    return increment(integer) == output
+def increment_checker(inputs, reference_inputs, parameters, outputs, returns):
+    result = increment(inputs, reference_inputs, parameters)
+    return result['outputs'] == outputs and result['returns'] == returns
 
 if __name__ == '__main__':
     contract.run()
