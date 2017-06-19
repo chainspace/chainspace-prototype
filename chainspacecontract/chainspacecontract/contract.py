@@ -50,7 +50,7 @@ class ChainspaceContract(object):
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
                     if key not in result or key is None:
-                        result[key] = ({} if key is 'returns' else tuple())
+                        result[key] = ({} if key == 'returns' else tuple())
 
                 return result
 
