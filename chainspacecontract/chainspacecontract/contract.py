@@ -31,12 +31,13 @@ class ChainspaceContract(object):
 
             @self.flask_app.route('/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
-                args = request.json['inputs']
-                if len(request.json['outputs']) > 1:
-                    args.append(tuple(request.json['outputs']))
-                else:
-                    args.append(request.json['outputs'][0])
-                return function_wrapper(*args, **request.json['parameters'])
+                return function_wrapper(
+                    tuple(request.json['inputs']),
+                    tuple(request.json['reference_inputs']),
+                    request.json['parameters'],
+                    tuple(request.json['outputs']),
+                    request.json['returns']
+                )
 
             return function_wrapper
 
@@ -44,10 +45,16 @@ class ChainspaceContract(object):
 
     def method(self, method_name):
         def method_decorator(function):
-            self.methods[method_name] = function
-
             def function_wrapper(*args, **kwargs):
-                return function(*args, **kwargs)
+                result = function(*args, **kwargs)
+
+                for key in ('outputs', 'returns', 'extra_parameters'):
+                    if key not in result or key is None:
+                        result[key] = ({} if key is 'returns' else tuple())
+
+                return result
+
+            self.methods[method_name] = function_wrapper
 
             return function_wrapper
 
@@ -56,5 +63,6 @@ class ChainspaceContract(object):
 
     def register_standard_checker(self, method_name, function):
         @self.checker(method_name)
-        def checker(*args, **kwargs):
-            return function(*args[:-1], **kwargs) == args[-1]
+        def checker(inputs, reference_inputs, parameters, outputs, returns):
+            result = function(inputs, reference_inputs, parameters)
+            return result['outputs'] == outputs and result['returns'] == returns
