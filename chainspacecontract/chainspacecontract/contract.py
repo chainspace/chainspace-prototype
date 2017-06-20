@@ -5,6 +5,7 @@ from flask import request
 
 class ChainspaceContract(object):
     def __init__(self, contract_name):
+        self.contract_name = contract_name
         self.flask_app = Flask(contract_name)
 
         self.methods = {}
@@ -45,12 +46,28 @@ class ChainspaceContract(object):
 
     def method(self, method_name):
         def method_decorator(function):
-            def function_wrapper(*args, **kwargs):
-                result = function(*args, **kwargs)
+            def function_wrapper(inputs, reference_inputs, parameters, *args, **kwargs):
+                if inputs is None:
+                    inputs = ()
+                if reference_inputs is None:
+                    reference_inputs = ()
+                if parameters is None:
+                    parameters = {}
+
+                result = function(inputs, reference_inputs, parameters, *args, **kwargs)
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
                     if key not in result or key is None:
                         result[key] = ({} if key == 'returns' else tuple())
+
+                result['parameters'] = parameters
+                result['parameters'].update(result['extra_parameters'])
+                del result['extra_parameters']
+
+                result['inputs'] = inputs
+                result['reference_inputs'] = reference_inputs
+
+                result['contract_id'] = 0
 
                 return result
 
