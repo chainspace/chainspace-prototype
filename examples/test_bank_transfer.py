@@ -71,34 +71,6 @@ def start_checker(app):
 ##################################################################################
 # tests
 ##################################################################################
-# -------------------------------------------------------------------------------
-# test 1
-# try to validate a transaction (call the checker) at an hardcoded address
-# -------------------------------------------------------------------------------
-def test_request():
-    # run the checker
-    t = Thread(target=start_checker, args=(app_checker,))
-    t.start()
-
-    try:
-        # test a valid transfer
-        r = requests.post(checker_url, data = dumps(Example_transfer))
-        assert loads(r.text)["status"] == "OK"
-
-        # test a transfer with invalid amount
-        r = requests.post(checker_url, data = dumps(Example_invalid_transfer))
-        assert loads(r.text)["status"] == "Error"
-
-        # test malformed transaction
-        r = requests.post(checker_url, data = dumps(Example_malformed_transfer))
-        assert loads(r.text)["status"] == "Error"
-
-        # get request
-        r = requests.get(checker_url)
-        assert loads(r.text)["status"] == "Error"
-
-    finally:
-        t._Thread__stop()
 
 
 # -------------------------------------------------------------------------------
@@ -111,46 +83,70 @@ def test_transaction():
     t1.start()
 
     try:
-        """
-        # add Alice's account to DB
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Sally_account))
+        ##
+        #IDs
+        ##
+        ID00 = "1"
+        ID01 = "2"
+        ID1 = "99e0e2bac064280f66baebe1515fe31ca9fa59c9dca3a7e7ab406a49a8ada0d5"
+        ID2 = "826c1cc8ce6b59d78a6655fb7fdaf1dafffad55db4880f3d5a8c30c192f9312c"
+        ID3 = "3"
+        ID4 = "4"
+
+
+
+        #
+        #create account
+        #
+        T = {
+            "contractID"        : 5,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [],
+            "parameters"        : dumps({}),
+            "returns"           : dumps({}),
+            "outputIDs"         : [ID00],
+            "dependencies"      : []
+        }
+        store = [
+            {"key": ID00, "value": Sally_account}
+        ]
+        packet = {"transaction": T, "store": store};
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/transaction/process", data = dumps(packet))
         assert loads(r.text)["status"] == "OK"
-        ID1 = loads(r.text)["objectID"]
 
-        # add Sally's account to DB
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Alice_account))
+
+        T = {
+            "contractID"        : 5,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [],
+            "parameters"        : dumps({}),
+            "returns"           : dumps({}),
+            "outputIDs"         : [ID01],
+            "dependencies"      : []
+        }
+        store = [
+            {"key": ID01, "value": Alice_account}
+        ]
+        packet = {"transaction": T, "store": store};
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/transaction/process", data = dumps(packet))
         assert loads(r.text)["status"] == "OK"
-        ID2 = loads(r.text)["objectID"]
 
-        # get ID of output objects
-        # NOTE: hardcoded values; python H(x) does not return the same hash than Java...
-        ID3 = "6b88d14940c1294227c2be03fd0affd4fcb8af3a54165d3a51fc1a5d49aaabbd"
-        ID4 = "b1405ffcf16294c76367c056610d89ab7cd9da267ee3183cf471e523e91c386b"
-        """
 
-        # set transaction
-        """
+
+
+    
+        #
+        #make payment
+        #
         T = {
             "contractID"        : 10,
             "inputIDs"          : [ID1, ID2],
             "referenceInputIDs" : [],
             "parameters"        : dumps({"amount":8}),
-            "outputs"           : [dumps(Sally_account_new), dumps(Alice_account_new)]
-        }
-        """
-
-        ID1 = "7308c63e4ff99491af54005258e73bccb320edfa2a1a1aab293f051ca63ea64d"
-        ID2 = "3cdff76fc23e30ed617d6188170cf111c844b343f4f6ac7d2e0d6794814859e3"
-        ID3 = "0701d1f317e8fecd6ac59f71c662e33bd0aaef8a5784ba4a0bfceb5b48c01e41"
-        ID4 = "57435d7c4b49b34ec02c425af4ccdc8b92b2841d2956c5a22d86105f08c37f8d"
-
-        T = {
-            "contractID"        : 10,
-            "inputIDs"          : [ID1, ID2],
-            "referenceInputIDs" : [],
-            "parameters"        : dumps({"amount":8}),
-            "outputIDs"         : [ID3, ID4]
-        }
+            "returns"           : dumps({}),
+            "outputIDs"         : [ID3, ID4],
+            "dependencies"      : []
+       }
 
 
         # set key-value store
@@ -165,8 +161,9 @@ def test_transaction():
         packet = {"transaction": T, "store": store};
 
         # sumbit the transaction to the ledger
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/process_transaction", data = dumps(packet))
+        r = requests.post(r"http://127.0.0.1:3001/api/1.0/transaction/process", data = dumps(packet))
         assert loads(r.text)["status"] == "OK"
+        
 
     finally:
         t1._Thread__stop()

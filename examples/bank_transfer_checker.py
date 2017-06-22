@@ -24,12 +24,18 @@ def ccheck(V, msg):
 # -------------------------------------------------------------------------------      
 def checker_function(T):
     # check transfer's format
-    ccheck(len(T["referenceInputs"]) == 0,                                      "Expect no references")
+    ccheck(len(T["referenceInputs"]) == 0, "Expect no references")
+
+    if (T[u"contractID"] == 5):
+        return {"status": "OK"}
+
 
     # retrieve inputs
-    from_account, to_account         = T[u"inputs"]
-    amount                           = T[u"parameters"]["amount"]
-    from_account_new, to_account_new = T[u"outputs"] 
+    from_account        = loads(T[u"inputs"][0])
+    to_account          = loads(T[u"inputs"][1])
+    amount              = loads(T[u"parameters"])["amount"]
+    from_account_new    = loads(T[u"outputs"][0])
+    to_account_new      = loads(T[u"outputs"][1])
 
     # check positive amount
     ccheck(0 < amount, "Transfer should be positive")
@@ -45,6 +51,7 @@ def checker_function(T):
     ccheck(from_account["amount"] - amount == from_account_new["amount"], "Incorrect new balance")
     ccheck(to_account["amount"]   + amount == to_account_new["amount"],   "Incorrect new balance")
     
+
     # return
     return {"status": "OK"}
 
@@ -66,11 +73,11 @@ def check():
         try:
             return dumps(checker_function(loads(request.data)))
         except KeyError as e:
-            return dumps({"status": "Error", "message": e.args})
+            return dumps({"status": "ERROR", "message": e.args})
         except Exception as e:
-            return dumps({"status": "Error", "message": e.args})
+            return dumps({"status": "ERROR", "message": e.args})
     else:
-        return dumps({"status": "Error", "message":"Use POST method."})
+        return dumps({"status": "ERROR", "message":"Use POST method."})
 
 
 ##################################################################################

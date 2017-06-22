@@ -32,8 +32,6 @@ class Store {
     }
 
 
-
-
     static Store fromJson(JSONArray jsonArray) {
 
         Pair[] pairArray = new Pair[jsonArray.length()];
@@ -48,12 +46,7 @@ class Store {
         return new Store(pairArray);
     }
 
-    /*
-    String toJson() {
-        Gson gson = new GsonBuilder().create();
-        return gson.toJson(this);
-    }
-    */
+
 
     private static class Pair
     {
