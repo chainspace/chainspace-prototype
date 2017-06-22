@@ -5,7 +5,7 @@ public class Main {
 
 
     // verbose option prints out many comments on the console
-    static final boolean VERBOSE = false;
+    static final boolean VERBOSE = true;
 
     private static final int CORES = 2;
 
@@ -18,9 +18,10 @@ public class Main {
      running but the application will behave as it was alone.
      (3) DEBUG_BFT: runs the node without calling BFTSmart; all objects are considered active.
      */
-    static final boolean DEBUG_ALLOW_REPEAT = true;
-    static final boolean DEBUG_SKIP_CHECKER = false;
-    static final boolean DEBUG_NO_BROADCAST = false;
+    static final boolean DEBUG_ALLOW_REPEAT         = true;
+    static final boolean DEBUG_SKIP_CHECKER         = false;
+    static final boolean DEBUG_NO_BROADCAST         = true;
+    static final boolean DEBUG_IGNORE_DEPENDENCIES  = false;
     //static final boolean DEBUG_SKIP_BFT    = false;
 
 
@@ -58,9 +59,7 @@ public class Main {
 
             // verbose print
             if (Main.VERBOSE) {
-                System.out.println();
-                e.printStackTrace();
-                System.out.println();
+                System.out.println(); e.printStackTrace(); System.out.println();
             }
             else {
                 System.err.println("[ERROR] Node service #" +nodeID+ " failled to start.");

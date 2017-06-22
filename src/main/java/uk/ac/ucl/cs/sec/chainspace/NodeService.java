@@ -87,8 +87,14 @@ class NodeService {
         // broadcast transaction to other nodes
         if (! Main.DEBUG_NO_BROADCAST) {
             try {
+
                 broadcastTransaction(request.body());
-            } catch (IOException ignored) {} // ignore failures here
+
+            } catch (IOException ignored) { // ignore failures here
+                if (Main.VERBOSE) {
+                    System.out.println(); ignored.printStackTrace(); System.out.println();
+                }
+            }
         }
 
 
@@ -96,17 +102,14 @@ class NodeService {
         JSONObject responseJson = new JSONObject();
         try {
 
-            // get the transaction
-            Transaction transaction = TransactionPackager.makeTransaction(request.body());
-            TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request.body());
-
             // pass transaction to the core
-            this.core.processTransaction( transaction, transactionForChecker);
+            String transactionID = this.core.processTransaction(request.body());
 
             // create json response
             responseJson.put("status", "OK");
-            responseJson.put("transactionID", transaction.getID());
+            responseJson.put("transactionID", transactionID);
             response.status(200);
+
         }
         catch (Exception e) {
 
@@ -117,9 +120,7 @@ class NodeService {
 
             // verbose print
             if (Main.VERBOSE) {
-                System.out.println();
-                e.printStackTrace();
-                System.out.println();
+                System.out.println(); e.printStackTrace(); System.out.println();
             }
 
         }
@@ -143,7 +144,7 @@ class NodeService {
         // debug: avoid infinite loop
         // TODO: get the nodes ID and addresses from a config file
         if (this.nodeID == 2) { return; }
-        String url = "http://127.0.0.1:3002/api/1.0/process_transaction";
+        String url = "http://127.0.0.1:3002/api/1.0/transaction/process";
 
         // make post request
         Utils.makePostRequest(url, data);

@@ -53,13 +53,24 @@ class Core {
      * This method processes a transaction object, call the checker, and store the outputs in the database if
      * everything goes fine.
      */
-    void processTransaction(Transaction transaction, TransactionForChecker transactionForChecker) throws Exception {
+    String processTransaction(String request) throws Exception {
 
+        // get the transactions
+        Transaction transaction = TransactionPackager.makeTransaction(request);
+        TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request);
 
-        // TODO: recursion over dependencies
+        // recursively loop over dependencies
+        if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
+            for (int i = 0; i < transaction.getDependencies().length; i++) {
+                processTransaction(transaction.getDependencies()[i]);
+            }
+        }
+
+        // process top level transaction
         processTransactionHelper(transaction, transactionForChecker);
 
-
+        // return the transaction's ID
+        return transaction.getID();
     }
 
     /**
