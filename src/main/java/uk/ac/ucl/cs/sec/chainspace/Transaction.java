@@ -14,8 +14,8 @@ class Transaction {
     private int      contractID;
     private String[] inputIDs;
     private String[] referenceInputIDs;
-    private String   parameters;
-    private String   returns;
+    private String[] parameters;
+    private String[] returns;
     private String[] outputIDs;
     private String[] dependencies;
 
@@ -26,8 +26,8 @@ class Transaction {
             int      contractID,
             String[] inputIDs,
             String[] referenceInputIDs,
-            String   parameters,
-            String   returns,
+            String[] parameters,
+            String[] returns,
             String[] outputIDs,
             String[] dependencies
     ) {
@@ -84,11 +84,11 @@ class Transaction {
         return referenceInputIDs;
     }
 
-    String getParameters() {
+    String[] getParameters() {
         return parameters;
     }
 
-    String getReturns() {
+    String[] getReturns() {
         return returns;
     }
 

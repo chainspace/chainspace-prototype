@@ -90,8 +90,8 @@ class TransactionPackager {
                 transaction.getContractID(),
                 inputs,
                 referenceInputs,
-                transaction.getParameters(),
-                transaction.getReturns(),
+                transaction.getParameters().clone(),
+                transaction.getReturns().clone(),
                 outputs,
                 transaction.getDependencies()
         );

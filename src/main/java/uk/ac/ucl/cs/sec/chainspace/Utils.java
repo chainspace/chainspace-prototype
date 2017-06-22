@@ -80,4 +80,36 @@ class Utils {
     }
 
 
+    /**
+     * printHeader
+     * Nicely display a header to the console.
+     * @param title the title to print to the console
+     */
+    static void printHeader(String title) {
+        System.out.println("\n----------------------------------------------------------------------------------");
+        System.out.println("\t" + title);
+        System.out.println("----------------------------------------------------------------------------------");
+    }
+
+    /**
+     * printStacktrace
+     * Nicely print the exception's stack trace to the console.
+     * @param e the exception from with to print the stack trace
+     */
+    static void printStacktrace(Exception e) {
+        System.out.println();
+        e.printStackTrace();
+        System.out.println();
+    }
+
+    /**
+     * printLine
+     * Draw a simple line to the console.
+     */
+    static void printLine() {
+        System.out.println("\n----------------------------------------------------------------------------------");
+        System.out.println("\n");
+    }
+
+
 }

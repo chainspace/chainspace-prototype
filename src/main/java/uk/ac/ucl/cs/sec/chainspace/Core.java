@@ -3,6 +3,7 @@ package uk.ac.ucl.cs.sec.chainspace;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
 
@@ -53,7 +54,7 @@ class Core {
      * This method processes a transaction object, call the checker, and store the outputs in the database if
      * everything goes fine.
      */
-    String processTransaction(String request) throws Exception {
+    String[] processTransaction(String request) throws Exception {
 
         // get the transactions
         Transaction transaction = TransactionPackager.makeTransaction(request);
@@ -62,22 +63,25 @@ class Core {
         // recursively loop over dependencies
         if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
             for (int i = 0; i < transaction.getDependencies().length; i++) {
-                processTransaction(transaction.getDependencies()[i]);
+
+                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]");}
+                String[] returns = processTransaction(transaction.getDependencies()[i]);
+                transactionForChecker.addParameters(returns);
+                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]");}
+
             }
         }
 
         // process top level transaction
-        processTransactionHelper(transaction, transactionForChecker);
+        return processTransactionHelper(transaction, transactionForChecker);
 
-        // return the transaction's ID
-        return transaction.getID();
     }
 
     /**
      * processTransactionHelper
      * Helper for processTransaction: executed on each recursion.
      */
-    private void processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
+    private String[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
             throws Exception
     {
 
@@ -123,6 +127,9 @@ class Core {
         // update logs
         this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
 
+        // pass local returns
+        return transaction.getReturns();
+
     }
 
 
@@ -149,6 +156,8 @@ class Core {
         else if(! responseJson.getString("status").equalsIgnoreCase("OK")) {
             throw new AbortTransactionException("The checker declined the transaction.");
         }
+
+        if (Main.VERBOSE) { System.out.println("\nThe checker accepted the transaction!"); }
 
     }
 

@@ -39,7 +39,7 @@ class Store {
         for (int i = 0; i < jsonArray.length(); i++) {
             pairArray[i] = new Pair(
                 jsonArray.getJSONObject(i).getString("key"),
-                jsonArray.getJSONObject(i).getJSONObject("value").toString()
+                jsonArray.getJSONObject(i).get("value").toString()
             );
         }
 

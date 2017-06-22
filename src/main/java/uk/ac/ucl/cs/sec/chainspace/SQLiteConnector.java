@@ -10,7 +10,7 @@ import java.sql.*;
  *
  */
 // TODO: optimise database query (one query instead of looping)
-class SQLiteConnector implements DatabaseConnector {
+class SQLiteConnector extends DatabaseConnector {
 
     // instance variables
     private Connection connection;
@@ -91,7 +91,7 @@ class SQLiteConnector implements DatabaseConnector {
         String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (String object : objects) {
-                String objectID = Utils.hash(transactionID + "|" + object);
+                String objectID = this.generateObjectID(transactionID, object);
                 statement.setString(1, objectID);
                 statement.setString(2, object);
                 statement.executeUpdate();
@@ -230,12 +230,12 @@ class SQLiteConnector implements DatabaseConnector {
         String newHead;
         if (resultSet.isBeforeFirst()) {
             if ( Main.VERBOSE) { System.out.println("\tOld head: "+resultSet.getString("digest"));}
-            newHead = Utils.hash( resultSet.getString("digest") + "|" + transactionJson);
+            newHead = this.generateHead(resultSet.getString("digest"), transactionJson);
         }
         // if not, simply had a hash of the transaction
         else {
             if ( Main.VERBOSE) { System.out.println("\tOld head: NONE");}
-            newHead = Utils.hash(transactionJson);
+            newHead = this.generateHead(transactionJson);
         }
         statement.setString(1, newHead);
         statement.executeUpdate();

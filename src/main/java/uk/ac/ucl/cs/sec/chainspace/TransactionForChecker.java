@@ -14,8 +14,8 @@ class TransactionForChecker {
     private int      contractID;
     private String[] inputs;
     private String[] referenceInputs;
-    private String   parameters;
-    private String   returns;
+    private String[] parameters;
+    private String[] returns;
     private String[] outputs;
     private String[] dependencies;
 
@@ -26,8 +26,8 @@ class TransactionForChecker {
             int      contractID,
             String[] inputs,
             String[] referenceInputs,
-            String   parameters,
-            String   returns,
+            String[] parameters,
+            String[] returns,
             String[] outputs,
             String[] dependencies
     ) {
@@ -69,6 +69,20 @@ class TransactionForChecker {
     }
 
 
+    /**
+     * addParameters
+     * Add new parameters to the transaction.
+     */
+    void addParameters(String[] newParameters) {
+
+        String[] tmp = new String[this.parameters.length + newParameters.length];
+        System.arraycopy(this.parameters, 0, tmp, 0, this.parameters.length);
+        System.arraycopy(newParameters, 0, tmp, this.parameters.length, newParameters.length);
+        this.parameters = tmp;
+
+    }
+
+
     /*
         getters
      */
@@ -85,11 +99,11 @@ class TransactionForChecker {
         return referenceInputs;
     }
 
-    String getParameters() {
+    String[] getParameters() {
         return parameters;
     }
 
-    String getReturns() {
+    String[] getReturns() {
         return returns;
     }
 

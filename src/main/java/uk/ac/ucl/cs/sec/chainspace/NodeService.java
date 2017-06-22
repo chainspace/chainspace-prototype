@@ -78,11 +78,7 @@ class NodeService {
     private String processTransactionRequest(Request request, Response response) {
 
         // verbose print
-        if (Main.VERBOSE) {
-            System.out.println("\n----------------------------------------------------------------------------------");
-            System.out.println("\tIncoming transaction");
-            System.out.println("----------------------------------------------------------------------------------");
-        }
+        if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
 
         // broadcast transaction to other nodes
         if (! Main.DEBUG_NO_BROADCAST) {
@@ -91,9 +87,7 @@ class NodeService {
                 broadcastTransaction(request.body());
 
             } catch (IOException ignored) { // ignore failures here
-                if (Main.VERBOSE) {
-                    System.out.println(); ignored.printStackTrace(); System.out.println();
-                }
+                if (Main.VERBOSE) { Utils.printStacktrace(ignored); }
             }
         }
 
@@ -103,11 +97,11 @@ class NodeService {
         try {
 
             // pass transaction to the core
-            String transactionID = this.core.processTransaction(request.body());
+            String[] returns = this.core.processTransaction(request.body());
 
             // create json response
             responseJson.put("status", "OK");
-            responseJson.put("transactionID", transactionID);
+            responseJson.put("returns", returns);
             response.status(200);
 
         }
@@ -119,9 +113,7 @@ class NodeService {
             response.status(400);
 
             // verbose print
-            if (Main.VERBOSE) {
-                System.out.println(); e.printStackTrace(); System.out.println();
-            }
+            if (Main.VERBOSE) { Utils.printStacktrace(e); }
 
         }
 
@@ -174,12 +166,7 @@ class NodeService {
         System.out.println("\nNode service #" +nodeID+ " [POST] @" +request.url()+ " from " +request.ip());
         System.out.println("\trequest content: " + request.body());
         System.out.println("\tresponse content: " + response);
-
-        // verbose print
-        if (Main.VERBOSE) {
-            System.out.println("\n----------------------------------------------------------------------------------");
-            System.out.println("\n");
-        }
+        if (Main.VERBOSE) { Utils.printLine(); }
 
     }
 
