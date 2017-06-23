@@ -16,18 +16,25 @@ public class Main {
     // CONIFG: size of the cache (set to zero to disable cache)
     static final int CACHE_DEPTH = 0;
 
+
     /*
 
+     DEBUG
+
      These are the debug options:
-     (1) DEBUG_ALLOW_REPEAT: when enabled, the system accepts multiple time the same trasaction. Object are not uniques
-     and are never set to 'inactive'.
-     to inactive, and IDs don't need to be uniques in the databases.
-     (2) DEBUG_SKIP_CHECKER: when enabled, the checker never called. This is equivalent of having a chcker that returns
-     always 'true'.
-     (3) DEBUG_NO_BROADCAST: in normal operations, when receving a nex transaction, the first thing that the node does
-     is to boradcast that transaction to all other nodes. When this option is enabled, the node does not bradcast the
-     transaction and processes it by itself. This option is useful to limit the number of consols' print (avaid that
-     every core prints on the console).
+        (1) DEBUG_ALLOW_REPEAT: when enabled, the system accepts multiple time the same trasaction. Object are not
+     uniques and are never set to 'inactive'.
+
+        (2) DEBUG_SKIP_CHECKER: when enabled, the checker never called. This is equivalent of having a chcker that
+     returns always 'true'.
+
+        (3) DEBUG_NO_BROADCAST: in normal operations, when receving a nex transaction, the first thing that the node
+     does is to boradcast that transaction to all other nodes. When this option is enabled, the node does not bradcast
+     the transaction and processes it by itself. This option is useful to limit the number of consols' print.
+
+        (4) DEBUG_IGNORE_DEPENDENCIES: when enables, transaction's dependencis are ignored and only the top-level
+     transaction is executed (no cross-contract calls).
+
 
      NOTE: All debug options sould be set to false when running in production environement.
 

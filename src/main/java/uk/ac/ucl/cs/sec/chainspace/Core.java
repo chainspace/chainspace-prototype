@@ -138,7 +138,7 @@ class Core {
     {
 
         // get checker URL
-        // TODO: at the moment the checker URL is hardcoded, this should be loaded from a config file
+        // TODO: This URL should be loaded from a config file (depending on the contractID)
         String checkerURL = "http://127.0.0.1:5001/bank/transfer";
 
         // call the checker
