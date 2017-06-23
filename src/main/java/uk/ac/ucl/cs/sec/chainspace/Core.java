@@ -3,7 +3,6 @@ package uk.ac.ucl.cs.sec.chainspace;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
 
@@ -11,16 +10,11 @@ import java.sql.SQLException;
  *
  *
  */
-// TODO: load node config from external file
 class Core {
 
     // instance variables
     private DatabaseConnector databaseConnector;
     private Cache cache;
-
-
-    // TODO: load cache depth from config
-    private static final int CACHE_DEPTH = 1;
 
 
     /**
@@ -30,11 +24,12 @@ class Core {
     Core(int nodeID) throws ClassNotFoundException, SQLException {
 
         // init cache
-        // here we are implementing a simple linear cash of complexity O(n)
-        this.cache = new SimpleCache(CACHE_DEPTH);
+        // here we are implementing a simple linear cash of complexity O(n). Any caching system implementing the Cache
+        // interface can be used instead.
+        this.cache = new SimpleCache(Main.CACHE_DEPTH);
 
         // init the database connection
-        // here we're using SQLite as an example
+        // here we're using SQLite as an example, but the core supports any extension of databaseConnector.
         this.databaseConnector = new SQLiteConnector(nodeID);
 
     }
@@ -65,7 +60,9 @@ class Core {
             for (int i = 0; i < transaction.getDependencies().length; i++) {
 
                 if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]");}
+                // recusrively process the transaction
                 String[] returns = processTransaction(transaction.getDependencies()[i]);
+                // updates the parameters of the caller transaction
                 transactionForChecker.addParameters(returns);
                 if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]");}
 
@@ -76,6 +73,7 @@ class Core {
         return processTransactionHelper(transaction, transactionForChecker);
 
     }
+
 
     /**
      * processTransactionHelper
@@ -109,9 +107,7 @@ class Core {
 
         /*
             This is the part where we call BFTSmart.
-            I would suggest to create a separate class that handle all the BFT
          */
-        // check if objects are active
         // TODO: check that all inputs are active.
 
 
@@ -127,7 +123,7 @@ class Core {
         // update logs
         this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
 
-        // pass local returns
+        // pass out returns
         return transaction.getReturns();
 
     }

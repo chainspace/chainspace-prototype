@@ -49,7 +49,6 @@ class TransactionForChecker {
         Gson gson = new GsonBuilder().create();
         return gson.fromJson(json.toString(), TransactionForChecker.class);
     }
-    /*
 
     /**
      * toJson
@@ -60,6 +59,7 @@ class TransactionForChecker {
         return gson.toJson(this);
     }
 
+
     /**
      * getID
      * Get the transaction's ID.
@@ -67,6 +67,7 @@ class TransactionForChecker {
     String getID() throws NoSuchAlgorithmException {
         return Utils.hash(this.toJson());
     }
+
 
 
     /**
@@ -86,12 +87,12 @@ class TransactionForChecker {
     /*
         getters
      */
-
     int getContractID() {
         return contractID;
     }
 
     String[] getInputs() {
+
         return inputs;
     }
 
@@ -100,18 +101,22 @@ class TransactionForChecker {
     }
 
     String[] getParameters() {
+
         return parameters;
     }
 
     String[] getReturns() {
+
         return returns;
     }
 
-    String[] getOutputs() {
-        return outputs;
+    String[] getDependencies() {
+
+        return dependencies;
     }
 
-    String[] getDependencies() {
-        return dependencies;
+    String[] getOutputs() {
+
+        return outputs;
     }
 }

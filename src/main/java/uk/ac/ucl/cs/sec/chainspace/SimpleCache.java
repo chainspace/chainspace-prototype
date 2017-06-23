@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
+ * SimpleCache
  *
- *
+ * A simple and inefficient caching system.
  */
-// TODO: use something more efficient that an ArrayList (tab, tree, linkedList)
 class SimpleCache extends ArrayList<String> implements Cache {
 
     // instance variables
@@ -16,7 +16,7 @@ class SimpleCache extends ArrayList<String> implements Cache {
 
     SimpleCache(int cacheDepth) {
 
-        this.cacheDepth = cacheDepth;
+        this.cacheDepth = (cacheDepth < 0) ? 0 : cacheDepth;
 
     }
 

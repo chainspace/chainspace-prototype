@@ -9,7 +9,6 @@ import java.sql.*;
  *
  *
  */
-// TODO: optimise database query (one query instead of looping)
 class SQLiteConnector extends DatabaseConnector {
 
     // instance variables
@@ -86,6 +85,7 @@ class SQLiteConnector extends DatabaseConnector {
      * registerObject
      * Debug method that blindly insert an object into the database if it does not already exist.
      */
+    // TODO: optimise requests (only one executeUpdate)
     public void saveObject(String transactionID, String[] objects) throws AbortTransactionException {
 
         String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
@@ -112,6 +112,7 @@ class SQLiteConnector extends DatabaseConnector {
      * isObjectInactive
      * Return true iff the object is in the database and is inactive.
      */
+    // TODO: optimise requests (only one executeQuery)
     public boolean isInactive(String[] objectIDs) throws AbortTransactionException {
 
         // check all objects
@@ -155,6 +156,7 @@ class SQLiteConnector extends DatabaseConnector {
      * setObjectInactive
      * Make object inactive (the object is now consumed).
      */
+    // TODO: optimise requests (only one executeUpdate)
     public void setInactive(String[] objectIDs) throws AbortTransactionException {
 
         // check all objects

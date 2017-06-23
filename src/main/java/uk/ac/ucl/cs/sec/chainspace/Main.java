@@ -7,29 +7,35 @@ package uk.ac.ucl.cs.sec.chainspace;
  */
 public class Main {
 
-    //
-    private static final int CORES = 2;
+    // CONFIG: number of cores
+    static final int CORES = 2;
 
-    // verbose option prints out many comments on the console
-    static final boolean VERBOSE = true;
+    // CONFIG: verbose option prints out extensive comments on the console
+    static final boolean VERBOSE = false;
 
+    // CONIFG: size of the cache (set to zero to disable cache)
+    static final int CACHE_DEPTH = 0;
 
     /*
 
-     There are three debug options:
-     (1) DEBUG: when DEBUG is enable, the core can run the same transaction multiple time; input objects are never set
+     These are the debug options:
+     (1) DEBUG_ALLOW_REPEAT: when enabled, the system accepts multiple time the same trasaction. Object are not uniques
+     and are never set to 'inactive'.
      to inactive, and IDs don't need to be uniques in the databases.
-     (2) DEBUG_CORE: the DEBUG_CORE option allows to test only the core: the checker is never called. Many nodes can be
-     running but the application will behave as it was alone.
-     (3) DEBUG_BFT: runs the node without calling BFTSmart; all objects are considered active.
+     (2) DEBUG_SKIP_CHECKER: when enabled, the checker never called. This is equivalent of having a chcker that returns
+     always 'true'.
+     (3) DEBUG_NO_BROADCAST: in normal operations, when receving a nex transaction, the first thing that the node does
+     is to boradcast that transaction to all other nodes. When this option is enabled, the node does not bradcast the
+     transaction and processes it by itself. This option is useful to limit the number of consols' print (avaid that
+     every core prints on the console).
 
-        All debug options sould be set to false when running in production environement
+     NOTE: All debug options sould be set to false when running in production environement.
+
      */
     static final boolean DEBUG_ALLOW_REPEAT         = true;
     static final boolean DEBUG_SKIP_CHECKER         = false;
     static final boolean DEBUG_NO_BROADCAST         = true;
     static final boolean DEBUG_IGNORE_DEPENDENCIES  = false;
-    //static final boolean DEBUG_SKIP_BFT    = false;
 
 
     /**

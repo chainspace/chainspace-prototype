@@ -86,7 +86,8 @@ class NodeService {
 
                 broadcastTransaction(request.body());
 
-            } catch (IOException ignored) { // ignore failures here
+            } catch (IOException ignored) {
+                // NOTE: this exception is ignored
                 if (Main.VERBOSE) { Utils.printStacktrace(ignored); }
             }
         }
@@ -135,11 +136,12 @@ class NodeService {
 
         // debug: avoid infinite loop
         // TODO: get the nodes ID and addresses from a config file
-        if (this.nodeID == 2) { return; }
-        String url = "http://127.0.0.1:3002/api/1.0/transaction/process";
-
-        // make post request
-        Utils.makePostRequest(url, data);
+        if (this.nodeID == 1) {
+            for (int i = 2; i <= Main.CORES; i++) {
+                String url = "http://127.0.0.1:300" + i + "/api/1.0/transaction/process";
+                Utils.makePostRequest(url, data);
+            }
+        }
 
     }
 

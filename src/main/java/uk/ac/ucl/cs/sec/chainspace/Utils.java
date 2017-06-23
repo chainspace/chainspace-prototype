@@ -15,10 +15,12 @@ import java.security.NoSuchAlgorithmException;
 
 
 /**
+ * Utils
  *
- *
+ * Some general purpose utilities.
  */
 class Utils {
+
 
     /**
      * hash
@@ -77,6 +79,7 @@ class Utils {
 
         // return string response
         return new BasicResponseHandler().handleResponse(response);
+
     }
 
 
@@ -110,6 +113,5 @@ class Utils {
         System.out.println("\n----------------------------------------------------------------------------------");
         System.out.println("\n");
     }
-
 
 }

@@ -219,7 +219,7 @@ def test_dependencies_with_returns():
             "inputIDs"          : [],
             "referenceInputIDs" : [],
             "parameters"        : [],
-            "returns"           : [],
+            "returns"           : ["Hello!"],
             "outputIDs"         : ["3"],
             "dependencies"      : [dumps(packet2)]
         }

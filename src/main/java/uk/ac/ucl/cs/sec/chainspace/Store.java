@@ -5,21 +5,29 @@ import org.json.JSONArray;
 
 /**
  *
- *
+ * Simple key-value store.
  */
 class Store {
 
+    // instance variables
     private Pair[] array;
 
+
+    /**
+     * constructor
+     *
+     */
     private Store(Pair[] array)
     {
+
         this.array = array;
     }
 
-    Pair[] getArray() {
-        return array;
-    }
 
+    /**
+     * getValueFromKey
+     * Get a value in the store from its associated key.
+     */
     String getValueFromKey(String key) {
 
         for (int i = 0; i < this.getArray().length ; i++) {
@@ -32,6 +40,19 @@ class Store {
     }
 
 
+    /*
+        Getters
+     */
+    Pair[] getArray() {
+
+        return array;
+    }
+
+
+    /**
+     * fromJson
+     * Convert a JSONArray representing the sore into a proper Store Java object.
+     */
     static Store fromJson(JSONArray jsonArray) {
 
         Pair[] pairArray = new Pair[jsonArray.length()];
@@ -48,6 +69,10 @@ class Store {
 
 
 
+    /**
+     *
+     *  Elements of the key-value store
+     */
     private static class Pair
     {
         String key, value;
@@ -61,7 +86,6 @@ class Store {
         String getKey() {
             return key;
         }
-
         String getValue() {
             return value;
         }
