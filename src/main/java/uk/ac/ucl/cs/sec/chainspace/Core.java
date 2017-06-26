@@ -1,16 +1,8 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONObject;
-import org.json.simple.JSONArray;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
 
@@ -25,10 +17,6 @@ class Core {
     private Cache cache;
 
 
-    // TODO: load cache depth from config
-    private static final int CACHE_DEPTH = 10;
-
-
     /**
      * Constructor
      * Runs a node service and init a database.
@@ -36,10 +24,13 @@ class Core {
     Core(int nodeID) throws ClassNotFoundException, SQLException {
 
         // init cache
-        this.cache = new Cache(CACHE_DEPTH);
+        // here we are implementing a simple linear cash of complexity O(n). Any caching system implementing the Cache
+        // interface can be used instead.
+        this.cache = new SimpleCache(Main.CACHE_DEPTH);
 
         // init the database connection
-        this.databaseConnector = new DatabaseConnector(nodeID);
+        // here we're using SQLite as an example, but the core supports any extension of databaseConnector.
+        this.databaseConnector = new SQLiteConnector(nodeID);
 
     }
 
@@ -48,104 +39,92 @@ class Core {
      * close
      * Gently shutdown the core
      */
-    void close() throws SQLException {
+    void close() throws Exception {
         this.databaseConnector.close();
     }
 
 
     /**
-     * debugLoad
-     * Debug method to quickly add an object to the node database. It returns the corresponding object ID.
+     * processTransaction
+     * This method processes a transaction object, call the checker, and store the outputs in the database if
+     * everything goes fine.
      */
-    void debugLoad(String object) throws NoSuchAlgorithmException {
+    String[] processTransaction(String request) throws Exception {
 
-            // add object to the database
-            this.databaseConnector.saveObject("", object);
+        // get the transactions
+        Transaction transaction = TransactionPackager.makeTransaction(request);
+        TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request);
+
+        // recursively loop over dependencies
+        if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
+            for (int i = 0; i < transaction.getDependencies().length; i++) {
+
+                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]");}
+                // recusrively process the transaction
+                String[] returns = processTransaction(transaction.getDependencies()[i]);
+                // updates the parameters of the caller transaction
+                transactionForChecker.addParameters(returns);
+                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]");}
+
+            }
+        }
+
+        // process top level transaction
+        return processTransactionHelper(transaction, transactionForChecker);
 
     }
 
 
     /**
-     * processTransaction
-     * This method processes a transaction object, call the checker, and store the outputs in the database if everything
-     * goes fine.
+     * processTransactionHelper
+     * Helper for processTransaction: executed on each recursion.
      */
-    void processTransaction(Transaction transaction, Store store)
-            throws AbortTransactionException, SQLException, NoSuchAlgorithmException, IOException
+    private String[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
+            throws Exception
     {
 
         // check if the transaction is in the cache (has recently been processed)
-        if (this.cache.isInCache(transaction.toJson())) { return; }
-
-        // check transaction's integrity
-        if (!checkTransactionIntegrity(transaction, store)) {
-            throw new AbortTransactionException("Malformed transaction or key-value store.");
-        }
-
-        // check input objects are active
-        // TODO: optimise database query (one query instead of looping)
-        for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            if (this.databaseConnector.isObjectInactive(transaction.getInputIDs()[i])) {
-                throw new AbortTransactionException("Object " +transaction.getInputIDs()[i]+ " is inactive.");
+        if (! Main.DEBUG_ALLOW_REPEAT) {
+            if (this.cache.isInCache(transaction.toJson())) {
+                throw new AbortTransactionException("This transaction as already been executed.");
             }
         }
 
-        // check reference input objects are active
-        // TODO: optimise database query (one query instead of looping)
-        for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
-            if (this.databaseConnector.isObjectInactive(transaction.getReferenceInputIDs()[i])) {
-                throw new AbortTransactionException("Object " +transaction.getReferenceInputIDs()[i]+ " is inactive.");
-            }
+        // check input objects and reference inputs are active
+        if (this.databaseConnector.isInactive(transaction.getInputIDs())) {
+            throw new AbortTransactionException("At least one input object is inactive.");
         }
-
-
-        // assemble inputs objects for checker
-        String[] inputs = new String[transaction.getInputIDs().length];
-        for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            inputs[i] = store.getValueFromKey(transaction.getInputIDs()[i]);
+        if (this.databaseConnector.isInactive(transaction.getReferenceInputIDs())) {
+            throw new AbortTransactionException("At least one reference input is inactive.");
         }
-
-        // assemble reference inputs objects for checker
-        String[] referenceInputs = new String[transaction.getReferenceInputIDs().length];
-        for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
-            referenceInputs[i] = store.getValueFromKey(transaction.getReferenceInputIDs()[i]);
-        }
-
-        // assemble output objects for checker
-        String[] outputs = new String[transaction.getOutputIDs().length];
-        for (int i = 0; i < transaction.getOutputIDs().length; i++) {
-            outputs[i] = store.getValueFromKey(transaction.getOutputIDs()[i]);
-        }
-
-
 
         // call the checker
-        if (!callChecker(transaction, inputs, referenceInputs, outputs)) {
-            throw new AbortTransactionException("The checker declined the transaction.");
+        if (! Main.DEBUG_SKIP_CHECKER) {
+            callChecker(transactionForChecker);
         }
 
 
 
-        // check if objects are active
-        // This is the part where we call BFTSmart
+        /*
+            This is the part where we call BFTSmart.
+         */
         // TODO: check that all inputs are active.
 
 
 
         // make input (consumed) objects inactive
-        // TODO: optimise database query (one query instead of looping)
-        for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            this.databaseConnector.setObjectInactive(transaction.getInputIDs()[i]);
+        if (! Main.DEBUG_ALLOW_REPEAT) {
+            this.databaseConnector.setInactive(transaction.getInputIDs());
         }
 
         // register new objects
-        // TODO: optimise database query (one query instead of looping)
-        for (String output : outputs) {
-            this.databaseConnector.saveObject(Utils.hash(transaction.toJson()), output);
-        }
+        this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
 
         // update logs
-        this.databaseConnector.logTransaction(transaction.toJson());
+        this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
+
+        // pass out returns
+        return transaction.getReturns();
 
     }
 
@@ -154,102 +133,27 @@ class Core {
      * callChecker
      * This method format a packet and call the checker in order to verify the transaction.
      */
-    @SuppressWarnings("unchecked") // these warning are caused by a bug in org.json.simple.JSONArray
-    private boolean callChecker(Transaction transaction, String[] inputs, String[] referenceInputs, String[] outputs)
-            throws IOException
+    private void callChecker(TransactionForChecker transactionForChecker)
+            throws IOException, AbortTransactionException
     {
 
         // get checker URL
-        // TODO: at the moment the checker URL is hardcoded, this should be loaded from a config file
+        // TODO: This URL should be loaded from a config file (depending on the contractID)
         String checkerURL = "http://127.0.0.1:5001/bank/transfer";
 
-        // create transaction in JSON for checker
-        JSONObject transactionForChecker = new JSONObject();
-        // contract method
-        transactionForChecker.put("contractID", transaction.getContractID());
-        // parameters
-        transactionForChecker.put("parameters", new JSONObject(transaction.getParameters()));
-
-        // inputs
-        JSONArray inputsForChecker = new JSONArray();
-        for (String input : inputs) {
-            inputsForChecker.add(new JSONObject(input));
-        }
-        transactionForChecker.put("inputs", inputsForChecker);
-
-        // reference inputs
-        JSONArray referenceInputsForChecker = new JSONArray();
-        for (String referenceInput : referenceInputs) {
-            referenceInputsForChecker.add(new JSONObject(referenceInput));
-        }
-        transactionForChecker.put("referenceInputs", referenceInputsForChecker);
-
-        // outputs
-        JSONArray outputsForChecker = new JSONArray();
-        for (Object output : outputs) {
-            outputsForChecker.add(new JSONObject(output.toString()));
-        }
-        transactionForChecker.put("outputs", outputsForChecker);
-
-        // make post request
-        HttpClient httpClient = HttpClientBuilder.create().build();
-        StringEntity postingString = new StringEntity(transactionForChecker.toString());
-        HttpPost post = new HttpPost(checkerURL);
-        post.setEntity(postingString);
-        post.setHeader("Content-type", "application/json");
-
-        // get response
-        HttpResponse response   = httpClient.execute(post);
-        String responseString   = new BasicResponseHandler().handleResponse(response);
+        // call the checker
+        String responseString = Utils.makePostRequest(checkerURL, transactionForChecker.toJson());
         JSONObject responseJson = new JSONObject(responseString);
 
-        // return
-        return responseJson.getString("status").equals("OK");
-
-    }
-
-
-    /**
-     * checkTransactionIntegrity
-     * Check the transaction's integrity.
-     */
-    private boolean checkTransactionIntegrity(Transaction transaction, Store store) throws NoSuchAlgorithmException {
-
-        // check transaction's and store's format
-        // all fields must be present. For instance, if a transaction has no parameters, and empty field should be sent
-        if (store.getArray() == null
-            || transaction.getInputIDs() == null
-            || transaction.getReferenceInputIDs() == null
-            || transaction.getOutputIDs() == null
-            || transaction.getParameters() == null )
-        {
-            return false;
+        // throw error if the checker declines the transaction
+        if (responseJson.getString("status").equalsIgnoreCase("ERROR")) {
+            throw new AbortTransactionException(responseJson.getString("message"));
+        }
+        else if(! responseJson.getString("status").equalsIgnoreCase("OK")) {
+            throw new AbortTransactionException("The checker declined the transaction.");
         }
 
-
-        // check hashed of input objects
-        for (String inputID: transaction.getInputIDs()) {
-            if (! Utils.verifyHash(store.getValueFromKey(inputID), inputID)) {
-                return false;
-            }
-        }
-
-        // check hashed of reference input objects
-        for (String referenceInputID: transaction.getReferenceInputIDs()) {
-            if (! Utils.verifyHash(store.getValueFromKey(referenceInputID), referenceInputID)) {
-                return false;
-            }
-        }
-
-        // check hashed of output objects
-        for (String outputID: transaction.getOutputIDs()) {
-            if (! Utils.verifyHash(store.getValueFromKey(outputID), outputID)) {
-                return false;
-            }
-        }
-
-        // otherwise, return true
-        return true;
+        if (Main.VERBOSE) { System.out.println("\nThe checker accepted the transaction!"); }
 
     }
 

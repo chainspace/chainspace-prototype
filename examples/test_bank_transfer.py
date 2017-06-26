@@ -17,38 +17,19 @@ import requests
 # variables
 ##################################################################################
 # checker URL
-checker_url   =  r"http://127.0.0.1:5001/bank/transfer"
+checker_url   = r"http://127.0.0.1:5001/bank/transfer"
+node_url      = r"http://127.0.0.1:3001/api/1.0/transaction/process"
 
 # old accounts (before money transfer)
-Sally_account = {"accountId": "Sally", "amount": 10}
-Alice_account = {"accountId": "Alice", "amount": 0}
+Alice_account    = {"accountId": "Alice", "amount": 0}
+Sally_account    = {"accountId": "Sally", "amount": 10}
+ID_Alice_account = "826c1cc8ce6b59d78a6655fb7fdaf1dafffad55db4880f3d5a8c30c192f9312c"
+ID_Sally_account = "99e0e2bac064280f66baebe1515fe31ca9fa59c9dca3a7e7ab406a49a8ada0d5"
+
 
 # new accounts (after money transfer)
-Sally_account_new = {"accountId": "Sally", "amount": 2}
 Alice_account_new = {"accountId": "Alice", "amount": 8}
-
-# example transfer 
-Example_transfer = {
-    "contractMethod"    : checker_url,
-    "inputs"            : [Sally_account, Alice_account],
-    "referenceInputs"   : [],
-    "parameters"        : {"amount":8},
-    "outputs"           : [Sally_account_new, Alice_account_new]
-}
-Example_invalid_transfer = {
-    "contractMethod"    : checker_url,
-    "inputs"            : [Sally_account, Alice_account],
-    "referenceInputs"   : [],
-    "parameters"        : {"amount":100},
-    "outputs"           : [Sally_account_new, Alice_account_new]
-}
-Example_malformed_transfer = {
-    "contractMethod"    : checker_url,
-    # inputs are missing
-    "referenceInputs"   : [],
-    "parameters"        : {"amount":8},
-    "outputs"           : [Sally_account_new, Alice_account_new]
-}
+Sally_account_new = {"accountId": "Sally", "amount": 2}
 
 
 ##################################################################################
@@ -72,101 +53,189 @@ def start_checker(app):
 # tests
 ##################################################################################
 # -------------------------------------------------------------------------------
-# test 1
-# try to validate a transaction (call the checker) at an hardcoded address
-# -------------------------------------------------------------------------------
-def test_request():
-    # run the checker
-    t = Thread(target=start_checker, args=(app_checker,))
-    t.start()
-
-    try:
-        # test a valid transfer
-        r = requests.post(checker_url, data = dumps(Example_transfer))
-        assert loads(r.text)["status"] == "OK"
-
-        # test a transfer with invalid amount
-        r = requests.post(checker_url, data = dumps(Example_invalid_transfer))
-        assert loads(r.text)["status"] == "Error"
-
-        # test malformed transaction
-        r = requests.post(checker_url, data = dumps(Example_malformed_transfer))
-        assert loads(r.text)["status"] == "Error"
-
-        # get request
-        r = requests.get(checker_url)
-        assert loads(r.text)["status"] == "Error"
-
-    finally:
-        t._Thread__stop()
-
-
-# -------------------------------------------------------------------------------
 # test 2
-# final check: simulate a complete transfer
+# check a bank tranfer with dependencies
 # -------------------------------------------------------------------------------
-def test_transaction():
+def test_dependencies():
     # run checker and cspace
     t1 = Thread(target=start_checker, args=(app_checker,))
     t1.start()
 
     try:
-        """
-        # add Alice's account to DB
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Sally_account))
-        assert loads(r.text)["status"] == "OK"
-        ID1 = loads(r.text)["objectID"]
 
-        # add Sally's account to DB
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/debug_load", data = dumps(Alice_account))
-        assert loads(r.text)["status"] == "OK"
-        ID2 = loads(r.text)["objectID"]
-
-        # get ID of output objects
-        # NOTE: hardcoded values; python H(x) does not return the same hash than Java...
-        ID3 = "6b88d14940c1294227c2be03fd0affd4fcb8af3a54165d3a51fc1a5d49aaabbd"
-        ID4 = "b1405ffcf16294c76367c056610d89ab7cd9da267ee3183cf471e523e91c386b"
-        """
-
+        # -----------------------------------------------------------------------
+        # create Alice's account
+        # -----------------------------------------------------------------------
         # set transaction
-        """
-        T = {
-            "contractID"        : 10,
-            "inputIDs"          : [ID1, ID2],
+        T1 = {
+            "contractID"        : 5,
+            "inputIDs"          : [],
             "referenceInputIDs" : [],
-            "parameters"        : dumps({"amount":8}),
-            "outputs"           : [dumps(Sally_account_new), dumps(Alice_account_new)]
-        }
-        """
-
-        ID1 = "7308c63e4ff99491af54005258e73bccb320edfa2a1a1aab293f051ca63ea64d"
-        ID2 = "3cdff76fc23e30ed617d6188170cf111c844b343f4f6ac7d2e0d6794814859e3"
-        ID3 = "0701d1f317e8fecd6ac59f71c662e33bd0aaef8a5784ba4a0bfceb5b48c01e41"
-        ID4 = "57435d7c4b49b34ec02c425af4ccdc8b92b2841d2956c5a22d86105f08c37f8d"
-
-        T = {
-            "contractID"        : 10,
-            "inputIDs"          : [ID1, ID2],
-            "referenceInputIDs" : [],
-            "parameters"        : dumps({"amount":8}),
-            "outputIDs"         : [ID3, ID4]
+            "parameters"        : [],
+            "returns"           : [],
+            "outputIDs"         : ["20"],
+            "dependencies"      : []
         }
 
-
-        # set key-value store
-        store = [
-            {"key": ID1, "value": Sally_account},
-            {"key": ID2, "value": Alice_account},
-            {"key": ID3, "value": Sally_account_new},
-            {"key": ID4, "value": Alice_account_new},
+        # set store
+        store1 = [
+            {"key": "20", "value": Alice_account}
         ]
 
-        # pack transaction
-        packet = {"transaction": T, "store": store};
+        # assemble
+        packet1 = {"transaction": T1, "store": store1};
+
+
+        # -----------------------------------------------------------------------
+        # create Sally's account
+        # -----------------------------------------------------------------------
+        # set transaction
+        T2 = {
+            "contractID"        : 5,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [],
+            "parameters"        : [],
+            "returns"           : [],
+            "outputIDs"         : ["21"],
+            "dependencies"      : []
+        }
+
+        # set store
+        store2 = [
+            {"key": "21", "value": Sally_account}
+        ]
+
+        # assemble
+        packet2 = {"transaction": T2, "store": store2};
+
+
+        # -----------------------------------------------------------------------
+        # make the transfer
+        # -----------------------------------------------------------------------
+        # set transaction
+        T3 = {
+            "contractID"        : 10,
+            "inputIDs"          : [ID_Sally_account, ID_Alice_account],
+            "referenceInputIDs" : [],
+            "parameters"        : [dumps({"amount":8})],
+            "returns"           : [],
+            "outputIDs"         : ["10", "11"],
+            "dependencies"      : [dumps(packet1), dumps(packet2)]
+        }
+
+        # set store
+        store3 = [
+            {"key": ID_Sally_account, "value": Sally_account},
+            {"key": ID_Alice_account, "value": Alice_account},
+            {"key": "10", "value": Sally_account_new},
+            {"key": "11", "value": Alice_account_new},
+        ]
+
+        # assemble
+        packet3 = {"transaction": T3, "store": store3};
 
         # sumbit the transaction to the ledger
-        r = requests.post(r"http://127.0.0.1:3001/api/1.0/process_transaction", data = dumps(packet))
+        r = requests.post(node_url, data = dumps(packet3))
         assert loads(r.text)["status"] == "OK"
+        
+
+    finally:
+        t1._Thread__stop()
+
+
+# -------------------------------------------------------------------------------
+# test 3
+# check a transaction with dependencies & returns
+# -------------------------------------------------------------------------------
+def test_dependencies_with_returns():
+    # run checker and cspace
+    t1 = Thread(target=start_checker, args=(app_checker,))
+    t1.start()
+
+    try:
+
+        # -----------------------------------------------------------------------
+        # variables
+        # -----------------------------------------------------------------------
+        tokenX1 = "1"
+        tokenX2 = "2"
+        tokenX4 = "4"
+
+        ID_tokenX1 = "cde1a2d429ba3e1096b7a004044a655aaef1cbb7829bde8821cadf1ca5c93802"
+
+
+        # -----------------------------------------------------------------------
+        # create a token
+        # -----------------------------------------------------------------------
+        # set transaction
+        T1 = {
+            "contractID"        : 100,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [],
+            "parameters"        : [],
+            "returns"           : [],
+            "outputIDs"         : ["20"],
+            "dependencies"      : []
+        }
+
+        # set store
+        store1 = [
+            {"key": "20", "value": tokenX1}
+        ]
+
+        # assemble
+        packet1 = {"transaction": T1, "store": store1};
+
+
+        # -----------------------------------------------------------------------
+        # read transaction: we use tokenX1 as reference to make a local return
+        # -----------------------------------------------------------------------
+        # set transaction
+        T2 = {
+            "contractID"        : 101,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [ID_tokenX1],
+            "parameters"        : [],
+            "returns"           : [dumps({"token" : tokenX2})],
+            "outputIDs"         : [],
+            "dependencies"      : [dumps(packet1)]
+        }
+
+        # set store
+        store2 = [
+            {"key": ID_tokenX1, "value": tokenX1}
+        ]
+
+        # assemble
+        packet2 = {"transaction": T2, "store": store2};
+
+
+        # -----------------------------------------------------------------------
+        # get the local returns as param and outputs tokenX4
+        # -----------------------------------------------------------------------
+        # set transaction
+        T3 = {
+            "contractID"        : 102,
+            "inputIDs"          : [],
+            "referenceInputIDs" : [],
+            "parameters"        : [],
+            "returns"           : ["Hello!"],
+            "outputIDs"         : ["3"],
+            "dependencies"      : [dumps(packet2)]
+        }
+
+        # set store
+        store3 = [
+            {"key": "3", "value": tokenX4},
+        ]
+
+        # assemble
+        packet3 = {"transaction": T3, "store": store3};
+
+        # sumbit the transaction to the ledger
+        r = requests.post(node_url, data = dumps(packet3))
+        assert loads(r.text)["status"] == "OK"
+        
 
     finally:
         t1._Thread__stop()
