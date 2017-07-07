@@ -52,12 +52,19 @@ class ChainspaceContract(object):
 
             @self.flask_app.route('/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
+                dependencies = (request.json['dependencies'] if 'dependencies' in request.json else [])
+                for dependency in dependencies:
+                    dependency['inputs'] = tuple(dependency['inputs'])
+                    dependency['reference_inputs'] = tuple(dependency['reference_inputs'])
+                    dependency['outputs'] = tuple(dependency['outputs'])
+
                 return function_wrapper(
                     tuple(request.json['inputs']),
                     tuple(request.json['reference_inputs']),
                     request.json['parameters'],
                     tuple(request.json['outputs']),
-                    request.json['returns']
+                    request.json['returns'],
+                    dependencies
                 )
 
             return function_wrapper
@@ -104,6 +111,14 @@ class ChainspaceContract(object):
 
     def register_standard_checker(self, method_name, function):
         @self.checker(method_name)
-        def checker(inputs, reference_inputs, parameters, outputs, returns):
+        def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters)
-            return result['outputs'] == outputs and result['returns'] == returns
+
+            for dependency in result['dependencies']:
+                del dependency['dependencies']
+
+            return (
+                result['outputs'] == outputs
+                and result['returns'] == returns
+                and result['dependencies'] == dependencies
+            )

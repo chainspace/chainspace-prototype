@@ -3,7 +3,7 @@
 from chainspacecontract import ChainspaceContract
 from chainspacecontract.examples.increment import contract as increment_contract
 
-contract = ChainspaceContract('addition')
+contract = ChainspaceContract('increment_twice')
 contract.register_dependency(increment_contract)
 
 
