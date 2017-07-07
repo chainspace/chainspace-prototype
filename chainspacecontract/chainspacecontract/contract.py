@@ -11,6 +11,9 @@ class ChainspaceContract(object):
         self.methods = {}
         self.checkers = {}
 
+    def __getattr__(self, key):
+        return self.methods[key]
+
     def _populate_empty_checkers(self):
         for method_name, function in self.methods.iteritems():
             if method_name not in self.checkers:
