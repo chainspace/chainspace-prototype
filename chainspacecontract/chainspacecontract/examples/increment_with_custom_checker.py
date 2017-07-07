@@ -21,7 +21,7 @@ def increment(inputs, reference_inputs, parameters):
 
 
 @contract.checker('increment')
-def increment_checker(inputs, reference_inputs, parameters, outputs, returns):
+def increment_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     result = increment(inputs, reference_inputs, parameters)
     return result['outputs'] == outputs and result['returns'] == returns
 
