@@ -1,7 +1,7 @@
 """An example smart contract to demonstrate cross-contract calls."""
 
 from chainspacecontract import ChainspaceContract
-from chainspacecontract.example.increment import contract as increment_contract
+from chainspacecontract.examples.increment import contract as increment_contract
 
 contract = ChainspaceContract('addition')
 contract.register_dependency(increment_contract)
@@ -16,7 +16,7 @@ def init():
 
 @contract.method('increment')
 def increment(inputs, reference_inputs, parameters):
-    increment_contract.increment(reference_inputs[0])
+    increment_contract.increment((reference_inputs[0],), None, None)
     return {
         'outputs': (inputs[0] + 1,)
     }
