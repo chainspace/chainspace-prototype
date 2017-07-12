@@ -75,7 +75,7 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('add_vote')
-def add_vote(inputs, reference_inputs, parameters):
+def add_vote(inputs, reference_inputs, parameters, voter_pub):
 
     # return
     return {
