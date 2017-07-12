@@ -17,7 +17,7 @@ class TestExamples(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
             'inputs': [1],
             'outputs': [2],
             'parameters': {},
@@ -27,7 +27,7 @@ class TestExamples(unittest.TestCase):
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
             'inputs': [1],
             'outputs': [3],
             'parameters': {},
@@ -45,7 +45,7 @@ class TestExamples(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
             'inputs': [1],
             'outputs': [2],
             'parameters': {},
@@ -55,7 +55,7 @@ class TestExamples(unittest.TestCase):
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
             'inputs': [1],
             'outputs': [3],
             'parameters': {},
@@ -73,7 +73,7 @@ class TestExamples(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/transfer', json={
+        response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
             'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
             'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 15}],
             'parameters': {'amount': 5},
@@ -83,7 +83,7 @@ class TestExamples(unittest.TestCase):
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/transfer', json={
+        response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
             'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
             'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 16}],
             'parameters': {'amount': 5},
@@ -101,7 +101,7 @@ class TestExamples(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
             'inputs': (0, ),
             'contract_id': 0,
             'parameters': {},
@@ -109,7 +109,7 @@ class TestExamples(unittest.TestCase):
             'returns': {},
             'dependencies': [{
                 'inputs': (0, ),
-                'contract_id': 0,
+                'contract_id': increment_contract.contract_name,
                 'parameters': {},
                 'outputs': (1, ),
                 'returns': {},
@@ -120,7 +120,7 @@ class TestExamples(unittest.TestCase):
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
             'inputs': (0, ),
             'contract_id': 0,
             'parameters': {},
@@ -128,7 +128,7 @@ class TestExamples(unittest.TestCase):
             'returns': {},
             'dependencies': [{
                 'inputs': (0, ),
-                'contract_id': 0,
+                'contract_id': increment_contract.contract_name,
                 'parameters': {},
                 'outputs': (0, ),
                 'returns': {},
@@ -147,7 +147,7 @@ class TestExamples(unittest.TestCase):
         checker_service_process.start()
         time.sleep(0.1)
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
             'inputs': (0, ),
             'contract_id': 0,
             'parameters': {},
@@ -155,7 +155,7 @@ class TestExamples(unittest.TestCase):
             'returns': {},
             'dependencies': [{
                 'inputs': (0, ),
-                'contract_id': 0,
+                'contract_id': increment_twice_contract.contract_name,
                 'parameters': {},
                 'outputs': (1, ),
                 'returns': {},
@@ -166,7 +166,7 @@ class TestExamples(unittest.TestCase):
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
-        response = requests.post('http://127.0.0.1:5000/increment', json={
+        response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
             'inputs': (0, ),
             'contract_id': 0,
             'parameters': {},
@@ -174,7 +174,7 @@ class TestExamples(unittest.TestCase):
             'returns': {},
             'dependencies': [{
                 'inputs': (0, ),
-                'contract_id': 0,
+                'contract_id': increment_twice_contract.contract_name,
                 'parameters': {},
                 'outputs': (1, ),
                 'returns': {},
@@ -187,6 +187,7 @@ class TestExamples(unittest.TestCase):
 
         checker_service_process.terminate()
         checker_service_process.join()
+
 
 if __name__ == '__main__':
     unittest.main()
