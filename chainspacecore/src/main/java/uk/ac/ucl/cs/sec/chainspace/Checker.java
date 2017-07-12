@@ -1,7 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
 /**
- * An interface representing a checker.
+ * An abstract class representing a checker.
  */
 public abstract class Checker {
     abstract void startChecker();
