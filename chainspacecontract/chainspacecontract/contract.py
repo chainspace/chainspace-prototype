@@ -9,6 +9,7 @@ class ChainspaceContract(object):
         self.flask_app = Flask(contract_name)
 
         self.methods = {}
+        self.methods_original = {}
         self.checkers = {}
         self.callbacks = []
         self.dependencies = []
@@ -82,7 +83,7 @@ class ChainspaceContract(object):
                     parameters = {}
 
                 self.dependent_transactions_log = []
-                if function.__name__ == 'init':
+                if self.methods_original['init'] == function:
                     result = function()
                 else:
                     result = function(inputs, reference_inputs, parameters, *args, **kwargs)
@@ -106,6 +107,7 @@ class ChainspaceContract(object):
                 return result
 
             self.methods[method_name] = function_wrapper
+            self.methods_original[method_name] = function
 
             return function_wrapper
 
