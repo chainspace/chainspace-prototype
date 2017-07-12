@@ -73,7 +73,7 @@ class ChainspaceContract(object):
 
     def method(self, method_name):
         def method_decorator(function):
-            def function_wrapper(inputs, reference_inputs, parameters, *args, **kwargs):
+            def function_wrapper(inputs=None, reference_inputs=None, parameters=None, *args, **kwargs):
                 if inputs is None:
                     inputs = ()
                 if reference_inputs is None:
@@ -82,7 +82,10 @@ class ChainspaceContract(object):
                     parameters = {}
 
                 self.dependent_transactions_log = []
-                result = function(inputs, reference_inputs, parameters, *args, **kwargs)
+                if function.__name__ == 'init':
+                    result = function()
+                else:
+                    result = function(inputs, reference_inputs, parameters, *args, **kwargs)
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
                     if key not in result or key is None:
