@@ -131,7 +131,7 @@ class TestVote(unittest.TestCase):
         # create inputs & parameters
         inputs = {'type': 'VoteToken'},
 
-        # get initial state
+        # get initial scores
         init_transaction = vote.create_vote(
             inputs,
             None,
@@ -140,15 +140,14 @@ class TestVote(unittest.TestCase):
             participants, 
             tally_pub
         )
+        init_vote = init_transaction['outputs'][1]
 
         # pack transaction
         transaction = vote.add_vote(
-            inputs,
+            init_vote,
             None,
             None,
-            options, 
-            participants, 
-            tally_pub
+            voter1_pub, 
         )
 
         ##
