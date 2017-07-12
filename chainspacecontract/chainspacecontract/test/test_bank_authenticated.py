@@ -38,7 +38,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/init', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/init', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##
@@ -79,7 +79,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/create_account', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/create_account', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##
@@ -127,7 +127,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/auth_transfer', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/auth_transfer', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##

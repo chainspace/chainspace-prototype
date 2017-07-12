@@ -9,6 +9,7 @@ class ChainspaceContract(object):
         self.flask_app = Flask(contract_name)
 
         self.methods = {}
+        self.methods_original = {}
         self.checkers = {}
         self.callbacks = []
         self.dependencies = []
@@ -50,7 +51,7 @@ class ChainspaceContract(object):
             def function_wrapper(*args, **kwargs):
                 return jsonify({'success': function(*args, **kwargs)})
 
-            @self.flask_app.route('/' + method_name, methods=['POST'], endpoint=method_name)
+            @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
                 dependencies = (request.json['dependencies'] if 'dependencies' in request.json else [])
                 for dependency in dependencies:
@@ -82,7 +83,7 @@ class ChainspaceContract(object):
                     parameters = {}
 
                 self.dependent_transactions_log = []
-                if function.__name__ == 'init':
+                if self.methods_original['init'] == function:
                     result = function()
                 else:
                     result = function(inputs, reference_inputs, parameters, *args, **kwargs)
@@ -98,7 +99,7 @@ class ChainspaceContract(object):
                 result['inputs'] = inputs
                 result['reference_inputs'] = reference_inputs
 
-                result['contract_id'] = 0
+                result['contract_id'] = self.contract_name
 
                 result['dependencies'] = self.dependent_transactions_log
 
@@ -106,6 +107,7 @@ class ChainspaceContract(object):
                 return result
 
             self.methods[method_name] = function_wrapper
+            self.methods_original[method_name] = function
 
             return function_wrapper
 

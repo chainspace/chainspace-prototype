@@ -39,7 +39,7 @@ class TestVote(unittest.TestCase):
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/init', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + vote_contract.contract_name + '/init', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##
@@ -84,15 +84,15 @@ class TestVote(unittest.TestCase):
             inputs,
             None,
             None,
-            options, 
-            participants, 
+            options,
+            participants,
             tally_pub
         )
 
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/create_vote', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + vote_contract.contract_name + '/create_vote', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##
@@ -136,8 +136,8 @@ class TestVote(unittest.TestCase):
             inputs,
             None,
             None,
-            options, 
-            participants, 
+            options,
+            participants,
             tally_pub
         )
         init_vote = init_transaction['outputs'][1]
@@ -147,13 +147,13 @@ class TestVote(unittest.TestCase):
             init_vote,
             None,
             None,
-            voter1_pub, 
+            voter1_pub,
         )
 
         ##
         ## submit transaction
         ##
-        response = requests.post('http://127.0.0.1:5000/add_vote', json=transaction)
+        response = requests.post('http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction)
         self.assertTrue(response.json()['success'])
 
         ##
@@ -162,7 +162,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-    
+
 
 
 ####################################################################
