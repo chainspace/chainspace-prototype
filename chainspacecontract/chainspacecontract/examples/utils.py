@@ -45,16 +45,54 @@ def key_gen(params):
    return (priv, pub)
 
 
+####################################################################
+# homomorphic encryptions / decryptions
+####################################################################
+def binencrypt(params, pub, m):
+	""" Encrypt a binary value m under public key pub """
+	assert m in [0, 1]
+	(_, g, (h0, _, _, _), o) = params
+
+	k = o.random()
+	a = k * g
+	b = k * pub + m * h0
+	return (a, b, k)
 
 
 ####################################################################
 # NIZK proofs
 ####################################################################
+""" utilities """
 def to_challenge(elements):
     """ Generates a Bn challenge by hashing a number of EC points """
     Cstring = b",".join([hexlify(x.export()) for x in elements])
     Chash =  sha256(Cstring).digest()
     return Bn.from_binary(Chash)
+
+
+""" proofs """
+def provezero(params, pub, Ciphertext, k):
+	""" prove that an encrupted value is zero """
+
+	# unpack the arguments
+	(_, g, (h0, h1, _, _), o) = params
+	(a, b) = Ciphertext
+
+	# create the witnesses
+	wk = o.random()
+
+	# calculate the witnesses commitments
+	Aw = wk * g
+	Bw = wk * pub + 0 * h0
+
+	# create the challenge
+	c = to_challenge([g, h0, h1, a, b, Aw, Bw])
+
+	# create responses for k and m
+	rk = (wk - c * k) % o
+
+	# return the proof
+	return (c, rk)
 
 
 
