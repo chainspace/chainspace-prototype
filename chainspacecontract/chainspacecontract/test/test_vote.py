@@ -77,7 +77,7 @@ class TestVote(unittest.TestCase):
         tally_pub    = pack(tally_pub)
 
         # create inputs & parameters
-        inputs = {'type': 'VoteEvent'},
+        inputs = {'type': 'VoteToken'},
 
         # pack transaction
         transaction = vote.create_vote(
@@ -102,6 +102,66 @@ class TestVote(unittest.TestCase):
         checker_service_process.join()
 
 
+    # --------------------------------------------------------------
+    # test add a vote
+    # --------------------------------------------------------------
+    def test_add_vote(self):
+        ##
+        ## run service
+        ##
+        checker_service_process = Process(target=vote_contract.run_checker_service)
+        checker_service_process.start()
+        time.sleep(0.1)
+
+        ##
+        ## create transaction
+        ##
+        # create keys
+        params = setup()
+        (_, tally_pub)  = key_gen(params)
+        (_, voter1_pub) = key_gen(params)
+        (_, voter2_pub) = key_gen(params)
+        (_, voter3_pub) = key_gen(params)
+
+        # set up options, particpants, and tally's key
+        options      = ['alice', 'bob']
+        participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
+        tally_pub    = pack(tally_pub)
+
+        # create inputs & parameters
+        inputs = {'type': 'VoteToken'},
+
+        # get initial state
+        init_transaction = vote.create_vote(
+            inputs,
+            None,
+            None,
+            options, 
+            participants, 
+            tally_pub
+        )
+
+        # pack transaction
+        transaction = vote.add_vote(
+            inputs,
+            None,
+            None,
+            options, 
+            participants, 
+            tally_pub
+        )
+
+        ##
+        ## submit transaction
+        ##
+        response = requests.post('http://127.0.0.1:5000/add_vote', json=transaction)
+        self.assertTrue(response.json()['success'])
+
+        ##
+        ## stop service
+        ##
+        checker_service_process.terminate()
+        checker_service_process.join()
 
     
 

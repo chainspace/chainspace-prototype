@@ -72,7 +72,7 @@ def to_challenge(elements):
 
 """ proofs """
 def provezero(params, pub, Ciphertext, k):
-	""" prove that an encrupted value is zero """
+	""" prove that an encrypted value is zero """
 
 	# unpack the arguments
 	(_, g, (h0, h1, _, _), o) = params
@@ -81,7 +81,7 @@ def provezero(params, pub, Ciphertext, k):
 	# create the witnesses
 	wk = o.random()
 
-	# calculate the witnesses commitments
+	# compute the witnesses' commitments
 	Aw = wk * g
 	Bw = wk * pub + 0 * h0
 
@@ -94,6 +94,23 @@ def provezero(params, pub, Ciphertext, k):
 	# return the proof
 	return (c, rk)
 
+def verifyzero(params, pub, ciphertext, proof):
+	""" verify proof that an encrypted value is zero """
+
+	# unpack the arguments
+	(_, g, (h0, h1, _, _), o) = params
+	a, b = ciphertext
+	(c, rk) = proof
+
+	# re-compute the witnesses' commitments
+	Aw = c * a + rk * g
+	Bw = c * b + rk * pub
+
+	# calculate the challenge prime
+	c_prime = to_challenge([g, h0, h1, a, b, Aw, Bw])
+
+	# return whether the proof succeeded
+	return c_prime == c
 
 
 ####################################################################

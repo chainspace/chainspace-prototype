@@ -12,7 +12,7 @@ from chainspacecontract import ChainspaceContract
 # crypto
 from petlib.ecdsa import do_ecdsa_sign, do_ecdsa_verify
 from chainspacecontract.examples.utils import setup, key_gen, pack, unpack, binencrypt
-from chainspacecontract.examples.utils import provezero 
+from chainspacecontract.examples.utils import provezero, verifyzero
 
 ## contract name
 contract = ChainspaceContract('vote')
@@ -26,12 +26,10 @@ contract = ChainspaceContract('vote')
 # ------------------------------------------------------------------
 @contract.method('init')
 def init():
-
     # return
     return {
         'outputs': {'type' : 'VoteToken'},
     }
-
 
 # ------------------------------------------------------------------
 # create vote event
@@ -42,7 +40,6 @@ def init():
 @contract.method('create_vote')
 def create_vote(inputs, reference_inputs, parameters, options, participants, tally_pub):
 
-    
     # genrate param
     params = setup()
     pub = unpack(tally_pub)
@@ -53,7 +50,7 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     
     # new account
     new_vote = {
-        'type'          : 'VoteEvent',
+        'type'          : 'Vote',
         "options"       : options,
         "scores"        : [pack(c), pack(c)],
         "participants"  : participants,
@@ -61,17 +58,32 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     }
 
     # proof that all init values are zero
-    proof_init_1 = (params, pub, input_c1, input_k1)
-    proof_init_2 = (params, pub, input_c2, input_k2)
+    proof_init = provezero(params, pub, c, k)
 
     # return
     return {
         'outputs': (inputs[0], new_vote),
         'extra_parameters' : {
-            'proof_init' : [pack(proof_init_1), pack(proof_init_2)]
+            'proof_init' : pack(proof_init)
         }
     }
 
+# ------------------------------------------------------------------
+# create vote event
+# NOTE: 
+#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
+#   - if there are more than 3 param, the checker has to be implemented by hand
+# ------------------------------------------------------------------
+@contract.method('add_vote')
+def add_vote(inputs, reference_inputs, parameters):
+
+    # return
+    return {
+        'outputs': (),
+        'extra_parameters' : {
+            'proof_init' : ()
+        }
+    }
 
 
 
@@ -80,23 +92,57 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
 # checker
 ####################################################################
 # ------------------------------------------------------------------
-# check account's creation
+# check vote's creation
 # ------------------------------------------------------------------
 @contract.checker('create_vote')
 def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
+        # retrieve vote
+        vote = outputs[1]
+
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False 
-        if outputs[1]['pub'] == None or outputs[1]['balance'] != 10:
+        if  len(vote['options']) < 1 or len(vote['options']) != len(vote['scores']):
+            return False
+        if vote['participants'] == None:
             return False
 
         # check tokens
         if inputs[0]['type'] != 'VoteToken' or outputs[0]['type'] != 'VoteToken':
             return False
-        if outputs[1]['type'] != 'VoteToken':
+        if vote['type'] != 'Vote':
             return False
+
+        # check proof
+        params = setup()
+        proof_init = unpack(parameters['proof_init'])
+        tally_pub  = unpack(vote['tally_pub'])
+        for value in vote['scores']:
+            if not verifyzero(params, tally_pub, unpack(value), proof_init):
+                return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check add vote
+# ------------------------------------------------------------------
+@contract.checker('add_vote')
+def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+
+        # retrieve vote
+        vote = outputs[1]
+
+        # check format
+        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
+            return False 
+        
 
         # otherwise
         return True
