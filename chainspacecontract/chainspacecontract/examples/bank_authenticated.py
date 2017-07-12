@@ -28,13 +28,13 @@ def init():
 
     # return
     return {
-        'outputs': {'type' : 'BankToken'},
+        'outputs': ({'type' : 'BankToken'},),
     }
 
 
 # ------------------------------------------------------------------
 # create account
-# NOTE: 
+# NOTE:
 #   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
@@ -52,13 +52,13 @@ def create_account(inputs, reference_inputs, parameters, pub):
 
 # ------------------------------------------------------------------
 # make transfer
-# NOTE: 
+# NOTE:
 #   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('auth_transfer')
 def auth_transfer(inputs, reference_inputs, parameters, priv):
-    
+
     # compute outputs
     new_from_account = copy.deepcopy(inputs[0])
     new_to_account   = copy.deepcopy(inputs[1])
@@ -96,7 +96,7 @@ def create_account_checker(inputs, reference_inputs, parameters, outputs, return
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
-            return False 
+            return False
         if outputs[1]['pub'] == None or outputs[1]['balance'] != 10:
             return False
 
@@ -122,7 +122,7 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
 
         # check format
         if len(inputs) != 2 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
-            return False 
+            return False
         if inputs[0]['pub'] != outputs[0]['pub'] or inputs[1]['pub'] != outputs[1]['pub']:
             return False
 
@@ -131,7 +131,7 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
             return False
         if outputs[0]['type'] != 'BankAccount' or outputs[1]['type'] != 'BankAccount':
             return False
-       
+
         # amount transfered should be non-negative
         if parameters['amount'] < 0:
             return False
@@ -145,18 +145,18 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
             return False
         if inputs[1]['balance'] != outputs[1]['balance'] - parameters['amount']:
             return False
-        
+
 
         # hash message to verify signature
         hasher = sha256()
         hasher.update(dumps(inputs).encode('utf8'))
         hasher.update(dumps(reference_inputs).encode('utf8'))
         hasher.update(dumps({"amount" : parameters["amount"]}).encode('utf8'))
-        
+
         # recompose signed digest
         pub = unpack(inputs[0]['pub'])
         sig = unpack(parameters['signature'])
-        
+
         # verify signature
         (G, _, _, _) = setup()
         return do_ecdsa_verify(G, pub, sig, hasher.digest())

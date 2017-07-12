@@ -23,7 +23,6 @@ class TestBankAuthenticated(unittest.TestCase):
     # test init
     # --------------------------------------------------------------
     def test_init(self):
-        """
         ##
         ## run service
         ##
@@ -47,7 +46,6 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
-        """
 
 
     # --------------------------------------------------------------
@@ -113,7 +111,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # create inputs & parameters
         inputs = [
-            {'type' : 'BankAccount', 'pub': pack(alice_pub), 'balance': 10}, 
+            {'type' : 'BankAccount', 'pub': pack(alice_pub), 'balance': 10},
             {'type' : 'BankAccount', 'pub': pack(bob_pub),   'balance': 10}
         ]
         parameters = {'amount': 3}
