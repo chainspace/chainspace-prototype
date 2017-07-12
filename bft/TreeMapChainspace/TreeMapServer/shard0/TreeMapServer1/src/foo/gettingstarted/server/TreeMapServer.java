@@ -117,9 +117,10 @@ public class TreeMapServer extends DefaultRecoverable {
                     Transaction t = (Transaction) ois.readObject();
                     t.print();
 
-                    // TODO: Here we really should create a new Client
-                    // TODO: and get the new client to validate transactions
-                    ds.writeUTF(t.isValid(new TreeMap<String, String>(table)));
+                    // This simply tells the client whether or not a transaction is valid
+                    String t_status = t.getStatus(new TreeMap<String, String>(table));
+                    System.out.println(t_status);
+                    ds.writeUTF(t_status);
 
                     byte[] reply = out.toByteArray();
                     return reply;

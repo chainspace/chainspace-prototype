@@ -18,6 +18,13 @@ public class Transaction implements Serializable {
     private List<String> inputs;
     private List<String> outputs;
 
+    // Transaction states
+    public static final String VALID = "valid";
+    public static final String INVALID_NOOBJECT = "Invalid: Input object(s) doesn't exist.";
+    public static final String REJECTED_LOCKEDOBJECT = "Rejected: Input object(s) is locked. ";
+    public static final String INVALID_INACTIVEOBJECT = "Invalid: Input object(s) is inactive.";
+    public static final String INVALID_BADTRANSACTION = "Invalid: Malformed transaction.";
+
     public Transaction() {
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
@@ -69,15 +76,22 @@ public class Transaction implements Serializable {
         }
     }
 
-    public String isValid(TreeMap<String, String> table) {
-        System.out.println("Checking if transaction is valid");
+    public String getStatus(TreeMap<String, String> table) {
+        // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
+
+        // Check if all input objects are active
         for(String str: inputs) {
             String readValue = table.get(str);
-            if (readValue == null || readValue.equals("0")) {
-                return "Fail";
-            }
+            if(readValue == null)
+                return INVALID_NOOBJECT;
+            else if(readValue.equals(ObjectStatus.LOCKED))
+                return REJECTED_LOCKEDOBJECT;
+            else if (readValue.equals(ObjectStatus.INACTIVE))
+                return INVALID_INACTIVEOBJECT;
         }
-        return "Success";
+        return VALID;
     }
+
 }
+
 
