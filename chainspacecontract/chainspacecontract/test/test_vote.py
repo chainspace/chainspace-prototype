@@ -185,7 +185,7 @@ class TestVote(unittest.TestCase):
         ## create transaction
         ##
         # number of voters and values
-        options      = ['alice', 'bob']
+        options = ['alice', 'bob']
         num_voters = 3
         values = [[1, 0] for _ in range(0, num_voters)]
 
@@ -217,7 +217,7 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                values[i],
+                values[i],        # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
@@ -254,7 +254,7 @@ class TestVote(unittest.TestCase):
         ## create transaction
         ##
         # number of voters and values
-        options      = ['alice', 'bob']
+        options = ['alice', 'bob']
         num_voters = 3
         values = [[1, 0] for _ in range(0, num_voters)]
 
@@ -286,7 +286,7 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                values[i],
+                values[i],        # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
@@ -306,6 +306,94 @@ class TestVote(unittest.TestCase):
         ##
         response = requests.post(
             'http://127.0.0.1:5000/' + vote_contract.contract_name + '/tally', json=transaction
+        )
+        self.assertTrue(response.json()['success'])
+
+        ##
+        ## stop service
+        ##
+        checker_service_process.terminate()
+        checker_service_process.join()
+
+
+    # --------------------------------------------------------------
+    # test read result
+    # --------------------------------------------------------------
+    def test_tally(self):
+        ##
+        ## run service
+        ##
+        checker_service_process = Process(target=vote_contract.run_checker_service)
+        checker_service_process.start()
+        time.sleep(0.1)
+
+        ##
+        ## create transaction
+        ##
+        # number of voters and values
+        options = ['alice', 'bob']
+        num_voters = 7
+        values = [[1, 0] for _ in range(0, num_voters)]
+
+        # create keys and particpants
+        params = setup()
+        (tally_priv, tally_pub) = key_gen(params)
+        keys = [key_gen(params) for _ in range(0, num_voters)]
+        participants = [pack(pub) for (_, pub) in keys]
+
+        # get init token
+        init_transaction = vote.init()
+
+        # get initial scores
+        create_vote_transaction = vote.create_vote(
+            (init_transaction['outputs'][0],),
+            None,
+            None,
+            options,
+            participants,
+            pack(tally_pub)
+        )
+        vote_0 = create_vote_transaction['outputs'][1]
+
+        # add votes
+        transaction = {}
+        input_obj = vote_0
+        for i in range(0, num_voters):
+            transaction = vote.add_vote(
+                (input_obj,),
+                None,
+                None,
+                values[i],        # votes' valu (0 or 1)
+                pack(keys[i][0]), # voter's priv key
+                pack(keys[i][1])  # voter's pub key
+            )
+            input_obj = transaction['outputs'][0]
+
+        # tally
+        transaction = vote.tally(
+            (input_obj,),
+            None,
+            None,
+            pack(tally_priv)
+        )
+        result = transaction['outputs'][0]
+
+        # read result
+        transaction = vote.read(
+            None,
+            (result,),
+            None,
+        )
+
+        # print result
+        print transaction['returns']
+
+
+        ##
+        ## submit transaction
+        ##
+        response = requests.post(
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/read', json=transaction
         )
         self.assertTrue(response.json()['success'])
 

@@ -187,6 +187,26 @@ def tally(inputs, reference_inputs, parameters, tally_priv):
         }
     }
 
+# ------------------------------------------------------------------
+# read
+# ------------------------------------------------------------------
+@contract.method('read')
+def read(inputs, reference_inputs, parameters):
+
+    # retrieve last vote
+    result = reference_inputs[0]
+
+    # set returns
+    returns = {
+        'outcome' : result['outcome']
+    }
+
+    # return
+    return {
+        'returns': returns
+    }
+
+
 
 ####################################################################
 # checker
@@ -343,6 +363,30 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         hasher.update(dumps(vote).encode('utf8'))
         hasher.update(dumps(result['outcome']).encode('utf8'))
         if not do_ecdsa_verify(G, tally_pub, sig, hasher.digest()):
+            return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check read
+# ------------------------------------------------------------------
+@contract.checker('read')
+def read_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+
+        # retrieve results
+        result = reference_inputs[0]
+
+        # check format
+        if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
+            return False 
+
+        # check values
+        if result['outcome'] != returns['outcome']:
             return False
 
         # otherwise
