@@ -11,7 +11,8 @@ import copy
 from chainspacecontract import ChainspaceContract
 # crypto
 from petlib.ecdsa import do_ecdsa_sign, do_ecdsa_verify
-from chainspacecontract.examples.utils import setup, key_gen, pack, unpack, binencrypt, add, add_side, make_table, dec
+from chainspacecontract.examples.utils import setup, key_gen, pack, unpack, add, add_side
+from chainspacecontract.examples.utils import binencrypt, make_table, dec
 from chainspacecontract.examples.utils import provezero, verifyzero, provebin, verifybin, proveone, verifyone
 
 ## contract name
@@ -88,7 +89,7 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
     # encrypt votes & proofs to build
     enc_added_votes = []  # encrypted votes
     proof_bin       = []  # votes are binary, well-formed, and the prover know the vote's value
-    sum_a, sum_b, sum_k = binencrypt(params, tally_pub, 0)  # sum of votes equals 1
+    sum_a, sum_b, sum_k = (0, 0, 0)  # sum of votes equals 1
 
     # loop over votes
     for i in range(0,len(added_vote)):
@@ -106,9 +107,12 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
         proof_bin.append(pack(tmp1))
 
         # update sum of votes
-        sum_c = (sum_a, sum_b)
-        sum_a, sum_b, sum_k = add_side(sum_c, c, sum_k, k)
-
+        if i == 0:
+            sum_a, sum_b, sum_k = (a, b, k)
+        else:
+            sum_c = (sum_a, sum_b)
+            sum_a, sum_b, sum_k = add_side(sum_c, c, sum_k, k)
+        
     # build proof that sum of votes equals 1
     sum_c = (sum_a, sum_b)
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
@@ -277,10 +281,18 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
         if not do_ecdsa_verify(G, voter_pub, sig, hasher.digest()):
             return False
 
-        # verify proofs
+        # verify proofs of binary (votes have to be bin values)
         for i in range(0, num_votes):
             if not verifybin(params, tally_pub, unpack(added_vote[i]), unpack(proof_bin[i])):
                 return False
+
+        # verify proof of sum of votes (sum of votes has to be 1)
+        sum_a, sum_b = unpack(added_vote[-1])
+        sum_c = (sum_a, sum_b)
+        for i in range(0, num_votes-1):
+            sum_c = add(sum_c, unpack(added_vote[i]))
+        if not verifyone(params, tally_pub, sum_c, proof_sum):
+            return False
 
         # verify that output == input + vote
         for i in range(0, num_votes):

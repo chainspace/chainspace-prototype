@@ -75,7 +75,6 @@ class TestVote(unittest.TestCase):
         # set up options, particpants, and tally's key
         options      = ['alice', 'bob']
         participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
-        tally_pub    = pack(tally_pub)
 
         # create inputs & parameters
         init_transaction = vote.init()
@@ -88,7 +87,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
-            tally_pub
+            pack(tally_pub)
         )
 
         ##
@@ -130,7 +129,6 @@ class TestVote(unittest.TestCase):
         # set up options, particpants, and tally's key
         options      = ['alice', 'bob']
         participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
-        tally_pub    = pack(tally_pub)
 
         # get init token
         init_transaction = vote.init()
@@ -143,7 +141,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
-            tally_pub
+            pack(tally_pub)
         )
         old_vote = create_vote_transaction['outputs'][1]
 
@@ -186,17 +184,16 @@ class TestVote(unittest.TestCase):
         ##
         ## create transaction
         ##
-        # create keys
+        # number of voters and values
+        options      = ['alice', 'bob']
+        num_voters = 3
+        values = [[1, 0] for _ in range(0, num_voters)]
+
+        # create keys and particpants
         params = setup()
         (_, tally_pub)  = key_gen(params)
-        (voter1_priv, voter1_pub) = key_gen(params)
-        (voter2_priv, voter2_pub) = key_gen(params)
-        (voter3_priv, voter3_pub) = key_gen(params)
-
-        # set up options, particpants, and tally's key
-        options      = ['alice', 'bob']
-        participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
-        tally_pub    = pack(tally_pub)
+        keys = [key_gen(params) for _ in range(0, num_voters)]
+        participants = [pack(pub) for (_, pub) in keys]
 
         # get init token
         init_transaction = vote.init()
@@ -208,49 +205,32 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
-            tally_pub
+            pack(tally_pub)
         )
         vote_0 = create_vote_transaction['outputs'][1]
 
-        # add vote 1
-        add_vote_1_transaction = vote.add_vote(
-            (vote_0,),
-            None,
-            None,
-            [1, 0],
-            pack(voter1_priv),
-            pack(voter1_pub)
-        )
-        vote_1 = add_vote_1_transaction['outputs'][0]
+        # add votes
+        transaction = {}
+        input_obj = vote_0
+        for i in range(0, num_voters):
+            transaction = vote.add_vote(
+                (input_obj,),
+                None,
+                None,
+                values[i],
+                pack(keys[i][0]), # voter's priv key
+                pack(keys[i][1])  # voter's pub key
+            )
+            input_obj = transaction['outputs'][0]
 
-        # add vote 2
-        add_vote_2_transaction = vote.add_vote(
-            (vote_1,),
-            None,
-            None,
-            [1, 0],
-            pack(voter2_priv),
-            pack(voter2_pub)
-        )
-        vote_2 = add_vote_2_transaction['outputs'][0]
-
-        # add vote 3
-        transaction = vote.add_vote(
-            (vote_2,),
-            None,
-            None,
-            [1, 0],
-            pack(voter3_priv),
-            pack(voter3_pub)
-        )
-
+            
         ##
         ## submit transaction
         ##
         response = requests.post(
             'http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction
         )
-        #self.assertTrue(response.json()['success'])
+        self.assertTrue(response.json()['success'])
 
         ##
         ## stop service
@@ -273,17 +253,16 @@ class TestVote(unittest.TestCase):
         ##
         ## create transaction
         ##
-        # create keys
-        params = setup()
-        (tally_priv, tally_pub)   = key_gen(params)
-        (voter1_priv, voter1_pub) = key_gen(params)
-        (voter2_priv, voter2_pub) = key_gen(params)
-        (voter3_priv, voter3_pub) = key_gen(params)
-
-        # set up options, particpants, and tally's key
+        # number of voters and values
         options      = ['alice', 'bob']
-        participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
-        tally_pub    = pack(tally_pub)
+        num_voters = 3
+        values = [[1, 0] for _ in range(0, num_voters)]
+
+        # create keys and particpants
+        params = setup()
+        (tally_priv, tally_pub) = key_gen(params)
+        keys = [key_gen(params) for _ in range(0, num_voters)]
+        participants = [pack(pub) for (_, pub) in keys]
 
         # get init token
         init_transaction = vote.init()
@@ -295,46 +274,27 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
-            tally_pub
+            pack(tally_pub)
         )
         vote_0 = create_vote_transaction['outputs'][1]
 
-        # add vote 1
-        add_vote_1_transaction = vote.add_vote(
-            (vote_0,),
-            None,
-            None,
-            [1, 0],
-            pack(voter1_priv),
-            pack(voter1_pub)
-        )
-        vote_1 = add_vote_1_transaction['outputs'][0]
-
-        # add vote 2
-        add_vote_2_transaction = vote.add_vote(
-            (vote_1,),
-            None,
-            None,
-            [1, 0],
-            pack(voter2_priv),
-            pack(voter2_pub)
-        )
-        vote_2 = add_vote_2_transaction['outputs'][0]
-
-        # add vote 3
-        add_vote_3_transaction = vote.add_vote(
-            (vote_2,),
-            None,
-            None,
-            [0, 1],
-            pack(voter3_priv),
-            pack(voter3_pub)
-        )
-        vote_3 = add_vote_3_transaction['outputs'][0]
+        # add votes
+        transaction = {}
+        input_obj = vote_0
+        for i in range(0, num_voters):
+            transaction = vote.add_vote(
+                (input_obj,),
+                None,
+                None,
+                values[i],
+                pack(keys[i][0]), # voter's priv key
+                pack(keys[i][1])  # voter's pub key
+            )
+            input_obj = transaction['outputs'][0]
 
         # tally
         transaction = vote.tally(
-            (vote_3,),
+            (input_obj,),
             None,
             None,
             pack(tally_priv)
