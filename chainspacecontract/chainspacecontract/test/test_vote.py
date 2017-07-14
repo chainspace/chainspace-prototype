@@ -18,7 +18,6 @@ from chainspacecontract.examples.utils import setup, key_gen, pack
 # voting system
 ####################################################################
 class TestVote(unittest.TestCase):
-    """
     # --------------------------------------------------------------
     # test init
     # --------------------------------------------------------------
@@ -75,7 +74,7 @@ class TestVote(unittest.TestCase):
         options      = ['alice', 'bob']
         participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
 
-        # create inputs & parameters
+        # init
         init_transaction = vote.init()
         token = init_transaction['outputs'][0]
 
@@ -319,7 +318,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-    """
+
     # --------------------------------------------------------------
     # test read result
     # --------------------------------------------------------------
