@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import java.io.IOException;
+
 /**
  * An abstract class representing a checker.
  */
