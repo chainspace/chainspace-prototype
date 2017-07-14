@@ -99,7 +99,7 @@ class ChainspaceContract(object):
                 result['inputs'] = inputs
                 result['reference_inputs'] = reference_inputs
 
-                result['contract_id'] = self.contract_name
+                result['contractID'] = self.contract_name
 
                 result['dependencies'] = self.dependent_transactions_log
 
