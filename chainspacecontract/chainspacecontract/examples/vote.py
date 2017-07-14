@@ -10,6 +10,8 @@ import copy
 # chainspace
 from chainspacecontract import ChainspaceContract
 # crypto
+from petlib.bn    import Bn
+from petlib.ec    import EcGroup
 from petlib.ecdsa import do_ecdsa_sign, do_ecdsa_verify
 from chainspacecontract.examples.utils import setup, key_gen, pack, unpack, add, add_side
 from chainspacecontract.examples.utils import binencrypt, make_table, dec
@@ -39,7 +41,7 @@ def init():
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('create_vote')
-def create_vote(inputs, reference_inputs, parameters, options, participants, tally_pub):
+def create_vote(inputs, reference_inputs, parameters, options, participants, tally_priv, tally_pub):
 
     # genrate param
     params = setup()
@@ -60,7 +62,7 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     }
 
     # proof that all init values are zero
-    proof_init = provezero(params, pub, c, k)
+    proof_init = provezero(params, pub, c, unpack(tally_priv))
 
     # return
     return {
@@ -147,7 +149,7 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('tally')
-def tally(inputs, reference_inputs, parameters, tally_priv):
+def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
     # retrieve last vote
     vote = inputs[0]
@@ -155,6 +157,7 @@ def tally(inputs, reference_inputs, parameters, tally_priv):
     # generate params & retrieve tally's public key
     params = setup()
     table  = make_table(params)
+    (G, _, (h0, _, _, _), _) = params
 
     # decrypt aggregated results
     outcome = []
@@ -162,12 +165,14 @@ def tally(inputs, reference_inputs, parameters, tally_priv):
         outcome.append(dec(params, table, unpack(tally_priv), unpack(item)))
 
     # proof of decryption
-    ##
     proof_dec = []
-    ##
+    for i in range(0, len(vote['scores'])):
+        a, b = unpack(vote['scores'][i])
+        ciphertext = (a, b - outcome[i] * h0) 
+        tmp = provezero(params, unpack(tally_pub), ciphertext, unpack(tally_priv))
+        proof_dec.append(pack(tmp))
 
     # signature
-    (G, _, _, _) = params
     hasher = sha256()
     hasher.update(dumps(vote).encode('utf8'))
     hasher.update(dumps(outcome).encode('utf8'))
@@ -350,16 +355,20 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
 
         # generate params, retrieve tally's public key and the parameters
         params = setup()
+        (G, _, (h0, _, _, _), _) = params
         tally_pub  = unpack(vote['tally_pub'])
         sig        = unpack(parameters['signature'])
         proof_dec  = parameters['proof_dec']
+        outcome    = result['outcome']
 
         # verify proof of correct decryption
-        ##
-        ##
+        for i in range(0, len(vote['scores'])):
+            a, b = unpack(vote['scores'][i])
+            ciphertext = (a, b - outcome[i] * h0) 
+            if not verifyzero(params, tally_pub, ciphertext, unpack(proof_dec[i])):
+                return False
 
         # verify signature
-        (G, _, _, _) = params
         hasher = sha256()
         hasher.update(dumps(vote).encode('utf8'))
         hasher.update(dumps(result['outcome']).encode('utf8'))

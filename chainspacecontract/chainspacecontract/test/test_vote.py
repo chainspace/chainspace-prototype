@@ -14,11 +14,11 @@ from chainspacecontract.examples import vote
 # crypto
 from chainspacecontract.examples.utils import setup, key_gen, pack
 
-
 ####################################################################
 # voting system
 ####################################################################
 class TestVote(unittest.TestCase):
+    """
     # --------------------------------------------------------------
     # test init
     # --------------------------------------------------------------
@@ -50,7 +50,6 @@ class TestVote(unittest.TestCase):
         checker_service_process.join()
 
 
-
     # --------------------------------------------------------------
     # test create vote event
     # --------------------------------------------------------------
@@ -67,7 +66,7 @@ class TestVote(unittest.TestCase):
         ##
         # create keys
         params = setup()
-        (_, tally_pub)  = key_gen(params)
+        (tally_priv, tally_pub)  = key_gen(params)
         (_, voter1_pub) = key_gen(params)
         (_, voter2_pub) = key_gen(params)
         (_, voter3_pub) = key_gen(params)
@@ -87,6 +86,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
+            pack(tally_priv),
             pack(tally_pub)
         )
 
@@ -121,7 +121,7 @@ class TestVote(unittest.TestCase):
         ##
         # create keys
         params = setup()
-        (_, tally_pub)  = key_gen(params)
+        (tally_priv, tally_pub)   = key_gen(params)
         (voter1_priv, voter1_pub) = key_gen(params)
         (_, voter2_pub)           = key_gen(params)
         (_, voter3_pub)           = key_gen(params)
@@ -141,6 +141,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
+            pack(tally_priv),
             pack(tally_pub)
         )
         old_vote = create_vote_transaction['outputs'][1]
@@ -191,7 +192,7 @@ class TestVote(unittest.TestCase):
 
         # create keys and particpants
         params = setup()
-        (_, tally_pub)  = key_gen(params)
+        (tally_priv, tally_pub) = key_gen(params)
         keys = [key_gen(params) for _ in range(0, num_voters)]
         participants = [pack(pub) for (_, pub) in keys]
 
@@ -205,6 +206,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
+            pack(tally_priv),
             pack(tally_pub)
         )
         vote_0 = create_vote_transaction['outputs'][1]
@@ -274,6 +276,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
+            pack(tally_priv),
             pack(tally_pub)
         )
         vote_0 = create_vote_transaction['outputs'][1]
@@ -297,7 +300,8 @@ class TestVote(unittest.TestCase):
             (input_obj,),
             None,
             None,
-            pack(tally_priv)
+            pack(tally_priv),
+            pack(tally_pub)
         )
 
 
@@ -315,7 +319,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-
+    """
     # --------------------------------------------------------------
     # test read result
     # --------------------------------------------------------------
@@ -332,7 +336,7 @@ class TestVote(unittest.TestCase):
         ##
         # number of voters and values
         options = ['alice', 'bob', 'sally']
-        num_voters = 100
+        num_voters = 50
         values = [[1, 0, 0] for _ in range(0, num_voters)]
 
         # create keys and particpants
@@ -351,6 +355,7 @@ class TestVote(unittest.TestCase):
             None,
             options,
             participants,
+            pack(tally_priv),
             pack(tally_pub)
         )
         vote_0 = create_vote_transaction['outputs'][1]
@@ -374,7 +379,8 @@ class TestVote(unittest.TestCase):
             (input_obj,),
             None,
             None,
-            pack(tally_priv)
+            pack(tally_priv),
+            pack(tally_pub)
         )
         result = transaction['outputs'][0]
 

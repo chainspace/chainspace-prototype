@@ -186,44 +186,62 @@ def verifybin(params, pub, ciphertext, proof):
 # proof of zero
 # ------------------------------------------------------------------
 """ proof """
-def provezero(params, pub, ciphertext, k):
+def provezero(params, pub, ciphertext, priv):
 	""" prove that an encrypted value is zero """
 
+	""" 
+	This is essentially as proving the following:
+	(1) knowledge of x in (x * k * g)
+	indeed:
+		cipher = (k * g, k * pub + m * h)
+
+		since m = 0:
+		cipher = (k * g, k * pub)
+		   	   = (k * g, k * x * g)
+
+		with a = k * g:
+		cipher = (a, x * a)
+
+	(2) knowledge of x in (x * g)
+	(3) equality of log: x * (k * g) and x * g
+
+	"""
+
 	# unpack the arguments
-	(_, g, (h0, h1, _, _), o) = params
+	(_, g, (h0, _, _, _), o) = params
 	(a, b) = ciphertext
 
 	# create the witnesses
-	wk = o.random()
+	wx = o.random()
 
-	# compute the witnesses' commitments
-	Aw = wk * g
-	Bw = wk * pub + 0 * h0
-
+	# compute the witnesses' commitments:
+	Aw = wx * a 	
+	Bw = wx * g 	
+		
 	# create the challenge
-	c = to_challenge([g, h0, h1, a, b, Aw, Bw])
+	c = to_challenge([g, h0, pub, a, b, Aw, Bw])
 
 	# create responses for k and m
-	rk = (wk - c * k) % o
+	rx = (wx - c * priv) % o
 
 	# return the proof
-	return (c, rk)
+	return (c, rx)
 
 """ verify """
 def verifyzero(params, pub, ciphertext, proof):
 	""" verify proof that an encrypted value is zero """
 
 	# unpack the arguments
-	(_, g, (h0, h1, _, _), o) = params
+	(_, g, (h0, _, _, _), o) = params
 	a, b = ciphertext
-	(c, rk) = proof
+	(c, rx) = proof
 
 	# re-compute the witnesses' commitments
-	Aw = c * a + rk * g
-	Bw = c * b + rk * pub
+	Aw = rx * a + c * b
+	Bw = rx * g + c * pub
 
 	# compute the challenge prime
-	c_prime = to_challenge([g, h0, h1, a, b, Aw, Bw])
+	c_prime = to_challenge([g, h0, pub, a, b, Aw, Bw])
 
 	# return whether the proof succeeded
 	return c_prime == c
@@ -237,7 +255,7 @@ def proveone(params, pub, ciphertext, k):
 	""" prove that an encrypted value is 1 """
 
 	# unpack the arguments
-	(_, g, (h0, h1, _, _), o) = params
+	(_, g, (h0, _, _, _), o) = params
 	(a, b) = ciphertext
 
 	# create the witnesses
@@ -246,35 +264,32 @@ def proveone(params, pub, ciphertext, k):
 
 	# compute witnesses' commitments
 	Aw = wk * g
-	Bw = wk * pub + wm * h0
-	Dw = wk * g + 1 * h1
+	Bw = wk * pub + 1 * h0
 
 	# create the challenge
-	c = to_challenge([g, h0, h1, a, b, Aw, Bw, Dw])
+	c = to_challenge([g, h0, pub, a, b, Aw, Bw])
 
 	# create responses for k and m
 	rk = (wk - c * k) % o
-	rm = (wm - c * 1) % o
 
 	# return the proof
-	return (c, (rk, rm))
+	return (c, rk)
 
 """ verify """
 def verifyone(params, pub, ciphertext, proof):
 	""" verify that an encrypted value is 1 """
 
 	# unpack the arguments
-	(_, g, (h0, h1, _, _), o) = params
+	(_, g, (h0, _, _, _), o) = params
 	a, b = ciphertext
-	(c, (rk, rm)) = proof
+	(c, rk) = proof
 
 	# re-compute witnesses' commitments
-	Aw = c * a + rk * g
-	Bw = c * b + rk * pub + rm * h0
-	Dw = c * a + rk * g + 1 * h1
+	Aw = rk * g + c * a
+	Bw = rk * pub + c * b + (1 - c) * h0
 
 	# compute the challenge prime
-	c_prime = to_challenge([g, h0, h1, a, b, Aw, Bw, Dw])
+	c_prime = to_challenge([g, h0, pub, a, b, Aw, Bw])
 
 	# return whether the proof succeeded
 	return c_prime == c
