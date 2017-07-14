@@ -168,6 +168,16 @@ class ChainspaceObject(str):
     def __init__(self, object_id, value):
         self.object_id = object_id
 
+    @staticmethod
+    def from_transaction(transaction, output_index):
+        """
+        Return a ChainspaceObject from a transaction output.
+
+        transaction: the transction.
+        output_index: the index of the output.
+        """
+        pass
+
 
 class _CheckerMode(object):
     def __init__(self):
