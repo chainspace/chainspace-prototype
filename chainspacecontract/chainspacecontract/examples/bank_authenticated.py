@@ -42,7 +42,7 @@ def init():
 def create_account(inputs, reference_inputs, parameters, pub):
 
     # new account
-    new_account = {'type' : 'BankAccount', 'pub': pack(pub), 'balance': 10}
+    new_account = {'type' : 'BankAccount', 'pub': pub, 'balance': 10}
 
     # return
     return {
