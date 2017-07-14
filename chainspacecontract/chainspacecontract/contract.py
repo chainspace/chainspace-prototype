@@ -147,14 +147,17 @@ class ChainspaceContract(object):
         @self.checker(method_name)
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters, __checker_mode=True)
+            solution = result['solution']
+            print inputs, reference_inputs, parameters, outputs, returns, dependencies
+            print solution
 
-            for dependency in result['dependencies']:
+            for dependency in solution['dependencies']:
                 del dependency['dependencies']
 
             return (
-                result['outputs'] == outputs
-                and result['returns'] == returns
-                and result['dependencies'] == dependencies
+                solution['outputs'] == outputs
+                and solution['returns'] == returns
+                and solution['dependencies'] == dependencies
             )
 
 
