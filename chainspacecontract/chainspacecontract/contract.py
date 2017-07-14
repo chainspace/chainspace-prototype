@@ -75,6 +75,12 @@ class ChainspaceContract(object):
     def method(self, method_name):
         def method_decorator(function):
             def function_wrapper(inputs=None, reference_inputs=None, parameters=None, *args, **kwargs):
+                if '__checker_mode' in kwargs:
+                    if kwargs['__checker_mode']:
+                        _checker_mode.on = True
+                    del kwargs['__checker_mode']
+                checker_mode = _checker_mode.on
+
                 if inputs is None:
                     inputs = ()
                 if reference_inputs is None:
@@ -96,15 +102,38 @@ class ChainspaceContract(object):
                 result['parameters'].update(result['extra_parameters'])
                 del result['extra_parameters']
 
-                result['inputs'] = inputs
-                result['reference_inputs'] = reference_inputs
+                if checker_mode:
+                    result['inputs'] = inputs
+                    result['reference_inputs'] = reference_inputs
+                else:
+                    store = {}
+                    for obj in inputs + reference_inputs:
+                        store[obj.object_id] = obj
+
+                    result['inputIDs'] = [obj.object_id for obj in inputs]
+                    result['referenceInputIDs'] = [obj.object_id for obj in reference_inputs]
 
                 result['contractID'] = self.contract_name
 
                 result['dependencies'] = self.dependent_transactions_log
 
-                self._trigger_callbacks(result)
-                return result
+                if checker_mode:
+                    dependencies = []
+                    for dependency in result['dependencies']:
+                        dependencies.append(dependency['solution'])
+                    result['dependencies'] = dependencies
+                    return_value = {'solution': result}
+                else:
+                    dependencies = []
+                    for dependency in result['dependencies']:
+                        store.update(dependency['store'])
+                        dependencies.append(dependency['transaction'])
+                    result['dependencies'] = dependencies
+                    return_value = {'transaction': result, 'store': store}
+
+                self._trigger_callbacks(return_value)
+                _checker_mode.on = False
+                return return_value
 
             self.methods[method_name] = function_wrapper
             self.methods_original[method_name] = function
@@ -117,7 +146,7 @@ class ChainspaceContract(object):
     def register_standard_checker(self, method_name, function):
         @self.checker(method_name)
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-            result = function(inputs, reference_inputs, parameters)
+            result = function(inputs, reference_inputs, parameters, __checker_mode=True)
 
             for dependency in result['dependencies']:
                 del dependency['dependencies']
@@ -135,3 +164,10 @@ class ChainspaceObject(str):
 
     def __init__(self, object_id, value):
         self.object_id = object_id
+
+
+class _CheckerMode(object):
+    def __init__(self):
+        self.on = False
+
+_checker_mode = _CheckerMode()
