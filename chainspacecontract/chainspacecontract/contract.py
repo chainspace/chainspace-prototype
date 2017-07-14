@@ -127,3 +127,11 @@ class ChainspaceContract(object):
                 and result['returns'] == returns
                 and result['dependencies'] == dependencies
             )
+
+
+class ChainspaceObject(str):
+    def __new__(cls, object_id, value):
+        return super(ChainspaceObject, cls).__new__(cls, value)
+
+    def __init__(self, object_id, value):
+        self.object_id = object_id
