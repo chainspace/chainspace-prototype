@@ -64,7 +64,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## create transaction
         ##
-        # create alice's and bob public key
+        # create alice's public key
         (_, alice_pub) = key_gen(setup())
 
         # init
@@ -222,6 +222,95 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         response = requests.post(
             'http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/auth_transfer', json=transaction
+        )
+        self.assertTrue(response.json()['success'])
+
+        ##
+        ## stop service
+        ##
+        checker_service_process.terminate()
+        checker_service_process.join()
+
+    # --------------------------------------------------------------
+    # test read account
+    # --------------------------------------------------------------
+    def test_read_account(self):
+        ##
+        ## run service
+        ##
+        checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
+        checker_service_process.start()
+        time.sleep(0.1)
+
+        ##
+        ## create transaction
+        ##
+        # create alice's and bob public key
+        num_transfers = 7
+        transfer_amount = 1
+        params = setup()
+        (alice_priv, alice_pub) = key_gen(params)
+        (bob_priv, bob_pub)     = key_gen(params)
+
+        # init
+        init_transaction = bank_authenticated.init()
+        token = init_transaction['outputs'][0]
+
+        # create alice's account
+        create_alice_account_transaction = bank_authenticated.create_account(
+            (token,),
+            None,
+            None,
+            pack(alice_pub)
+        )
+        token = create_alice_account_transaction['outputs'][0]
+        alice_account = create_alice_account_transaction['outputs'][1]
+
+        # create bob's account
+        create_bob_account_transaction = bank_authenticated.create_account(
+            (token,),
+            None,
+            None,
+            pack(bob_pub)
+        )
+        bob_account = create_bob_account_transaction['outputs'][1]
+
+        # pack transaction
+        transaction = {}
+        input_obj = [alice_account, bob_account]
+        for i in range(0, num_transfers):
+            transaction = bank_authenticated.auth_transfer(
+                input_obj,
+                None,
+                {'amount': transfer_amount},
+                pack(alice_priv)
+            )
+            input_obj = transaction['outputs']
+
+        # read alice's account
+        alice_account = input_obj[0]
+        transaction = bank_authenticated.read(
+            None,
+            (alice_account,),
+            None
+        )
+        print transaction['returns']
+
+        # read bob's account
+        bob_account = input_obj[1]
+        transaction = bank_authenticated.read(
+            None,
+            (bob_account,),
+            None
+        )
+        print transaction['returns']
+
+
+        ##
+        ## submit transaction
+        ##
+        response = requests.post(
+            'http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/read', json=transaction
         )
         self.assertTrue(response.json()['success'])
 
