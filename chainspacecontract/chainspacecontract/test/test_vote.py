@@ -319,7 +319,7 @@ class TestVote(unittest.TestCase):
     # --------------------------------------------------------------
     # test read result
     # --------------------------------------------------------------
-    def test_tally(self):
+    def test_read(self):
         ##
         ## run service
         ##
@@ -331,9 +331,9 @@ class TestVote(unittest.TestCase):
         ## create transaction
         ##
         # number of voters and values
-        options = ['alice', 'bob']
-        num_voters = 7
-        values = [[1, 0] for _ in range(0, num_voters)]
+        options = ['alice', 'bob', 'sally']
+        num_voters = 100
+        values = [[1, 0, 0] for _ in range(0, num_voters)]
 
         # create keys and particpants
         params = setup()

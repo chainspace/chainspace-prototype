@@ -48,12 +48,13 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     # encrypt initial score
     (a, b, k) = binencrypt(params, pub, 0)   # encryption of a zero
     c = (a, b)
+    scores = [pack(c) for _ in options]
     
     # new vote object
     new_vote = {
         'type'          : 'VoteObject',
         'options'       : options,
-        'scores'        : [pack(c), pack(c)],
+        'scores'        : scores,
         'participants'  : participants,
         'tally_pub'     : tally_pub
     }
