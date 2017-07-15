@@ -173,10 +173,12 @@ class ChainspaceObject(str):
         """
         Return a ChainspaceObject from a transaction output.
 
-        transaction: the transction.
+        transaction: the transaction.
         output_index: the index of the output.
         """
-        pass
+        obj = transaction['outputs'][output_index]
+        object_id = 0 # TODO: calculate the actual object ID.
+        return ChainspaceObject(object_id, obj)
 
 
 class _CheckerMode(object):
