@@ -199,17 +199,9 @@ def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 @contract.method('read')
 def read(inputs, reference_inputs, parameters):
 
-    # retrieve last vote
-    result = reference_inputs[0]
-
-    # set returns
-    returns = {
-        'outcome' : result['outcome']
-    }
-
     # return
     return {
-        'returns': returns
+        'returns' : (reference_inputs[0],),
     }
 
 
@@ -388,15 +380,12 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
 def read_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
-        # retrieve results
-        result = reference_inputs[0]
-
         # check format
         if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
             return False 
 
         # check values
-        if result['outcome'] != returns['outcome']:
+        if reference_inputs[0] != returns[0]:
             return False
 
         # otherwise

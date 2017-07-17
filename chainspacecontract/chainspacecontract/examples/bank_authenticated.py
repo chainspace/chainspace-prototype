@@ -83,6 +83,18 @@ def auth_transfer(inputs, reference_inputs, parameters, priv):
         }
     }
 
+# ------------------------------------------------------------------
+# read
+# ------------------------------------------------------------------
+@contract.method('read')
+def read(inputs, reference_inputs, parameters):
+
+    # return
+    return {
+        'returns' : (reference_inputs[0],),
+    }
+
+
 
 ####################################################################
 # checker
@@ -111,7 +123,6 @@ def create_account_checker(inputs, reference_inputs, parameters, outputs, return
 
     except (KeyError, Exception):
         return False
-
 
 # ------------------------------------------------------------------
 # check transfer
@@ -164,7 +175,26 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
     except (KeyError, Exception):
         return False
 
+# ------------------------------------------------------------------
+# check read
+# ------------------------------------------------------------------
+@contract.checker('read')
+def read_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
 
+        # check format
+        if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
+            return False 
+
+        # check values
+        if reference_inputs[0] != returns[0]:
+            return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
 
 
 ####################################################################
