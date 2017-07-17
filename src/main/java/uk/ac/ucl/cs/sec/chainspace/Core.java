@@ -51,6 +51,32 @@ class Core {
      */
     String[] processTransaction(String request) throws Exception {
 
+        // accumulate all output objects and IDs in the variable out
+        // Note: Java passes to the callee only the reference of the array 'out' (not a copy of it)
+        // thus, the array is modified by the callee functions (in C-style)
+        Pair[] out = new Pair[]{};
+        out = processTransactionVM(request, out);
+
+        // return and save outputs upon successful execution
+        String[] outString = new String[out.length];
+        for (int i = 0; i < out.length; i++) {
+            // save outputs
+            this.databaseConnector.saveObject((String)out[i].getKey(), (String)out[i].getValue());
+            // convert the pair's array into a string's array
+            outString[i] = out[i].toString();
+        }
+        return outString;
+
+    }
+
+
+    /**
+     * processTransaction
+     * This method processes a transaction object, call the checker, and store the outputs in the database if
+     * everything goes fine.
+     */
+    private Pair[] processTransactionVM(String request, Pair[] out) throws Exception {
+
         // get the transactions
         Transaction transaction = TransactionPackager.makeTransaction(request);
         TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request);
@@ -59,12 +85,12 @@ class Core {
         if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
             for (int i = 0; i < transaction.getDependencies().length; i++) {
 
-                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]");}
+                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]"); }
                 // recusrively process the transaction
-                String[] returns = processTransaction(transaction.getDependencies()[i]);
+                Pair[] tmp = processTransactionVM(transaction.getDependencies()[i], out);
+                out = Utils.concatenate(out, tmp);
                 // updates the parameters of the caller transaction
-                transactionForChecker.addParameters(returns);
-                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]");}
+                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]"); }
 
             }
         }
@@ -79,7 +105,7 @@ class Core {
      * processTransactionHelper
      * Helper for processTransaction: executed on each recursion.
      */
-    private String[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
+    private Pair[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
             throws Exception
     {
 
@@ -118,14 +144,18 @@ class Core {
         }
 
         // register new objects
-        this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
+        //this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
 
         // update logs
         this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
 
-        // pass out returns
-        return transaction.getReturns();
-
+        // pass over the output object's and IDs
+        Pair[] out = new Pair[transactionForChecker.getOutputs().length];
+        for (int i = 0; i < transactionForChecker.getOutputs().length; i++) {
+            String objectID = Utils.generateObjectID(transaction.getID(), transactionForChecker.getOutputs()[i]);
+            out[i] = new Pair<>(objectID, transactionForChecker.getOutputs()[i]);
+        }
+        return out;
     }
 
 

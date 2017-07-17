@@ -98,11 +98,11 @@ class NodeService {
         try {
 
             // pass transaction to the core
-            String[] returns = this.core.processTransaction(request.body());
+            String[] out = this.core.processTransaction(request.body());
 
             // create json response
             responseJson.put("status", "OK");
-            responseJson.put("returns", returns);
+            responseJson.put("new objects", out);
             response.status(200);
 
         }
