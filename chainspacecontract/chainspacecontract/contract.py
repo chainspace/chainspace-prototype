@@ -117,6 +117,11 @@ class ChainspaceContract(object):
 
                 result['dependencies'] = self.dependent_transactions_log
 
+                outputs = []
+                for obj in result['outputs']:
+                    outputs.append(str(obj))
+                result['outputs'] = tuple(outputs)
+
                 if checker_mode:
                     dependencies = []
                     for dependency in result['dependencies']:
