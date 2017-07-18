@@ -48,8 +48,8 @@ class ChainspaceContract(object):
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            def function_wrapper(*args, **kwargs):
-                return jsonify({'success': function(*args, **kwargs)})
+            def function_wrapper(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+                return jsonify({'success': function(inputs, reference_inputs, parameters, outputs, returns, dependencies)})
 
             @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
