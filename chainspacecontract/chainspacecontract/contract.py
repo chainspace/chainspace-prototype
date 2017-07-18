@@ -127,6 +127,9 @@ class ChainspaceContract(object):
                     result['dependencies'] = dependencies
                     return_value = {'solution': result}
 
+                    for dependency in result['dependencies']:
+                        del dependency['dependencies']
+
                     outputs = []
                     for obj in result['outputs']:
                         outputs.append(str(obj))
@@ -161,9 +164,6 @@ class ChainspaceContract(object):
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters, __checker_mode=True)
             solution = result['solution']
-
-            for dependency in solution['dependencies']:
-                del dependency['dependencies']
 
             return (
                 solution['outputs'] == outputs
@@ -218,3 +218,11 @@ def _stringify(*args):
         return new_args[0]
     else:
         return tuple(new_args)
+
+
+def transaction_to_solution(data):
+    store = data['store']
+    transaction = data['transaction']
+
+    for dependency in transaction['dependencies']:
+        del dependency['dependencies']
