@@ -131,10 +131,10 @@ class ChainspaceContract(object):
                     result['dependencies'] = dependencies
                     return_value = {'transaction': result, 'store': store}
 
-                outputs = []
-                for output_index in range(len(result['outputs'])):
-                    outputs.append(ChainspaceObject.from_transaction(result, output_index))
-                result['outputs'] = tuple(outputs)
+                    outputs = []
+                    for output_index in range(len(result['outputs'])):
+                        outputs.append(ChainspaceObject.from_transaction(result, output_index))
+                    result['outputs'] = tuple(outputs)
 
                 self._trigger_callbacks(return_value)
                 _checker_mode.on = False
