@@ -148,8 +148,6 @@ class ChainspaceContract(object):
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters, __checker_mode=True)
             solution = result['solution']
-            print inputs, reference_inputs, parameters, outputs, returns, dependencies
-            print solution
 
             for dependency in solution['dependencies']:
                 del dependency['dependencies']
