@@ -9,14 +9,15 @@ contract = ChainspaceContract('addition')
 @contract.method('init')
 def init():
     return {
-        'outputs': (0,)
+        'outputs': ('0',)
     }
 
 
 @contract.method('increment')
 def increment(inputs, reference_inputs, parameters):
+    integer = int(inputs[0])
     return {
-        'outputs': (inputs[0] + 1,)
+        'outputs': (integer + 1,)
     }
 
 
