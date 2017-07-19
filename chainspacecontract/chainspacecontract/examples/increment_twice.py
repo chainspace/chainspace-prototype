@@ -19,7 +19,7 @@ def increment(inputs, reference_inputs, parameters):
     integer = int(inputs[0])
     increment_contract.increment((parameters['passed_integer'],), None, None)
     return {
-        'outputs': (integer + 1,)
+        'outputs': (str(integer + 1),)
     }
 
 if __name__ == '__main__':

@@ -117,6 +117,10 @@ class ChainspaceContract(object):
 
                 result['dependencies'] = self.dependent_transactions_log
 
+                for obj in result['outputs']:
+                    if type(obj) is not str:
+                        raise ValueError("Outputs objects must be strings.")
+
                 if checker_mode:
                     dependencies = []
                     for dependency in result['dependencies']:
@@ -126,11 +130,6 @@ class ChainspaceContract(object):
 
                     for dependency in result['dependencies']:
                         del dependency['dependencies']
-
-                    outputs = []
-                    for obj in result['outputs']:
-                        outputs.append(str(obj))
-                    result['outputs'] = tuple(outputs)
                 else:
                     dependencies = []
                     for dependency in result['dependencies']:
