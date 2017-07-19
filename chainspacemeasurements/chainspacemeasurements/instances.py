@@ -5,7 +5,7 @@ import paramiko
 ec2 = boto3.resource('ec2', region_name='us-east-2')
 
 
-class ChainspaceSystem(object):
+class ChainspaceNetwork(object):
     def __init__(self, realm):
         self.realm = str(realm)
 
