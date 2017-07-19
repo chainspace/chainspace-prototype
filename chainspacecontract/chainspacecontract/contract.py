@@ -118,7 +118,7 @@ class ChainspaceContract(object):
                 result['dependencies'] = self.dependent_transactions_log
 
                 for obj in result['outputs']:
-                    if type(obj) is not str:
+                    if not isinstance(obj, str):
                         raise ValueError("Outputs objects must be strings.")
 
                 if checker_mode:
