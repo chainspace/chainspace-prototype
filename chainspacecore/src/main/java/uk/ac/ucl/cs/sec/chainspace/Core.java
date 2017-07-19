@@ -58,14 +58,19 @@ class Core {
         out = processTransactionVM(request, out);
 
         // return and save outputs upon successful execution
-        String[] outString = new String[out.length];
-        for (int i = 0; i < out.length; i++) {
+        String[] outForClient = new String[]{};
+        for (Pair anOut : out) {
+            // loop over outputs
+            Transaction transaction = (Transaction) anOut.getKey();
+            TransactionForChecker transactionForChecker = (TransactionForChecker) anOut.getValue();
             // save outputs
-            this.databaseConnector.saveObject((String)out[i].getKey(), (String)out[i].getValue());
+            this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
+            // log transaction
+            this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
             // convert the pair's array into a string's array
-            outString[i] = out[i].toString();
+            outForClient = Utils.concatenate(outForClient, transactionForChecker.getOutputs());
         }
-        return outString;
+        return outForClient;
 
     }
 
@@ -143,19 +148,8 @@ class Core {
             this.databaseConnector.setInactive(transaction.getInputIDs());
         }
 
-        // register new objects
-        //this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
-
-        // update logs
-        this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
-
-        // pass over the output object's and IDs
-        Pair[] out = new Pair[transactionForChecker.getOutputs().length];
-        for (int i = 0; i < transactionForChecker.getOutputs().length; i++) {
-            String objectID = Utils.generateObjectID(transaction.getID(), transactionForChecker.getOutputs()[i]);
-            out[i] = new Pair<>(objectID, transactionForChecker.getOutputs()[i]);
-        }
-        return out;
+        // return
+        return new Pair[]{new Pair<>(transaction, transactionForChecker)};
     }
 
 
