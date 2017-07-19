@@ -24,7 +24,7 @@ class Core {
     Core(int nodeID) throws ClassNotFoundException, SQLException {
 
         // init cache
-        // here we are implementing a simple linear cash of complexity O(n). Any caching system implementing the Cache
+        // here we are implementing a simple cash of complexity O(n). Any caching system implementing the Cache
         // interface can be used instead.
         this.cache = new SimpleCache(Main.CACHE_DEPTH);
 
