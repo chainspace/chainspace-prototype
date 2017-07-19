@@ -49,7 +49,6 @@ class ChainspaceContract(object):
             self.checkers[method_name] = function
 
             def function_wrapper(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-                inputs, reference_inputs, parameters, outputs, returns, dependencies = _stringify(inputs, reference_inputs, parameters, outputs, returns, dependencies)
                 return jsonify({'success': function(inputs, reference_inputs, parameters, outputs, returns, dependencies)})
 
             @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
@@ -88,15 +87,6 @@ class ChainspaceContract(object):
                     reference_inputs = ()
                 if parameters is None:
                     parameters = {}
-
-                inputs = tuple(inputs)
-                reference_inputs = tuple(reference_inputs)
-
-                parameters = _stringify(parameters)
-                if not checker_mode:
-                    for obj in inputs + reference_inputs:
-                        if type(obj) is not ChainspaceObject:
-                            ValueError("All inputs and reference inputs must be ChainspaceObjects.")
 
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
@@ -204,27 +194,6 @@ class _CheckerMode(object):
         self.on = False
 
 _checker_mode = _CheckerMode()
-
-
-def _stringify(*args):
-    new_args = []
-    for arg in args:
-        if isinstance(arg, list):
-            new_arg = [_stringify(item) for item in arg]
-        elif isinstance(arg, tuple):
-            new_arg = tuple([_stringify(item) for item in arg])
-        elif isinstance(arg, dict):
-            new_arg = {}
-            for key, value in arg.items():
-                new_arg[_stringify(key)] = _stringify(value)
-        else:
-            new_arg = str(arg)
-        new_args.append(new_arg)
-
-    if len(new_args) == 1:
-        return new_args[0]
-    else:
-        return tuple(new_args)
 
 
 def transaction_to_solution(data):

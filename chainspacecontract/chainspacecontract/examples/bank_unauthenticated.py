@@ -10,8 +10,8 @@ contract = ChainspaceContract('bank_unauthenticated')
 def init():
     return {
         'outputs': (
-            "{'name': 'alice', 'balance': 10}",
-            "{'name': 'bob', 'balance': 10}"
+            json.dumps({'name': 'alice', 'balance': 10}),
+            json.dumps({'name': 'bob', 'balance': 10})
         )
     }
 
