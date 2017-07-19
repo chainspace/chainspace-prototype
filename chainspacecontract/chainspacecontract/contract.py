@@ -89,7 +89,14 @@ class ChainspaceContract(object):
                 if parameters is None:
                     parameters = {}
 
-                inputs, reference_inputs, parameters = _stringify(inputs, reference_inputs, parameters)
+                inputs = tuple(inputs)
+                reference_inputs = tuple(reference_inputs)
+
+                parameters = _stringify(parameters)
+                if not checker_mode:
+                    for obj in inputs + reference_inputs:
+                        if type(obj) is not ChainspaceObject:
+                            ValueError("All inputs and reference inputs must be ChainspaceObjects.")
 
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
@@ -226,3 +233,17 @@ def transaction_to_solution(data):
 
     for dependency in transaction['dependencies']:
         del dependency['dependencies']
+
+    for single_transaction in (transaction,) + tuple(transaction['dependencies']):
+        single_transaction['inputs'] = []
+        single_transaction['reference_inputs'] = []
+        for object_id in single_transaction['inputIDs']:
+            single_transaction['inputs'].append(store[object_id])
+        for object_id in single_transaction['referenceInputIDs']:
+            single_transaction['reference_inputs'].append(store[object_id])
+        del single_transaction['inputIDs']
+        del single_transaction['referenceInputIDs']
+        single_transaction['inputs'] = tuple(single_transaction['inputs'])
+        single_transaction['reference_inputs'] = tuple(single_transaction['reference_inputs'])
+
+    return transaction
