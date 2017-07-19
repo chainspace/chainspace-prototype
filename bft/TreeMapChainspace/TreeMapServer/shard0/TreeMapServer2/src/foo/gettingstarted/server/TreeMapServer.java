@@ -6,6 +6,8 @@ import bftsmart.tom.ServiceReplica;
 import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 import foo.gettingstarted.RequestType;
 import foo.gettingstarted.Transaction;
+import foo.gettingstarted.TransactionSequence;
+import foo.gettingstarted.client.MapClient;
 
 // Classes that need to be declared to implement this
 // replicated Map
@@ -24,9 +26,18 @@ import java.util.Map;
 public class TreeMapServer extends DefaultRecoverable {
 
     Map<String, String> table;
+    Map<String, TransactionSequence> sequences;
+    int shard;
+    MapClient[] clients = new MapClient[2];
 
     public TreeMapServer(int id) {
         table = new TreeMap<>();
+        sequences = new  TreeMap<>();
+        // TODO: Hardcoded for now, make configurable
+        shard = 0;
+
+        clients[0] = new MapClient(3, "config0" );
+        //clients[1] = new MapClient(3, "config1" );
         new ServiceReplica(id, this, this);
     }
 
@@ -73,6 +84,27 @@ public class TreeMapServer extends DefaultRecoverable {
                     resultBytes = removedValue.getBytes();
                 }
                 return resultBytes;
+            } else if (reqType == RequestType.PREPARE_T) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                DataOutputStream ds = new DataOutputStream(out);
+                try {
+                    System.out.println("Processing transaction");
+                    Transaction t = (Transaction) ois.readObject();
+                    t.print();
+
+                    // Check whether or not a transaction is valid
+                    String t_status = t.getStatus(new TreeMap<String, String>(table), shard);
+                    System.out.println(t_status);
+                    ds.writeUTF(t_status);
+
+                    byte[] reply = out.toByteArray();
+                    return reply;
+                }
+                catch (Exception  e) {
+                    System.out.println("Exception: " + e.getMessage());
+                    return null;
+                }
+
             } else {
                 System.out.println("Unknown request type: " + reqType);
                 return null;
@@ -109,7 +141,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 return sizeInBytes;
             }
-            else if (reqType == RequestType.TRANSACTION) {
+            else if (reqType == RequestType.TRANSACTION_VALIDITY) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 DataOutputStream ds = new DataOutputStream(out);
                 try {
@@ -118,19 +150,38 @@ public class TreeMapServer extends DefaultRecoverable {
                     t.print();
 
                     // This simply tells the client whether or not a transaction is valid
-                    String t_status = t.getStatus(new TreeMap<String, String>(table));
+                    String t_status = t.getStatus(new TreeMap<String, String>(table), shard);
                     System.out.println(t_status);
-                    ds.writeUTF(t_status);
 
+                    ds.writeUTF(t_status);
                     byte[] reply = out.toByteArray();
                     return reply;
                 }
+
                 catch (Exception  e) {
                     System.out.println("Exception: " + e.getMessage());
                     return null;
                 }
+            }
+            else if (reqType == RequestType.TRANSACTION_COMMIT) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                DataOutputStream ds = new DataOutputStream(out);
+                try {
+                    System.out.println("Processing transaction");
+                    Transaction t = (Transaction) ois.readObject();
+                    t.print();
 
-            }  else {
+                    String reply = clients[0].prepare_t(t);
+                    System.out.println("Reply of BFT is: "+reply);
+                    return reply.getBytes();
+                }
+
+                catch (Exception  e) {
+                    System.out.println("Exception: " + e.getMessage());
+                    return null;
+                }
+            }
+            else {
                 System.out.println("Unknown request type: " + reqType);
                 return null;
             }

@@ -1,9 +1,2 @@
-.idea
-out
-*.iml
-venv
-target
-*.pyc
-.cache
-*.egg-info
 .DS_Store
+venv

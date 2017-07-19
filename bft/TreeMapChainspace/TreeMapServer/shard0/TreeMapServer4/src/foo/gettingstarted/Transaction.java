@@ -15,12 +15,14 @@ import java.io.Serializable;
 import java.util.TreeMap;
 
 public class Transaction implements Serializable {
-    private List<String> inputs;
-    private List<String> outputs;
+    public String id;
+    public List<String> inputs;
+    public List<String> outputs;
 
     // Transaction states
     public static final String VALID = "valid";
     public static final String INVALID_NOOBJECT = "Invalid: Input object(s) doesn't exist.";
+    public static final String INVALID_NOMANAGEDOBJECT = "Invalid: None of the input object(s) is managed by this shard.";
     public static final String REJECTED_LOCKEDOBJECT = "Rejected: Input object(s) is locked. ";
     public static final String INVALID_INACTIVEOBJECT = "Invalid: Input object(s) is inactive.";
     public static final String INVALID_BADTRANSACTION = "Invalid: Malformed transaction.";
@@ -28,6 +30,10 @@ public class Transaction implements Serializable {
     public Transaction() {
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
+    }
+
+    public void addID(String id) {
+        this.id = id;
     }
 
     public void addInput(String in) {
@@ -76,19 +82,31 @@ public class Transaction implements Serializable {
         }
     }
 
-    public String getStatus(TreeMap<String, String> table) {
+    public String getStatus(TreeMap<String, String> table, int shard) {
         // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
 
         // Check if all input objects are active
-        for(String str: inputs) {
-            String readValue = table.get(str);
-            if(readValue == null)
+        // and at least one of the input objects is managed by this shard
+        int nManagedObj = 0;
+
+        for(String key: inputs) {
+            String readValue = table.get(key);
+            boolean managedObj = (ObjectStatus.mapObjectToShard(key)==shard);
+            if(managedObj)
+                nManagedObj++;
+            if(managedObj && readValue == null)
                 return INVALID_NOOBJECT;
-            else if(readValue.equals(ObjectStatus.LOCKED))
-                return REJECTED_LOCKEDOBJECT;
-            else if (readValue.equals(ObjectStatus.INACTIVE))
-                return INVALID_INACTIVEOBJECT;
+            else if(managedObj && readValue != null) {
+                if (readValue.equals(ObjectStatus.LOCKED))
+                    return REJECTED_LOCKEDOBJECT;
+                else if (managedObj && readValue.equals(ObjectStatus.INACTIVE))
+                    return INVALID_INACTIVEOBJECT;
+            }
         }
+        // The case when this shard doesn't manage any of the input objects
+        if(nManagedObj == 0)
+            return INVALID_NOMANAGEDOBJECT;
+
         return VALID;
     }
 

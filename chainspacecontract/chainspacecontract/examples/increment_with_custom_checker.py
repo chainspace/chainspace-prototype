@@ -9,21 +9,26 @@ contract = ChainspaceContract('addition')
 @contract.method('init')
 def init():
     return {
-        'outputs': (0,)
+        'outputs': ('0',)
     }
 
 
 @contract.method('increment')
 def increment(inputs, reference_inputs, parameters):
+    integer = int(inputs[0])
     return {
-        'outputs': (inputs[0] + 1,)
+        'outputs': (integer + 1,)
     }
 
 
 @contract.checker('increment')
 def increment_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-    result = increment(inputs, reference_inputs, parameters)
-    return result['outputs'] == outputs and result['returns'] == returns
+    if (len(inputs) == 1
+        and len(outputs) == 1
+        and int(inputs[0]) + 1 == int(outputs[0])):
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     contract.run()

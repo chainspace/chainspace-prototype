@@ -48,8 +48,8 @@ class ChainspaceContract(object):
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            def function_wrapper(*args, **kwargs):
-                return jsonify({'success': function(*args, **kwargs)})
+            def function_wrapper(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+                return jsonify({'success': function(inputs, reference_inputs, parameters, outputs, returns, dependencies)})
 
             @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
@@ -75,12 +75,21 @@ class ChainspaceContract(object):
     def method(self, method_name):
         def method_decorator(function):
             def function_wrapper(inputs=None, reference_inputs=None, parameters=None, *args, **kwargs):
+                if '__checker_mode' in kwargs:
+                    if kwargs['__checker_mode']:
+                        _checker_mode.on = True
+                    del kwargs['__checker_mode']
+                checker_mode = _checker_mode.on
+
                 if inputs is None:
                     inputs = ()
                 if reference_inputs is None:
                     reference_inputs = ()
                 if parameters is None:
                     parameters = {}
+
+                inputs = tuple(inputs)
+                reference_inputs = tuple(reference_inputs)
 
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
@@ -96,15 +105,50 @@ class ChainspaceContract(object):
                 result['parameters'].update(result['extra_parameters'])
                 del result['extra_parameters']
 
-                result['inputs'] = inputs
-                result['reference_inputs'] = reference_inputs
+                if checker_mode:
+                    result['inputs'] = inputs
+                    result['reference_inputs'] = reference_inputs
+                else:
+                    store = {}
+                    for obj in inputs + reference_inputs:
+                        store[obj.object_id] = obj
 
-                result['contract_id'] = self.contract_name
+                    result['inputIDs'] = [obj.object_id for obj in inputs]
+                    result['referenceInputIDs'] = [obj.object_id for obj in reference_inputs]
+
+                result['contractID'] = self.contract_name
 
                 result['dependencies'] = self.dependent_transactions_log
 
-                self._trigger_callbacks(result)
-                return result
+                for obj in result['outputs']:
+                    if not isinstance(obj, str):
+                        raise ValueError("Outputs objects must be strings.")
+
+                if checker_mode:
+                    dependencies = []
+                    for dependency in result['dependencies']:
+                        dependencies.append(dependency['solution'])
+                    result['dependencies'] = dependencies
+                    return_value = {'solution': result}
+
+                    for dependency in result['dependencies']:
+                        del dependency['dependencies']
+                else:
+                    dependencies = []
+                    for dependency in result['dependencies']:
+                        store.update(dependency['store'])
+                        dependencies.append(dependency['transaction'])
+                    result['dependencies'] = dependencies
+                    return_value = {'transaction': result, 'store': store}
+
+                    outputs = []
+                    for output_index in range(len(result['outputs'])):
+                        outputs.append(ChainspaceObject.from_transaction(result, output_index))
+                    result['outputs'] = tuple(outputs)
+
+                self._trigger_callbacks(return_value)
+                _checker_mode.on = False
+                return return_value
 
             self.methods[method_name] = function_wrapper
             self.methods_original[method_name] = function
@@ -117,13 +161,60 @@ class ChainspaceContract(object):
     def register_standard_checker(self, method_name, function):
         @self.checker(method_name)
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-            result = function(inputs, reference_inputs, parameters)
-
-            for dependency in result['dependencies']:
-                del dependency['dependencies']
+            result = function(inputs, reference_inputs, parameters, __checker_mode=True)
+            solution = result['solution']
 
             return (
-                result['outputs'] == outputs
-                and result['returns'] == returns
-                and result['dependencies'] == dependencies
+                solution['outputs'] == outputs
+                and solution['returns'] == returns
+                and solution['dependencies'] == dependencies
             )
+
+
+class ChainspaceObject(str):
+    def __new__(cls, object_id, value):
+        return super(ChainspaceObject, cls).__new__(cls, value)
+
+    def __init__(self, object_id, value):
+        self.object_id = object_id
+
+    @staticmethod
+    def from_transaction(transaction, output_index):
+        """
+        Return a ChainspaceObject from a transaction output.
+
+        transaction: the transaction.
+        output_index: the index of the output.
+        """
+        obj = transaction['outputs'][output_index]
+        object_id = obj # TODO: calculate the actual object ID.
+        return ChainspaceObject(object_id, obj)
+
+
+class _CheckerMode(object):
+    def __init__(self):
+        self.on = False
+
+_checker_mode = _CheckerMode()
+
+
+def transaction_to_solution(data):
+    store = data['store']
+    transaction = data['transaction']
+
+    for dependency in transaction['dependencies']:
+        del dependency['dependencies']
+
+    for single_transaction in (transaction,) + tuple(transaction['dependencies']):
+        single_transaction['inputs'] = []
+        single_transaction['reference_inputs'] = []
+        for object_id in single_transaction['inputIDs']:
+            single_transaction['inputs'].append(store[object_id])
+        for object_id in single_transaction['referenceInputIDs']:
+            single_transaction['reference_inputs'].append(store[object_id])
+        del single_transaction['inputIDs']
+        del single_transaction['referenceInputIDs']
+        single_transaction['inputs'] = tuple(single_transaction['inputs'])
+        single_transaction['reference_inputs'] = tuple(single_transaction['reference_inputs'])
+
+    return transaction
