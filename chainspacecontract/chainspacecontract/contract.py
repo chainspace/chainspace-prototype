@@ -88,6 +88,9 @@ class ChainspaceContract(object):
                 if parameters is None:
                     parameters = {}
 
+                inputs = tuple(inputs)
+                reference_inputs = tuple(reference_inputs)
+
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
                     result = function()
@@ -184,7 +187,7 @@ class ChainspaceObject(str):
         output_index: the index of the output.
         """
         obj = transaction['outputs'][output_index]
-        object_id = 0 # TODO: calculate the actual object ID.
+        object_id = obj # TODO: calculate the actual object ID.
         return ChainspaceObject(object_id, obj)
 
 
