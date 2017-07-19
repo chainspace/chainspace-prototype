@@ -6,6 +6,7 @@ setup(
     version = '0.1',
     packages = ['chainspacemeasurements'],
     install_requires = [
-        'fabric',
+        'paramiko',
+        'boto3',
     ],
 )
