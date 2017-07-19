@@ -90,16 +90,16 @@ class SQLiteConnector extends DatabaseConnector {
 
         String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String object : objects) {
-                String objectID = Utils.generateObjectID(transactionID, object);
+            for (int i = 0; i < objects.length; i++) {
+                String objectID = Utils.generateObjectID(transactionID, objects[i], i);
                 statement.setString(1, objectID);
-                statement.setString(2, object);
+                statement.setString(2, objects[i]);
                 statement.executeUpdate();
 
                 if (Main.VERBOSE) {
                     System.out.println("\nNew object has been created:");
                     System.out.println("\tID: " + objectID);
-                    System.out.println("\tObject: " + object);
+                    System.out.println("\tObject: " + objects[i]);
                 }
             }
         } catch (SQLException | NoSuchAlgorithmException e) {
