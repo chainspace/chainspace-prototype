@@ -13,6 +13,7 @@ class ChainspaceNetwork(object):
 
     def _get_instances(self):
         return ec2.instances.filter(Filters=[
+            {'Name': 'tag:type', 'Values': ['chainspace']},
             {'Name': 'tag:realm', 'Values': [self.realm]},
             {'Name': 'instance-state-name', 'Values': ['running']}
         ])
@@ -57,9 +58,13 @@ class ChainspaceNetwork(object):
         for instance, client in self.ssh_connections.items():
             stdin, stdout, stderr = client.exec_command(command)
 
-            instance_tags = dict(map(lambda x: (x['Key'], x['Value']), instance.tags or []))
-            print '[shard ' + instance_tags['shard'] + ' node ' + instance_tags['node'] + '] ' + stdout.read() + stderr.read(),
+            instance_tags = _tags_from_instance(instance)
+            print '[shard ' + instance_tags['shard'] + ' node ' + instance_tags['node'] + '] ' + stdout.read() + stderr.read()
 
     def ssh_close(self):
         for instance, client in self.ssh_connections.items():
             client.close()
+
+
+def _tags_from_instance(instance):
+    return dict(map(lambda x: (x['Key'], x['Value']), instance.tags or []))
