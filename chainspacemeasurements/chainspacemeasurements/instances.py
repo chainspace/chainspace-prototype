@@ -33,8 +33,9 @@ class ChainspaceNetwork(object):
     def _get_bootstrap_commands(self, instance):
         commands = (
             'sudo apt update',
-            'sudo apt install git -y',
+            'sudo apt install git python-pip -y',
             'git clone https://github.com/musalbas/chainspace',
+            'sudo pip install chainspace/chainspacecontract'
         )
         return commands
 
