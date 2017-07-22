@@ -1,4 +1,5 @@
 """EC2 instance management."""
+import sys
 from multiprocessing.dummy import Pool
 
 import boto3
@@ -45,6 +46,8 @@ class ChainspaceNetwork(object):
 
     def _single_start(self, shard, node, key_name):
         self._log("Starting node {} in shard {}...".format(node, shard))
+        shard = str(shard)
+        node = str(node)
         ec2.create_instances(
             ImageId='ami-b2795cd7', # Debian 8.7
             InstanceType='t2.micro',
@@ -58,8 +61,9 @@ class ChainspaceNetwork(object):
                     'Tags': [
                         {'Key': 'type', 'Value': 'chainspace'},
                         {'Key': 'realm', 'Value': self.realm},
-                        {'Key': 'shard', 'Value': str(shard)},
-                        {'Key': 'node', 'Value': str(node)},
+                        {'Key': 'shard', 'Value': shard},
+                        {'Key': 'node', 'Value': node},
+                        {'Key': 'Name', 'Value': 'Chainspace - network: {} shard: {} node: {}'.format(self.realm, shard, node)},
                     ]
                 }
             ]
@@ -148,3 +152,4 @@ def _multi_args_wrapper(args):
 
 def _safe_print(message):
     print "{0}\n".format(message),
+    sys.stdout.flush()
