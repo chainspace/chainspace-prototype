@@ -5,19 +5,20 @@ from multiprocessing.dummy import Pool
 import boto3
 import paramiko
 
-ec2 = boto3.resource('ec2', region_name='us-east-2')
-
 
 class ChainspaceNetwork(object):
     threads = 20
 
-    def __init__(self, realm):
+    def __init__(self, realm, aws_region='us-east-1'):
         self.realm = str(realm)
+
+        self.aws_region = aws_region
+        self.ec2 = boto3.resource('ec2', region_name=aws_region)
 
         self.ssh_connections = {}
 
     def _get_instances(self):
-        return ec2.instances.filter(Filters=[
+        return self.ec2.instances.filter(Filters=[
             {'Name': 'tag:type', 'Values': ['chainspace']},
             {'Name': 'tag:realm', 'Values': [self.realm]},
             {'Name': 'instance-state-name', 'Values': ['running']}
@@ -48,13 +49,13 @@ class ChainspaceNetwork(object):
         self._log("Starting node {} in shard {}...".format(node, shard))
         shard = str(shard)
         node = str(node)
-        ec2.create_instances(
-            ImageId='ami-b2795cd7', # Debian 8.7
+        self.ec2.create_instances(
+            ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
             InstanceType='t2.micro',
             MinCount=1,
             MaxCount=1,
             KeyName=key_name,
-            SecurityGroups=['ssh-all-in'],
+            SecurityGroups=['chainspace'],
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
@@ -153,3 +154,21 @@ def _multi_args_wrapper(args):
 def _safe_print(message):
     print "{0}\n".format(message),
     sys.stdout.flush()
+
+
+_jessie_mapping = {
+    'ap-northeast-1': 'ami-dbc0bcbc',
+    'ap-northeast-2': 'ami-6d8b5a03',
+    'ap-south-1': 'ami-9a83f5f5',
+    'ap-southeast-1': 'ami-0842e96b',
+    'ap-southeast-2': 'ami-881317eb',
+    'ca-central-1': 'ami-a1fe43c5',
+    'eu-central-1': 'ami-5900cc36',
+    'eu-west-1': 'ami-402f1a33',
+    'eu-west-2': 'ami-87848ee3',
+    'sa-east-1': 'ami-b256ccde',
+    'us-east-1': 'ami-b14ba7a7',
+    'us-east-2': 'ami-b2795cd7',
+    'us-west-1': 'ami-94bdeef4',
+    'us-west-2': 'ami-221ea342',
+}
