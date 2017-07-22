@@ -56,6 +56,14 @@ class Utils {
     }
 
 
+    /**
+     * concatenate
+     * Concatenate two arrays.
+     * @param a the first array
+     * @param b the second array
+     * @param <T> the type of the arrays
+     * @return a new array with the content of a and b
+     */
     static <T> T[] concatenate(T[] a, T[] b) {
         int aLen = a.length;
         int bLen = b.length;
@@ -72,8 +80,8 @@ class Utils {
      * generateObjectID
      * Create an object ID from the object and the trasaction that created it.
      */
-    static String generateObjectID(String transactionID, String object) throws NoSuchAlgorithmException {
-        return Utils.hash(transactionID + "|" + object);
+    static String generateObjectID(String transactionID, String object, int idx) throws NoSuchAlgorithmException {
+        return Utils.hash(transactionID + "|" + Utils.hash(object) + "|" + idx);
     }
 
 
