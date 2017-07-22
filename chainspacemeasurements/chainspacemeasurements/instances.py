@@ -35,7 +35,7 @@ class ChainspaceNetwork(object):
     def _get_bootstrap_commands(self, instance):
         commands = (
             'sudo apt update',
-            'sudo apt install -t jessie-backports openjdk-8-jdk',
+            'sudo apt install -t jessie-backports openjdk-8-jdk -y',
             'sudo apt install git python-pip maven -y',
             'git clone https://github.com/musalbas/chainspace',
             'sudo pip install chainspace/chainspacecontract',
@@ -89,9 +89,15 @@ class ChainspaceNetwork(object):
         client = self.ssh_connections[instance]
         stdin, stdout, stderr = client.exec_command(command)
         for message in stdout.readlines():
-            self._log_instance(instance, message.rstrip())
+            try:
+                self._log_instance(instance, message.rstrip())
+            except Exception:
+                pass
         for message in stderr.readlines():
-            self._log_instance(instance, message.rstrip())
+            try:
+                self._log_instance(instance, message.rstrip())
+            except Exception:
+                pass
 
     def _single_ssh_close(self, instance):
         self._log_instance(instance, "Closing SSH connection...")
