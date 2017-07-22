@@ -35,9 +35,13 @@ class ChainspaceNetwork(object):
     def _get_bootstrap_commands(self, instance):
         commands = (
             'sudo apt update',
-            'sudo apt install git python-pip -y',
+            'sudo apt install -t jessie-backports openjdk-8-jdk',
+            'sudo apt install git python-pip maven -y',
             'git clone https://github.com/musalbas/chainspace',
-            'sudo pip install chainspace/chainspacecontract'
+            'sudo pip install chainspace/chainspacecontract',
+            'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java',
+            'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single',
+            'nohup java -cp target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main &',
         )
         return commands
 
