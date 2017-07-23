@@ -36,12 +36,12 @@ class ChainspaceNetwork(object):
         commands = (
             'sudo apt update',
             'sudo apt install -t jessie-backports openjdk-8-jdk -y',
-            'sudo apt install git python-pip maven -y',
+            'sudo apt install git python-pip maven screen -y',
             'git clone https://github.com/musalbas/chainspace',
             'sudo pip install chainspace/chainspacecontract',
             'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java',
             'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single',
-            'nohup java -cp target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main &',
+            'screen -dmS chainspacecore java -cp chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main',
         )
         return commands
 
