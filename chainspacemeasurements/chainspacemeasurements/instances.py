@@ -163,7 +163,7 @@ def _multi_args_wrapper(args):
 
 
 def _safe_print(message):
-    sys.stdout.write('{0}\n'.format(message))
+    sys.stdout.write('{}\n'.format(message))
 
 
 _jessie_mapping = {
