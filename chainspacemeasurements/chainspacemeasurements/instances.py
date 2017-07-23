@@ -9,7 +9,7 @@ import paramiko
 class ChainspaceNetwork(object):
     threads = 20
 
-    def __init__(self, realm, aws_region='us-east-1'):
+    def __init__(self, realm, aws_region='us-east-2'):
         self.realm = str(realm)
 
         self.aws_region = aws_region
