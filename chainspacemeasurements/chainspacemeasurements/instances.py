@@ -89,7 +89,7 @@ class ChainspaceNetwork(object):
         self._log_instance(instance, "Command: {}".format(command))
         client = self.ssh_connections[instance]
         stdin, stdout, stderr = client.exec_command(command)
-        for message in stdout.readlines():
+        for message in iter(stdout.readline, ''):
             try:
                 self._log_instance(instance, message.rstrip())
             except Exception:
