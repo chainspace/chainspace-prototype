@@ -8,6 +8,7 @@ import paramiko
 
 class ChainspaceNetwork(object):
     threads = 20
+    aws_api_threads = 5
 
     def __init__(self, realm, aws_region='us-east-2'):
         self.realm = str(realm)
@@ -111,7 +112,7 @@ class ChainspaceNetwork(object):
             for j in range(nodes_per_shard):
                 args.append((self._single_start, i, j, key_name))
 
-        pool = Pool(ChainspaceNetwork.threads)
+        pool = Pool(ChainspaceNetwork.aws_api_threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
