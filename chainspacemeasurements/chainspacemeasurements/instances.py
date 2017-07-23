@@ -7,7 +7,7 @@ import paramiko
 
 
 class ChainspaceNetwork(object):
-    threads = 20
+    threads = 100
     aws_api_threads = 5
 
     def __init__(self, realm, aws_region='us-east-2'):
