@@ -5,6 +5,7 @@
 ###################################################################
 # general
 from multiprocessing import Process
+from json            import dumps, loads
 import time
 import unittest
 import requests
@@ -142,7 +143,7 @@ class TestBankAuthenticated(unittest.TestCase):
         transaction_dict = bank_authenticated.auth_transfer(
             [alice_account, bob_account],
             None,
-            [dumps({'amount': 3})],
+            [dumps(3)],
             pack(alice_priv)
         )
 
@@ -212,7 +213,7 @@ class TestBankAuthenticated(unittest.TestCase):
             transaction_dict = bank_authenticated.auth_transfer(
                 input_obj,
                 None,
-                [dumps({'amount': transfer_amount})],
+                [dumps(transfer_amount)],
                 pack(alice_priv)
             )
             input_obj = transaction_dict['transaction']['outputs']
@@ -283,7 +284,7 @@ class TestBankAuthenticated(unittest.TestCase):
             transaction = bank_authenticated.auth_transfer(
                 input_obj,
                 None,
-                [dumps({'amount': transfer_amount})],
+                [dumps(transfer_amount)],
                 pack(alice_priv)
             )['transaction']
             input_obj = transaction['outputs']
