@@ -142,7 +142,7 @@ class TestBankAuthenticated(unittest.TestCase):
         transaction_dict = bank_authenticated.auth_transfer(
             [alice_account, bob_account],
             None,
-            {'amount': 3},
+            [dumps({'amount': 3})],
             pack(alice_priv)
         )
 
@@ -212,7 +212,7 @@ class TestBankAuthenticated(unittest.TestCase):
             transaction_dict = bank_authenticated.auth_transfer(
                 input_obj,
                 None,
-                {'amount': transfer_amount},
+                [dumps({'amount': transfer_amount})],
                 pack(alice_priv)
             )
             input_obj = transaction_dict['transaction']['outputs']
@@ -283,7 +283,7 @@ class TestBankAuthenticated(unittest.TestCase):
             transaction = bank_authenticated.auth_transfer(
                 input_obj,
                 None,
-                {'amount': transfer_amount},
+                [dumps({'amount': transfer_amount})],
                 pack(alice_priv)
             )['transaction']
             input_obj = transaction['outputs']
