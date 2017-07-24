@@ -5,8 +5,7 @@
 ####################################################################
 # general
 from hashlib import sha256
-from json    import dumps
-import copy
+from json    import dumps, loads
 # chainspace
 from chainspacecontract import ChainspaceContract
 # crypto
@@ -31,7 +30,7 @@ contract = ChainspaceContract('vote')
 def init():
     # return
     return {
-        'outputs': ({'type' : 'VoteToken'},)
+        'outputs': (dumps({'type' : 'VoteToken'}),)
     }
 
 # ------------------------------------------------------------------
@@ -50,14 +49,14 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     # encrypt initial score
     (a, b, k) = binencrypt(params, pub, 0)   # encryption of a zero
     c = (a, b)
-    scores = [pack(c) for _ in options]
+    scores = [pack(c) for _ in loads(options)]
     
     # new vote object
     new_vote = {
         'type'          : 'VoteObject',
-        'options'       : options,
+        'options'       : loads(options),
         'scores'        : scores,
-        'participants'  : participants,
+        'participants'  : loads(participants),
         'tally_pub'     : tally_pub
     }
 
@@ -66,7 +65,7 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
 
     # return
     return {
-        'outputs': (inputs[0], new_vote),
+        'outputs': (inputs[0], dumps(new_vote)),
         'extra_parameters' : {
             'proof_init' : pack(proof_init)
         }
@@ -81,10 +80,12 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
 @contract.method('add_vote')
 def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter_pub):
 
+    
     # retrieve old vote & init new vote object
-    old_vote = inputs[0]
-    new_vote = copy.deepcopy(old_vote)
-
+    old_vote = loads(inputs[0])
+    new_vote = loads(inputs[0])
+    added_vote = loads(added_vote)
+    
     # generate params & retrieve tally's public key
     params = setup()
     tally_pub = unpack(old_vote['tally_pub'])
@@ -132,12 +133,12 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
 
     # return
     return {
-        'outputs': (new_vote,),
+        'outputs': (dumps(new_vote),),
         'extra_parameters' : {
-            'votes'     : enc_added_votes,
+            'votes'     : dumps(enc_added_votes),
             'signature' : pack(sig),
             'voter_pub' : voter_pub,  # already packed
-            'proof_bin' : proof_bin,
+            'proof_bin' : dumps(proof_bin),
             'proof_sum' : pack(proof_sum)
         }
     }
@@ -152,7 +153,7 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
 def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
     # retrieve last vote
-    vote = inputs[0]
+    vote = loads(inputs[0])
 
     # generate params & retrieve tally's public key
     params = setup()
@@ -186,9 +187,9 @@ def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
     # return
     return {
-        'outputs': (result,),
+        'outputs': (dumps(result),),
         'extra_parameters' : {
-            'proof_dec' : proof_dec,
+            'proof_dec' : dumps(proof_dec),
             'signature' : pack(sig)
         }
     }
@@ -217,7 +218,7 @@ def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, 
     try:
 
         # retrieve vote
-        vote = outputs[1]
+        vote  = loads(outputs[1])
         num_votes = len(vote['options'])
 
         # check format
@@ -229,7 +230,7 @@ def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, 
             return False
 
         # check tokens
-        if inputs[0]['type'] != 'VoteToken' or outputs[0]['type'] != 'VoteToken':
+        if loads(inputs[0])['type'] != 'VoteToken' or loads(outputs[0])['type'] != 'VoteToken':
             return False
         if vote['type'] != 'VoteObject':
             return False
@@ -256,8 +257,8 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
     try:
 
         # retrieve vote
-        old_vote = inputs[0]
-        new_vote = outputs[0]
+        old_vote = loads(inputs[0])
+        new_vote = loads(outputs[0])
         num_votes = len(old_vote['options'])
 
         # check format
@@ -285,10 +286,10 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
         # generate params, retrieve tally's public key and the parameters
         params = setup()
         tally_pub  = unpack(old_vote['tally_pub'])
-        added_vote = parameters['votes']
+        added_vote = loads(parameters['votes'])
         sig        = unpack(parameters['signature'])
         voter_pub  = unpack(parameters['voter_pub'])
-        proof_bin  = parameters['proof_bin']
+        proof_bin  = loads(parameters['proof_bin'])
         proof_sum  = unpack(parameters['proof_sum'])
 
         # verify signature
@@ -332,8 +333,8 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
     try:
 
         # retrieve vote
-        vote   = inputs[0]
-        result = outputs[0]
+        vote   = loads(inputs[0])
+        result = loads(outputs[0])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
@@ -350,7 +351,7 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         (G, _, (h0, _, _, _), _) = params
         tally_pub  = unpack(vote['tally_pub'])
         sig        = unpack(parameters['signature'])
-        proof_dec  = parameters['proof_dec']
+        proof_dec  = loads(parameters['proof_dec'])
         outcome    = result['outcome']
 
         # verify proof of correct decryption

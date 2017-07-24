@@ -5,10 +5,12 @@
 ###################################################################
 # general
 from multiprocessing import Process
+from json            import dumps, loads
 import time
 import unittest
 import requests
 # chainsapce
+from chainspacecontract import transaction_to_solution
 from chainspacecontract.examples.smart_meter import contract as smart_meter_contract
 from chainspacecontract.examples import smart_meter
 # crypto
@@ -39,7 +41,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/init', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/init', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -68,7 +70,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # init
         init_transaction = smart_meter.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # create meter
         transaction = smart_meter.create_meter(
@@ -77,15 +79,15 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(provider_pub),
             'Some info about the meter.',   # some info about the meter
-            [5, 3, 5, 3, 5],                # the tariffs 
-            764                             # the billing period
+            dumps([5, 3, 5, 3, 5]),         # the tariffs 
+            dumps(764)                      # the billing period
         )
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/create_meter', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/create_meter', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -115,7 +117,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # init
         init_transaction = smart_meter.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # create meter
         create_meter_transaction = smart_meter.create_meter(
@@ -124,10 +126,10 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(provider_pub),
             'Some info about the meter.',
-            [5, 3, 5, 3, 5],  # the tariffs
-            764               # billing period         
+            dumps([5, 3, 5, 3, 5]),  # the tariffs
+            dumps(764)               # billing period         
         )
-        meter = create_meter_transaction['outputs'][1]
+        meter = create_meter_transaction['transaction']['outputs'][1]
 
         # add a reading
         transaction = smart_meter.add_reading(
@@ -135,8 +137,8 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             None,
             pack(provider_priv),
-            10,                  # the new reading 
-            G.order().random()   # the opening value
+            dumps(10),                 # the new reading 
+            pack(G.order().random())   # the opening value
         )
 
 
@@ -144,7 +146,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/add_reading', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/add_reading', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -180,7 +182,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # init
         init_transaction = smart_meter.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # create meter
         create_meter_transaction = smart_meter.create_meter(
@@ -189,10 +191,10 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(provider_pub),
             'Some info about the meter.',
-            tariffs,
-            billing_period        
+            dumps(tariffs),
+            dumps(billing_period)     
         )
-        meter = create_meter_transaction['outputs'][1]
+        meter = create_meter_transaction['transaction']['outputs'][1]
 
         # add a readings
         transaction = {}
@@ -203,17 +205,17 @@ class TestBankAuthenticated(unittest.TestCase):
                 None,
                 None,
                 pack(provider_priv),
-                readings[i],
-                openings[i]
+                dumps(readings[i]),
+                pack(openings[i])
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/add_reading', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/add_reading', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -252,7 +254,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # init
         init_transaction = smart_meter.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # create meter
         create_meter_transaction = smart_meter.create_meter(
@@ -261,10 +263,10 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(provider_pub),
             'Some info about the meter.',
-            tariffs,
-            billing_period                
+            dumps(tariffs),
+            dumps(billing_period)              
         )
-        meter = create_meter_transaction['outputs'][1]
+        meter = create_meter_transaction['transaction']['outputs'][1]
 
         # add a readings
         transaction = {}
@@ -275,19 +277,19 @@ class TestBankAuthenticated(unittest.TestCase):
                 None,
                 None,
                 pack(provider_priv),
-                readings[i],
-                openings[i]
+                dumps(readings[i]),
+                pack(openings[i])
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
         # compute bill
         transaction = smart_meter.compute_bill(
             (input_obj,),
             None,
             None,
-            readings, 
-            openings, 
-            tariffs              
+            dumps(readings), 
+            pack(openings), 
+            dumps(tariffs)             
         )
 
 
@@ -295,7 +297,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/compute_bill', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/compute_bill', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -334,7 +336,7 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # init
         init_transaction = smart_meter.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # create meter
         create_meter_transaction = smart_meter.create_meter(
@@ -343,10 +345,10 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(provider_pub),
             'Some info about the meter.',
-            tariffs,
-            billing_period                
+            dumps(tariffs),
+            dumps(billing_period)               
         )
-        meter = create_meter_transaction['outputs'][1]
+        meter = create_meter_transaction['transaction']['outputs'][1]
 
         # add a readings
         transaction = {}
@@ -357,21 +359,21 @@ class TestBankAuthenticated(unittest.TestCase):
                 None,
                 None,
                 pack(provider_priv),
-                readings[i],
-                openings[i]
+                dumps(readings[i]),
+                pack(openings[i])
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
         # compute bill
         transaction = smart_meter.compute_bill(
             (input_obj,),
             None,
             None,
-            readings, 
-            openings, 
-            tariffs              
+            dumps(readings), 
+            pack(openings), 
+            dumps(tariffs)             
         )
-        bill = transaction['outputs'][0]
+        bill = transaction['transaction']['outputs'][0]
 
         # read bill
         transaction = smart_meter.read(
@@ -381,14 +383,14 @@ class TestBankAuthenticated(unittest.TestCase):
         )
 
         # print bill
-        print transaction['returns']
+        print transaction['transaction']['returns']
 
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/read', json=transaction
+            'http://127.0.0.1:5000/' + smart_meter_contract.contract_name + '/read', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
