@@ -5,10 +5,12 @@
 ###################################################################
 # general
 from multiprocessing import Process
+from json            import dumps, loads
 import time
 import unittest
 import requests
 # chainsapce
+from chainspacecontract import transaction_to_solution
 from chainspacecontract.examples.vote import contract as vote_contract
 from chainspacecontract.examples import vote
 # crypto
@@ -38,7 +40,7 @@ class TestVote(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/init', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/init', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -76,15 +78,15 @@ class TestVote(unittest.TestCase):
 
         # init
         init_transaction = vote.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # initialise vote (all votes are zero)
         transaction = vote.create_vote(
             (token,),
             None,
             None,
-            options,
-            participants,
+            dumps(options),
+            dumps(participants),
             pack(tally_priv),
             pack(tally_pub)
         )
@@ -93,7 +95,7 @@ class TestVote(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/create_vote', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/create_vote', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -103,7 +105,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-
+    
     # --------------------------------------------------------------
     # test add a vote
     # --------------------------------------------------------------
@@ -131,26 +133,26 @@ class TestVote(unittest.TestCase):
 
         # get init token
         init_transaction = vote.init()
-        token = init_transaction['outputs'][0]
+        token = init_transaction['transaction']['outputs'][0]
 
         # initialise vote (all votes are zero)
         create_vote_transaction = vote.create_vote(
             (token,),
             None,
             None,
-            options,
-            participants,
+            dumps(options),
+            dumps(participants),
             pack(tally_priv),
             pack(tally_pub)
         )
-        old_vote = create_vote_transaction['outputs'][1]
+        old_vote = create_vote_transaction['transaction']['outputs'][1]
 
         # add a vote
         transaction = vote.add_vote(
             (old_vote,),
             None,
             None,
-            [1, 0],
+            dumps([1, 0]),
             pack(voter1_priv),
             pack(voter1_pub)
         )
@@ -159,7 +161,7 @@ class TestVote(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -200,15 +202,15 @@ class TestVote(unittest.TestCase):
 
         # get initial scores
         create_vote_transaction = vote.create_vote(
-            (init_transaction['outputs'][0],),
+            (init_transaction['transaction']['outputs'][0],),
             None,
             None,
-            options,
-            participants,
+            dumps(options),
+            dumps(participants),
             pack(tally_priv),
             pack(tally_pub)
         )
-        vote_0 = create_vote_transaction['outputs'][1]
+        vote_0 = create_vote_transaction['transaction']['outputs'][1]
 
         # add votes
         transaction = {}
@@ -218,18 +220,18 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                values[i],        # votes' valu (0 or 1)
+                dumps(values[i]),        # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
             
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/add_vote', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -239,7 +241,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-
+    
     # --------------------------------------------------------------
     # test tally
     # --------------------------------------------------------------
@@ -270,15 +272,15 @@ class TestVote(unittest.TestCase):
 
         # get initial scores
         create_vote_transaction = vote.create_vote(
-            (init_transaction['outputs'][0],),
+            (init_transaction['transaction']['outputs'][0],),
             None,
             None,
-            options,
-            participants,
+            dumps(options),
+            dumps(participants),
             pack(tally_priv),
             pack(tally_pub)
         )
-        vote_0 = create_vote_transaction['outputs'][1]
+        vote_0 = create_vote_transaction['transaction']['outputs'][1]
 
         # add votes
         transaction = {}
@@ -288,11 +290,11 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                values[i],        # votes' valu (0 or 1)
+                dumps(values[i]),        # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
         # tally
         transaction = vote.tally(
@@ -308,7 +310,7 @@ class TestVote(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/tally', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/tally', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -349,15 +351,15 @@ class TestVote(unittest.TestCase):
 
         # get initial scores
         create_vote_transaction = vote.create_vote(
-            (init_transaction['outputs'][0],),
+            (init_transaction['transaction']['outputs'][0],),
             None,
             None,
-            options,
-            participants,
+            dumps(options),
+            dumps(participants),
             pack(tally_priv),
             pack(tally_pub)
         )
-        vote_0 = create_vote_transaction['outputs'][1]
+        vote_0 = create_vote_transaction['transaction']['outputs'][1]
 
         # add votes
         transaction = {}
@@ -367,11 +369,11 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                values[i],        # votes' valu (0 or 1)
+                dumps(values[i]),        # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
-            input_obj = transaction['outputs'][0]
+            input_obj = transaction['transaction']['outputs'][0]
 
         # tally
         transaction = vote.tally(
@@ -381,7 +383,7 @@ class TestVote(unittest.TestCase):
             pack(tally_priv),
             pack(tally_pub)
         )
-        result = transaction['outputs'][0]
+        result = transaction['transaction']['outputs'][0]
 
         # read result
         transaction = vote.read(
@@ -391,14 +393,14 @@ class TestVote(unittest.TestCase):
         )
 
         # print result
-        print transaction['returns']
+        print transaction['transaction']['returns']
 
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/read', json=transaction
+            'http://127.0.0.1:5000/' + vote_contract.contract_name + '/read', json=transaction_to_solution(transaction)
         )
         self.assertTrue(response.json()['success'])
 
@@ -407,6 +409,7 @@ class TestVote(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
+
 
 
 

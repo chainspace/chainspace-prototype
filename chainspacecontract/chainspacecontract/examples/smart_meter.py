@@ -5,8 +5,7 @@
 ####################################################################
 # general
 from hashlib import sha256
-from json    import dumps
-import copy
+from json    import dumps, loads
 # chainspace
 from chainspacecontract import ChainspaceContract
 # crypto
@@ -28,7 +27,7 @@ def init():
 
     # return
     return {
-        'outputs': ({'type' : 'SMToken'},),
+        'outputs': (dumps({'type' : 'SMToken'}),),
     }
 
 # ------------------------------------------------------------------
@@ -46,13 +45,13 @@ def create_meter(inputs, reference_inputs, parameters, pub, info, tariffs, billi
         'pub'            : pub, 
         'info'           : info,
         'readings'       : [],
-        'billing_period' : billing_period,
-        'tariffs'        : tariffs
+        'billing_period' : loads(billing_period),
+        'tariffs'        : loads(tariffs)
     }
 
     # return
     return {
-        'outputs': (inputs[0], new_meter)
+        'outputs': (inputs[0], dumps(new_meter))
     }
 
 # ------------------------------------------------------------------
@@ -65,12 +64,12 @@ def create_meter(inputs, reference_inputs, parameters, pub, info, tariffs, billi
 def add_reading(inputs, reference_inputs, parameters, meter_priv, reading, opening):
 
     # compute output
-    old_meter = inputs[0]
-    new_meter = copy.deepcopy(old_meter)
+    old_meter = loads(inputs[0])
+    new_meter = loads(inputs[0])
 
     # create commitement to the reading
     (G, g, (h0, _, _, _), _) = setup()
-    commitment = reading * g + opening * h0
+    commitment = loads(reading) * g + unpack(opening) * h0
 
     # update readings
     new_meter['readings'].append(pack(commitment))
@@ -85,7 +84,7 @@ def add_reading(inputs, reference_inputs, parameters, meter_priv, reading, openi
 
     # return
     return {
-        'outputs': (new_meter,),
+        'outputs': (dumps(new_meter),),
         'extra_parameters' : {
             'reading'        : pack(commitment),
             'signature'      : pack(sig)
@@ -102,12 +101,12 @@ def add_reading(inputs, reference_inputs, parameters, meter_priv, reading, openi
 def compute_bill(inputs, reference_inputs, parameters, readings, openings, tariffs):
 
     # get meter
-    meter = inputs[0]
+    meter = loads(inputs[0])
 
     # compute total bill
     G = setup()[0]
-    total_bill   = sum(r*t for r,t in zip(readings, tariffs))
-    sum_openings = sum(o*t for o,t in zip(openings, tariffs)) % G.order()
+    total_bill   = sum(r*t for r,t in zip(loads(readings), loads(tariffs)))
+    sum_openings = sum(o*t for o,t in zip(unpack(openings), loads(tariffs))) % G.order()
 
     # new bill
     bill = {
@@ -120,9 +119,9 @@ def compute_bill(inputs, reference_inputs, parameters, readings, openings, tarif
 
     # return
     return {
-        'outputs': (bill,),
+        'outputs': (dumps(bill),),
         'extra_parameters' : {
-            'total_bill'   : total_bill,
+            'total_bill'   : dumps(total_bill),
             'sum_openings' : pack(sum_openings),
         }
     }
@@ -149,18 +148,21 @@ def read(inputs, reference_inputs, parameters):
 def create_meter_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
+        # loads data
+        meter = loads(outputs[1])
+
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False
-        if outputs[1]['pub'] == None or outputs[1]['info'] == None or outputs[1]['billing_period'] == None:
+        if meter['pub'] == None or meter['info'] == None or meter['billing_period'] == None:
             return False
-        if outputs[1]['readings'] == None or outputs[1]['tariffs'] == None:
+        if meter['readings'] == None or meter['tariffs'] == None:
             return False
 
         # check tokens
-        if inputs[0]['type'] != 'SMToken' or outputs[0]['type'] != 'SMToken':
+        if loads(inputs[0])['type'] != 'SMToken' or loads(outputs[0])['type'] != 'SMToken':
             return False
-        if outputs[1]['type'] != 'SMMeter':
+        if meter['type'] != 'SMMeter':
             return False
 
         # otherwise
@@ -177,8 +179,8 @@ def add_reading_checker(inputs, reference_inputs, parameters, outputs, returns, 
     try:
 
         # get objects
-        old_meter = inputs[0]
-        new_meter = outputs[0]
+        old_meter = loads(inputs[0])
+        new_meter = loads(outputs[0])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
@@ -222,8 +224,8 @@ def compute_bill_checker(inputs, reference_inputs, parameters, outputs, returns,
     try:
 
         # get objects
-        meter = inputs[0]
-        bill  = outputs[0]
+        meter = loads(inputs[0])
+        bill  = loads(outputs[0])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
@@ -232,7 +234,7 @@ def compute_bill_checker(inputs, reference_inputs, parameters, outputs, returns,
             return False
         if meter['tariffs'] != bill['tariffs']:
             return False
-        if bill['total_bill'] != parameters['total_bill']:
+        if bill['total_bill'] != loads(parameters['total_bill']):
             return False
 
         # check tokens
@@ -243,7 +245,7 @@ def compute_bill_checker(inputs, reference_inputs, parameters, outputs, returns,
         tariffs      = bill['tariffs']
         commitements = meter['readings']
         sum_openings = unpack(parameters['sum_openings'])
-        total_bill   = parameters['total_bill']
+        total_bill   = loads(parameters['total_bill'])
 
         # verify bill
         (G, g, (h0, _, _, _), _) = setup()
