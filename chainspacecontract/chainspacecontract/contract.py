@@ -58,13 +58,15 @@ class ChainspaceContract(object):
                     dependency['inputs'] = tuple(dependency['inputs'])
                     dependency['reference_inputs'] = tuple(dependency['reference_inputs'])
                     dependency['outputs'] = tuple(dependency['outputs'])
+                    dependency['parameters'] = tuple(dependency['parameters'])
+                    dependency['returns'] = tuple(dependency['returns'])
 
                 return function_wrapper(
                     tuple(request.json['inputs']),
                     tuple(request.json['reference_inputs']),
-                    request.json['parameters'],
+                    tuple(request.json['parameters']),
                     tuple(request.json['outputs']),
-                    request.json['returns'],
+                    tuple(request.json['returns']),
                     dependencies
                 )
 
@@ -86,10 +88,11 @@ class ChainspaceContract(object):
                 if reference_inputs is None:
                     reference_inputs = ()
                 if parameters is None:
-                    parameters = {}
+                    parameters = ()
 
                 inputs = tuple(inputs)
                 reference_inputs = tuple(reference_inputs)
+                parameters = tuple(parameters)
 
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
@@ -99,10 +102,10 @@ class ChainspaceContract(object):
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
                     if key not in result or key is None:
-                        result[key] = ({} if key == 'returns' else tuple())
+                        result[key] = tuple()
 
                 result['parameters'] = parameters
-                result['parameters'].update(result['extra_parameters'])
+                result['parameters'] += result['extra_parameters']
                 del result['extra_parameters']
 
                 if checker_mode:

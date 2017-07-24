@@ -20,7 +20,7 @@ def init():
 def transfer(inputs, reference_inputs, parameters):
     from_account = json.loads(inputs[0])
     to_account = json.loads(inputs[1])
-    amount = int(parameters['amount'])
+    amount = int(parameters[0])
 
     from_account['balance'] -= amount
     to_account['balance'] += amount
