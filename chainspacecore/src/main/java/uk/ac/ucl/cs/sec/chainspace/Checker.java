@@ -1,16 +1,19 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+
 /**
  * An abstract class representing a checker.
+ *
  */
-public abstract class Checker {
+abstract class Checker {
     abstract void startChecker() throws StartCheckerException;
     abstract void stopChecker();
-    abstract Boolean check(TransactionForChecker transactionForChecker);
+    abstract String check(TransactionForChecker transactionForChecker);
 
-    Boolean checkSingle(TransactionForChecker transactionForChecker) throws StartCheckerException {
+    String checkSingle(TransactionForChecker transactionForChecker) throws StartCheckerException {
+
         this.startChecker();
-        Boolean result = this.check(transactionForChecker);
+        String result = this.check(transactionForChecker);
         this.stopChecker();
 
         return result;

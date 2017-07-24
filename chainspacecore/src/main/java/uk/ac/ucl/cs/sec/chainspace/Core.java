@@ -24,7 +24,7 @@ class Core {
     Core(int nodeID) throws ClassNotFoundException, SQLException {
 
         // init cache
-        // here we are implementing a simple linear cash of complexity O(n). Any caching system implementing the Cache
+        // here we are implementing a simple cache of complexity O(n). Any caching system implementing the Cache
         // interface can be used instead.
         this.cache = new SimpleCache(Main.CACHE_DEPTH);
 
@@ -51,6 +51,37 @@ class Core {
      */
     String[] processTransaction(String request) throws Exception {
 
+        // accumulate all output objects and IDs in the variable out
+        // Note: Java passes to the callee only the reference of the array 'out' (not a copy of it)
+        // thus, the array is modified by the callee functions (in C-style)
+        Pair[] out = new Pair[]{};
+        out = processTransactionVM(request, out);
+
+        // return and save outputs upon successful execution
+        String[] outForClient = new String[]{};
+        for (Pair anOut : out) {
+            // loop over outputs
+            Transaction transaction = (Transaction) anOut.getKey();
+            TransactionForChecker transactionForChecker = (TransactionForChecker) anOut.getValue();
+            // save outputs
+            this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
+            // log transaction
+            this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
+            // convert the pair's array into a string's array
+            outForClient = Utils.concatenate(outForClient, transactionForChecker.getOutputs());
+        }
+        return outForClient;
+
+    }
+
+
+    /**
+     * processTransaction
+     * This method processes a transaction object, call the checker, and store the outputs in the database if
+     * everything goes fine.
+     */
+    private Pair[] processTransactionVM(String request, Pair[] out) throws Exception {
+
         // get the transactions
         Transaction transaction = TransactionPackager.makeTransaction(request);
         TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request);
@@ -59,12 +90,12 @@ class Core {
         if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
             for (int i = 0; i < transaction.getDependencies().length; i++) {
 
-                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]");}
-                // recusrively process the transaction
-                String[] returns = processTransaction(transaction.getDependencies()[i]);
+                if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]"); }
+                // recursively process the transaction
+                Pair[] tmp = processTransactionVM(transaction.getDependencies()[i], out);
+                out = Utils.concatenate(out, tmp);
                 // updates the parameters of the caller transaction
-                transactionForChecker.addParameters(returns);
-                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]");}
+                if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]"); }
 
             }
         }
@@ -79,7 +110,7 @@ class Core {
      * processTransactionHelper
      * Helper for processTransaction: executed on each recursion.
      */
-    private String[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
+    private Pair[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
             throws Exception
     {
 
@@ -117,15 +148,8 @@ class Core {
             this.databaseConnector.setInactive(transaction.getInputIDs());
         }
 
-        // register new objects
-        this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
-
-        // update logs
-        this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
-
-        // pass out returns
-        return transaction.getReturns();
-
+        // return
+        return new Pair[]{new Pair<>(transaction, transactionForChecker)};
     }
 
 
@@ -134,15 +158,16 @@ class Core {
      * This method format a packet and call the checker in order to verify the transaction.
      */
     private void callChecker(TransactionForChecker transactionForChecker)
-            throws IOException, AbortTransactionException
-    {
+            throws IOException, AbortTransactionException, StartCheckerException {
 
-        // get checker URL
-        // TODO: This URL should be loaded from a config file (depending on the contractID)
-        String checkerURL = "http://127.0.0.1:5001/bank/transfer";
+        // TODO: fix absolute path requirement
+        String path = "/Users/alberto/GitHub/chainspace/chainspacecore/checkers/10.py";
+
+        // check if checker is already started
+        PythonChecker checker =  PythonChecker.getFromCache(path, transactionForChecker.getContractID());
 
         // call the checker
-        String responseString = Utils.makePostRequest(checkerURL, transactionForChecker.toJson());
+        String responseString = checker.check(transactionForChecker);
         JSONObject responseJson = new JSONObject(responseString);
 
         // throw error if the checker declines the transaction

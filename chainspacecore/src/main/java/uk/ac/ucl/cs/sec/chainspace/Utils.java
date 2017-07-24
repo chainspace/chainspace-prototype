@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -20,7 +21,6 @@ import java.security.NoSuchAlgorithmException;
  * Some general purpose utilities.
  */
 class Utils {
-
 
     /**
      * hash
@@ -53,6 +53,52 @@ class Utils {
 
         return hash(object).equals(hashedValue);
 
+    }
+
+
+    /**
+     * concatenate
+     * Concatenate two arrays.
+     * @param a the first array
+     * @param b the second array
+     * @param <T> the type of the arrays
+     * @return a new array with the content of a and b
+     */
+    static <T> T[] concatenate(T[] a, T[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+
+        @SuppressWarnings("unchecked")
+        T[] c = (T[]) Array.newInstance(a.getClass().getComponentType(), aLen+bLen);
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+
+        return c;
+    }
+
+    /**
+     * generateObjectID
+     * Create an object ID from the object and the trasaction that created it.
+     */
+    static String generateObjectID(String transactionID, String object, int idx) throws NoSuchAlgorithmException {
+        return Utils.hash(transactionID + "|" + Utils.hash(object) + "|" + idx);
+    }
+
+
+    /**
+     * generateHead
+     * Create a new head from a new transaction and the previous head.
+     */
+    static String generateHead(String oldHead, String transactionJson) throws NoSuchAlgorithmException {
+        return Utils.hash(oldHead + "|" + transactionJson);
+    }
+
+    /**
+     * generateHead
+     * Create a new head from a new transaction (should be used only for the first transaction).
+     */
+    static String generateHead(String transactionJson) throws NoSuchAlgorithmException {
+        return Utils.hash(transactionJson);
     }
 
 

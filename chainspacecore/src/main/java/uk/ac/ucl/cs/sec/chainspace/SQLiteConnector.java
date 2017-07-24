@@ -83,26 +83,49 @@ class SQLiteConnector extends DatabaseConnector {
 
     /**
      * registerObject
-     * Debug method that blindly insert an object into the database if it does not already exist.
+     * Blindly insert an object into the database if it does not already exist.
      */
     // TODO: optimise requests (only one executeUpdate)
     public void saveObject(String transactionID, String[] objects) throws AbortTransactionException {
 
         String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (String object : objects) {
-                String objectID = this.generateObjectID(transactionID, object);
+            for (int i = 0; i < objects.length; i++) {
+                String objectID = Utils.generateObjectID(transactionID, objects[i], i);
                 statement.setString(1, objectID);
-                statement.setString(2, object);
+                statement.setString(2, objects[i]);
                 statement.executeUpdate();
 
                 if (Main.VERBOSE) {
                     System.out.println("\nNew object has been created:");
                     System.out.println("\tID: " + objectID);
-                    System.out.println("\tObject: " + object);
+                    System.out.println("\tObject: " + objects[i]);
                 }
             }
         } catch (SQLException | NoSuchAlgorithmException e) {
+            throw new AbortTransactionException(e.getMessage());
+        }
+
+    }
+
+    /**
+     * registerObject
+     * Blindly insert an object into the database if it does not already exist.
+     */
+    public void saveObject(String objectID, String object) throws AbortTransactionException {
+
+        String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, objectID);
+            statement.setString(2, object);
+            statement.executeUpdate();
+
+            if (Main.VERBOSE) {
+                System.out.println("\nNew object has been created:");
+                System.out.println("\tID: " + objectID);
+                System.out.println("\tObject: " + object);
+            }
+        } catch (SQLException e) {
             throw new AbortTransactionException(e.getMessage());
         }
 
@@ -232,12 +255,12 @@ class SQLiteConnector extends DatabaseConnector {
         String newHead;
         if (resultSet.isBeforeFirst()) {
             if ( Main.VERBOSE) { System.out.println("\tOld head: "+resultSet.getString("digest"));}
-            newHead = this.generateHead(resultSet.getString("digest"), transactionJson);
+            newHead = Utils.generateHead(resultSet.getString("digest"), transactionJson);
         }
         // if not, simply had a hash of the transaction
         else {
             if ( Main.VERBOSE) { System.out.println("\tOld head: NONE");}
-            newHead = this.generateHead(transactionJson);
+            newHead = Utils.generateHead(transactionJson);
         }
         statement.setString(1, newHead);
         statement.executeUpdate();

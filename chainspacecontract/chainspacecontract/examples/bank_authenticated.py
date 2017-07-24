@@ -5,8 +5,7 @@
 ####################################################################
 # general
 from hashlib import sha256
-from json    import dumps
-import copy
+from json    import dumps, loads
 # chainspace
 from chainspacecontract import ChainspaceContract
 # crypto
@@ -28,7 +27,7 @@ def init():
 
     # return
     return {
-        'outputs': ({'type' : 'BankToken'},),
+        'outputs': (dumps({'type' : 'BankToken'}),),
     }
 
 
@@ -42,11 +41,11 @@ def init():
 def create_account(inputs, reference_inputs, parameters, pub):
 
     # new account
-    new_account = {'type' : 'BankAccount', 'pub': pack(pub), 'balance': 10}
+    new_account = {'type' : 'BankAccount', 'pub': pub, 'balance': 10}
 
     # return
     return {
-        'outputs': (inputs[0], new_account)
+        'outputs': (inputs[0], dumps(new_account))
     }
 
 
@@ -60,16 +59,17 @@ def create_account(inputs, reference_inputs, parameters, pub):
 def auth_transfer(inputs, reference_inputs, parameters, priv):
 
     # compute outputs
-    new_from_account = copy.deepcopy(inputs[0])
-    new_to_account   = copy.deepcopy(inputs[1])
-    new_from_account["balance"] -= parameters['amount']
-    new_to_account["balance"]   += parameters['amount']
+    amount = loads(parameters[0])
+    new_from_account = loads(inputs[0])
+    new_to_account   = loads(inputs[1])
+    new_from_account["balance"] -= amount
+    new_to_account["balance"]   += amount
 
     # hash message to sign
     hasher = sha256()
     hasher.update(dumps(inputs).encode('utf8'))
     hasher.update(dumps(reference_inputs).encode('utf8'))
-    hasher.update(dumps({"amount" : parameters["amount"]}).encode('utf8'))
+    hasher.update(dumps(parameters[0]).encode('utf8'))
 
     # sign message
     G = setup()[0]
@@ -77,11 +77,21 @@ def auth_transfer(inputs, reference_inputs, parameters, priv):
 
     # return
     return {
-        'outputs': (new_from_account, new_to_account),
-        'extra_parameters' : {
-            'signature' : pack(sig)
-        }
+        'outputs': (dumps(new_from_account), dumps(new_to_account)),
+        'extra_parameters' : (pack(sig),)
     }
+
+# ------------------------------------------------------------------
+# read
+# ------------------------------------------------------------------
+@contract.method('read')
+def read(inputs, reference_inputs, parameters):
+
+    # return
+    return {
+        'returns' : (reference_inputs[0],),
+    }
+
 
 
 ####################################################################
@@ -93,17 +103,20 @@ def auth_transfer(inputs, reference_inputs, parameters, priv):
 @contract.checker('create_account')
 def create_account_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
+        input_token = loads(inputs[0])
+        output_token = loads(outputs[0])
+        output_account = loads(outputs[1])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False
-        if outputs[1]['pub'] == None or outputs[1]['balance'] != 10:
+        if output_account['pub'] == None or output_account['balance'] != 10:
             return False
 
         # check tokens
-        if inputs[0]['type'] != 'BankToken' or outputs[0]['type'] != 'BankToken':
+        if input_token['type'] != 'BankToken' or output_token['type'] != 'BankToken':
             return False
-        if outputs[1]['type'] != 'BankAccount':
+        if output_account['type'] != 'BankAccount':
             return False
 
         # otherwise
@@ -112,38 +125,43 @@ def create_account_checker(inputs, reference_inputs, parameters, outputs, return
     except (KeyError, Exception):
         return False
 
-
 # ------------------------------------------------------------------
 # check transfer
 # ------------------------------------------------------------------
 @contract.checker('auth_transfer')
 def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
+        amount = loads(parameters[0])
+        input_from_account = loads(inputs[0])
+        input_to_account = loads(inputs[1])
+        output_from_account = loads(outputs[0])
+        output_to_account = loads(outputs[1])
+        sig = unpack(parameters[1])
 
         # check format
         if len(inputs) != 2 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False
-        if inputs[0]['pub'] != outputs[0]['pub'] or inputs[1]['pub'] != outputs[1]['pub']:
+        if input_from_account['pub'] != output_from_account['pub'] or input_to_account['pub'] != output_to_account['pub']:
             return False
 
         # check tokens
-        if inputs[0]['type'] != 'BankAccount' or inputs[1]['type'] != 'BankAccount':
+        if input_from_account['type'] != 'BankAccount' or input_to_account['type'] != 'BankAccount':
             return False
-        if outputs[0]['type'] != 'BankAccount' or outputs[1]['type'] != 'BankAccount':
+        if output_from_account['type'] != 'BankAccount' or output_to_account['type'] != 'BankAccount':
             return False
 
         # amount transfered should be non-negative
-        if parameters['amount'] < 0:
+        if amount < 0:
             return False
 
         # amount transfered should not exceed balance
-        if inputs[0]['balance'] < parameters['amount']:
+        if input_from_account['balance'] < amount:
             return False
 
         # consistency between inputs and outputs
-        if inputs[0]['balance'] != outputs[0]['balance'] + parameters['amount']:
+        if input_from_account['balance'] != output_from_account['balance'] + amount:
             return False
-        if inputs[1]['balance'] != outputs[1]['balance'] - parameters['amount']:
+        if input_to_account['balance'] != output_to_account['balance'] - amount:
             return False
 
 
@@ -151,20 +169,40 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
         hasher = sha256()
         hasher.update(dumps(inputs).encode('utf8'))
         hasher.update(dumps(reference_inputs).encode('utf8'))
-        hasher.update(dumps({"amount" : parameters["amount"]}).encode('utf8'))
+        hasher.update(dumps(parameters[0]).encode('utf8'))
 
         # recompose signed digest
-        pub = unpack(inputs[0]['pub'])
-        sig = unpack(parameters['signature'])
+        pub = unpack(input_from_account['pub'])
 
         # verify signature
         (G, _, _, _) = setup()
         return do_ecdsa_verify(G, pub, sig, hasher.digest())
 
+        return True
+
     except (KeyError, Exception):
         return False
 
+# ------------------------------------------------------------------
+# check read
+# ------------------------------------------------------------------
+@contract.checker('read')
+def read_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
 
+        # check format
+        if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
+            return False
+
+        # check values
+        if reference_inputs[0] != returns[0]:
+            return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
 
 
 ####################################################################

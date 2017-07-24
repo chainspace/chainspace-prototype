@@ -1,7 +1,9 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-public class StartCheckerException extends Exception {
-    public StartCheckerException(String message) {
-        super(message);
+class StartCheckerException extends Exception {
+
+    StartCheckerException(String message) {
+
+        super("[ERROR_STARTCHECKER] " + message);
     }
 }

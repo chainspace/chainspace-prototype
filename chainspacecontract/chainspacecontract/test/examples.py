@@ -18,9 +18,9 @@ class TestExamples(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
-            'inputs': [1],
-            'outputs': [2],
-            'parameters': {},
+            'inputs': ['1'],
+            'outputs': ['2'],
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -28,9 +28,9 @@ class TestExamples(unittest.TestCase):
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
-            'inputs': [1],
-            'outputs': [3],
-            'parameters': {},
+            'inputs': ['1'],
+            'outputs': ['3'],
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -46,9 +46,9 @@ class TestExamples(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
-            'inputs': [1],
-            'outputs': [2],
-            'parameters': {},
+            'inputs': ['1'],
+            'outputs': ['2'],
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -56,9 +56,9 @@ class TestExamples(unittest.TestCase):
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
-            'inputs': [1],
-            'outputs': [3],
-            'parameters': {},
+            'inputs': ['1'],
+            'outputs': ['3'],
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -74,9 +74,9 @@ class TestExamples(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
-            'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
-            'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 15}],
-            'parameters': {'amount': 5},
+            'inputs': ['{"name": "alice", "balance": 10}', '{"name": "bob", "balance": 10}'],
+            'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 15, "name": "bob"}'],
+            'parameters': ['5'],
             'reference_inputs': [],
             'returns': {},
         })
@@ -84,9 +84,9 @@ class TestExamples(unittest.TestCase):
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
-            'inputs': [{'name': 'alice', 'balance': 10}, {'name': 'bob', 'balance': 10}],
-            'outputs': [{'name': 'alice', 'balance': 5}, {'name': 'bob', 'balance': 16}],
-            'parameters': {'amount': 5},
+            'inputs': ['{"balance": 10, "name": "alice"}', '{"balance": 10, "name": "bob"}'],
+            'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 16, "name": "bob"}'],
+            'parameters': ['5'],
             'reference_inputs': [],
             'returns': {},
         })
@@ -102,39 +102,39 @@ class TestExamples(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
-            'inputs': (0, ),
-            'contract_id': 0,
-            'parameters': {},
-            'outputs': (1, ),
+            'inputs': ('0', ),
+            'contractID': 0,
+            'parameters': ['0'],
+            'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
-                'inputs': (0, ),
-                'contract_id': increment_contract.contract_name,
-                'parameters': {},
-                'outputs': (1, ),
+                'inputs': ('0', ),
+                'contractID': increment_contract.contract_name,
+                'parameters': [],
+                'outputs': ('1', ),
                 'returns': {},
                 'reference_inputs': ()
             }],
-            'reference_inputs': (0, )
+            'reference_inputs': ()
         })
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
-            'inputs': (0, ),
-            'contract_id': 0,
-            'parameters': {},
-            'outputs': (1, ),
+            'inputs': ('0', ),
+            'contractID': 0,
+            'parameters': ['0'],
+            'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
-                'inputs': (0, ),
-                'contract_id': increment_contract.contract_name,
-                'parameters': {},
-                'outputs': (0, ),
+                'inputs': ('0', ),
+                'contractID': increment_contract.contract_name,
+                'parameters': [],
+                'outputs': ('0', ),
                 'returns': {},
                 'reference_inputs': ()
             }],
-            'reference_inputs': (0, )
+            'reference_inputs': ()
         })
         response_json = response.json()
         self.assertFalse(response_json['success'])
@@ -148,39 +148,39 @@ class TestExamples(unittest.TestCase):
         time.sleep(0.1)
 
         response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
-            'inputs': (0, ),
-            'contract_id': 0,
-            'parameters': {},
-            'outputs': (1, ),
+            'inputs': ('0', ),
+            'contractID': 0,
+            'parameters': ['0', '0'],
+            'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
-                'inputs': (0, ),
-                'contract_id': increment_twice_contract.contract_name,
-                'parameters': {},
-                'outputs': (1, ),
+                'inputs': ('0', ),
+                'contractID': increment_twice_contract.contract_name,
+                'parameters': ['0'],
+                'outputs': ('1', ),
                 'returns': {},
-                'reference_inputs': (0, )
+                'reference_inputs': ()
             }],
-            'reference_inputs': (0, 0)
+            'reference_inputs': ()
         })
         response_json = response.json()
         self.assertTrue(response_json['success'])
 
         response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
-            'inputs': (0, ),
-            'contract_id': 0,
-            'parameters': {},
-            'outputs': (0, ),
+            'inputs': ('0', ),
+            'contractID': 0,
+            'parameters': ['0', '0'],
+            'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
-                'inputs': (0, ),
-                'contract_id': increment_twice_contract.contract_name,
-                'parameters': {},
-                'outputs': (1, ),
+                'inputs': ('0', ),
+                'contractID': increment_twice_contract.contract_name,
+                'parameters': ['0'],
+                'outputs': ('0', ),
                 'returns': {},
-                'reference_inputs': (0, )
+                'reference_inputs': ()
             }],
-            'reference_inputs': (0, 0)
+            'reference_inputs': ()
         })
         response_json = response.json()
         self.assertFalse(response_json['success'])

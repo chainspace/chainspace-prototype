@@ -32,7 +32,7 @@ class Store {
 
         for (int i = 0; i < this.getArray().length ; i++) {
             if (this.getArray()[i].getKey().equals(key)) {
-                return this.getArray()[i].getValue();
+                return (String) this.getArray()[i].getValue();
             }
         }
 
@@ -58,7 +58,7 @@ class Store {
         Pair[] pairArray = new Pair[jsonArray.length()];
 
         for (int i = 0; i < jsonArray.length(); i++) {
-            pairArray[i] = new Pair(
+            pairArray[i] = new Pair<>(
                 jsonArray.getJSONObject(i).getString("key"),
                 jsonArray.getJSONObject(i).get("value").toString()
             );
@@ -69,25 +69,5 @@ class Store {
 
 
 
-    /**
-     *
-     *  Elements of the key-value store
-     */
-    private static class Pair
-    {
-        String key, value;
 
-        Pair(String key, String value)
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        String getKey() {
-            return key;
-        }
-        String getValue() {
-            return value;
-        }
-    }
 }
