@@ -20,7 +20,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
             'inputs': ['1'],
             'outputs': ['2'],
-            'parameters': {},
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -30,7 +30,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_contract.contract_name + '/increment', json={
             'inputs': ['1'],
             'outputs': ['3'],
-            'parameters': {},
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -48,7 +48,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
             'inputs': ['1'],
             'outputs': ['2'],
-            'parameters': {},
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -58,7 +58,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_with_custom_checker_contract.contract_name + '/increment', json={
             'inputs': ['1'],
             'outputs': ['3'],
-            'parameters': {},
+            'parameters': [],
             'reference_inputs': [],
             'returns': {},
         })
@@ -76,7 +76,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
             'inputs': ['{"name": "alice", "balance": 10}', '{"name": "bob", "balance": 10}'],
             'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 15, "name": "bob"}'],
-            'parameters': {'amount': '5'},
+            'parameters': ['5'],
             'reference_inputs': [],
             'returns': {},
         })
@@ -86,7 +86,7 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + bank_unauthenticated_contract.contract_name + '/transfer', json={
             'inputs': ['{"balance": 10, "name": "alice"}', '{"balance": 10, "name": "bob"}'],
             'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 16, "name": "bob"}'],
-            'parameters': {'amount': '5'},
+            'parameters': ['5'],
             'reference_inputs': [],
             'returns': {},
         })
@@ -104,13 +104,13 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
             'inputs': ('0', ),
             'contractID': 0,
-            'parameters': {'passed_integer': '0'},
+            'parameters': ['0'],
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
                 'inputs': ('0', ),
                 'contractID': increment_contract.contract_name,
-                'parameters': {},
+                'parameters': [],
                 'outputs': ('1', ),
                 'returns': {},
                 'reference_inputs': ()
@@ -123,13 +123,13 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_twice_contract.contract_name + '/increment', json={
             'inputs': ('0', ),
             'contractID': 0,
-            'parameters': {'passed_integer': '0'},
+            'parameters': ['0'],
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
                 'inputs': ('0', ),
                 'contractID': increment_contract.contract_name,
-                'parameters': {},
+                'parameters': [],
                 'outputs': ('0', ),
                 'returns': {},
                 'reference_inputs': ()
@@ -150,13 +150,13 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
             'inputs': ('0', ),
             'contractID': 0,
-            'parameters': {'passed_integer_a': '0', 'passed_integer_b': '0'},
+            'parameters': ['0', '0'],
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
                 'inputs': ('0', ),
                 'contractID': increment_twice_contract.contract_name,
-                'parameters': {'passed_integer': '0'},
+                'parameters': ['0'],
                 'outputs': ('1', ),
                 'returns': {},
                 'reference_inputs': ()
@@ -169,13 +169,13 @@ class TestExamples(unittest.TestCase):
         response = requests.post('http://127.0.0.1:5000/' + increment_thrice_contract.contract_name + '/increment', json={
             'inputs': ('0', ),
             'contractID': 0,
-            'parameters': {'passed_integer_a': '0', 'passed_integer_b': '0'},
+            'parameters': ['0', '0'],
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
                 'inputs': ('0', ),
                 'contractID': increment_twice_contract.contract_name,
-                'parameters': {'passed_integer': '0'},
+                'parameters': ['0'],
                 'outputs': ('0', ),
                 'returns': {},
                 'reference_inputs': ()

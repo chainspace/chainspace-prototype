@@ -17,7 +17,7 @@ def init():
 @contract.method('increment')
 def increment(inputs, reference_inputs, parameters):
     integer = int(inputs[0])
-    increment_contract.increment((parameters['passed_integer'],), None, None)
+    increment_contract.increment((parameters[0],), None, None)
     return {
         'outputs': (str(integer + 1),)
     }
