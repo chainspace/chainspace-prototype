@@ -52,7 +52,7 @@ class ChainspaceNetwork(object):
             'sudo apt install -t jessie-backports openjdk-8-jdk -y',
             'sudo apt install git python-pip maven screen psmisc -y',
         )
-        for command in self._get_install_deps_commands(instance):
+        for command in commands:
             self._single_ssh_exec(instance, command)
         self._log_instance(instance, "Installed Chainspace dependencies.")
 
@@ -64,7 +64,7 @@ class ChainspaceNetwork(object):
             'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java',
             'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single',
         )
-        for command in self._get_install_deps_commands(instance):
+        for command in commands:
             self._single_ssh_exec(instance, command)
         self._log_instance(instance, "Installed Chainspace core.")
 
