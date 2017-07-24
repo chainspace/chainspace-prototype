@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -190,7 +193,9 @@ class ChainspaceObject(str):
         output_index: the index of the output.
         """
         obj = transaction['outputs'][output_index]
-        object_id = obj # TODO: calculate the actual object ID.
+        transaction_digest = hashlib.sha256(json.dumps(transaction)).hexdigest()
+        object_digest = hashlib.sha256(json.dumps(transaction['outputs'][output_index]))
+        object_id = '{}|{}|{}'.format(transaction_digest, object_digest, output_index)
         return ChainspaceObject(object_id, obj)
 
 
