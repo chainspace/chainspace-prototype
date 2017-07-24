@@ -10,72 +10,58 @@ class ChainspaceNetwork(object):
     threads = 100
     aws_api_threads = 5
 
-    def __init__(self, realm, aws_region='us-east-2'):
-        self.realm = str(realm)
+    def __init__(self, network_id, aws_region='us-east-2'):
+        self.network_id = str(network_id)
 
         self.aws_region = aws_region
         self.ec2 = boto3.resource('ec2', region_name=aws_region)
 
         self.ssh_connections = {}
 
-    def _get_instances(self):
+    def _get_running_instances(self):
         return self.ec2.instances.filter(Filters=[
             {'Name': 'tag:type', 'Values': ['chainspace']},
-            {'Name': 'tag:realm', 'Values': [self.realm]},
+            {'Name': 'tag:network_id', 'Values': [self.network_id]},
             {'Name': 'instance-state-name', 'Values': ['running']}
+        ])
+
+    def _get_stopped_instances(self):
+        return self.ec2.instances.filter(Filters=[
+            {'Name': 'tag:type', 'Values': ['chainspace']},
+            {'Name': 'tag:network_id', 'Values': [self.network_id]},
+            {'Name': 'instance-state-name', 'Values': ['stopped']}
+        ])
+
+    def _get_all_instances(self):
+        return self.ec2.instances.filter(Filters=[
+            {'Name': 'tag:type', 'Values': ['chainspace']},
+            {'Name': 'tag:network_id', 'Values': [self.network_id]},
         ])
 
     def _log(self, message):
         _safe_print(message)
 
     def _log_instance(self, instance, message):
-        instance_tags = _tags_from_instance(instance)
-        message = '[shard {} node {}] {}'.format(instance_tags['shard'], instance_tags['node'], message)
+        message = '[instance {}] {}'.format(instance.id, message)
         self._log(message)
 
-    def _get_bootstrap_commands(self, instance):
+    def _get_install_commands(self, instance):
         commands = (
             'sudo apt update',
             'sudo apt install -t jessie-backports openjdk-8-jdk -y',
-            'sudo apt install git python-pip maven screen -y',
+            'sudo apt install git python-pip maven screen psmisc -y',
             'git clone https://github.com/musalbas/chainspace',
             'sudo pip install chainspace/chainspacecontract',
             'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java',
             'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single',
-            'screen -dmS chainspacecore java -cp chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main',
         )
         return commands
 
-    def _single_bootstrap(self, instance):
-        for command in self._get_bootstrap_commands(instance):
+    def _single_install(self, instance):
+        self._log_instance(instance, "Installing Chainspace...")
+        for command in self._get_install_commands(instance):
             self._single_ssh_exec(instance, command)
-
-    def _single_start(self, shard, node, key_name):
-        self._log("Starting node {} in shard {}...".format(node, shard))
-        shard = str(shard)
-        node = str(node)
-        self.ec2.create_instances(
-            ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
-            InstanceType='t2.micro',
-            MinCount=1,
-            MaxCount=1,
-            KeyName=key_name,
-            SecurityGroups=['chainspace'],
-            TagSpecifications=[
-                {
-                    'ResourceType': 'instance',
-                    'Tags': [
-                        {'Key': 'type', 'Value': 'chainspace'},
-                        {'Key': 'realm', 'Value': self.realm},
-                        {'Key': 'shard', 'Value': shard},
-                        {'Key': 'node', 'Value': node},
-                        {'Key': 'Name', 'Value': 'Chainspace - network: {} shard: {} node: {}'.format(self.realm, shard, node)},
-                    ]
-                }
-            ]
-        )
-
-        self._log("Started node {} in shard {}.".format(node, shard))
+        self._log_instance(instance, "Installed Chainspace.")
 
     def _single_ssh_connect(self, instance):
         self._log_instance(instance, "Initiating SSH connection...")
@@ -86,7 +72,7 @@ class ChainspaceNetwork(object):
         self._log_instance(instance, "Initiated SSH connection.")
 
     def _single_ssh_exec(self, instance, command):
-        self._log_instance(instance, "Command: {}".format(command))
+        self._log_instance(instance, "Executing command: {}".format(command))
         client = self.ssh_connections[instance]
         stdin, stdout, stderr = client.exec_command(command)
         for message in iter(stdout.readline, ''):
@@ -99,6 +85,7 @@ class ChainspaceNetwork(object):
                 self._log_instance(instance, message.rstrip())
             except Exception:
                 pass
+        self._log_instance(instance, "Executed command: {}".format(command))
 
     def _single_ssh_close(self, instance):
         self._log_instance(instance, "Closing SSH connection...")
@@ -106,56 +93,101 @@ class ChainspaceNetwork(object):
         client.close()
         self._log_instance(instance, "Closed SSH connection.")
 
-    def start(self, shards, nodes_per_shard, key_name):
-        args = []
-        for i in range(shards):
-            for j in range(nodes_per_shard):
-                args.append((self._single_start, i, j, key_name))
+    def launch(self, count, key_name):
+        self._log("Launching {} instances...".format(count))
+        self.ec2.create_instances(
+            ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
+            InstanceType='t2.micro',
+            MinCount=count,
+            MaxCount=count,
+            KeyName=key_name,
+            SecurityGroups=['chainspace'],
+            TagSpecifications=[
+                {
+                    'ResourceType': 'instance',
+                    'Tags': [
+                        {'Key': 'type', 'Value': 'chainspace'},
+                        {'Key': 'network_id', 'Value': self.network_id},
+                        {'Key': 'Name', 'Value': 'Chainspace node (network: {})'.format(self.network_id)},
+                    ]
+                }
+            ]
+        )
+        self._log("Launched {} instances.".format(count))
 
-        pool = Pool(ChainspaceNetwork.aws_api_threads)
-        pool.map(_multi_args_wrapper, args)
-        pool.close()
-        pool.join()
-
-    def bootstrap(self):
-        args = [(self._single_bootstrap, instance) for instance in self._get_instances()]
+    def install(self):
+        self._log("Installing Chainspace on all nodes...")
+        args = [(self._single_install, instance) for instance in self._get_running_instances()]
         pool = Pool(ChainspaceNetwork.threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
+        self._log("Installed Chainspace on all nodes.")
 
     def ssh_connect(self):
-        args = [(self._single_ssh_connect, instance) for instance in self._get_instances()]
+        self._log("Initiating SSH connection on all nodes...")
+        args = [(self._single_ssh_connect, instance) for instance in self._get_running_instances()]
         pool = Pool(ChainspaceNetwork.threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
+        self._log("Initiated SSH connection on all nodes.")
 
     def ssh_exec(self, command):
-        args = [(self._single_ssh_exec, instance, command) for instance in self._get_instances()]
+        self._log("Executing command on all nodes: {}".format(command))
+        args = [(self._single_ssh_exec, instance, command) for instance in self._get_running_instances()]
         pool = Pool(ChainspaceNetwork.threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
+        self._log("Executed command on all nodes: {}".format(command))
 
     def ssh_close(self):
-        args = [(self._single_ssh_close, instance) for instance in self._get_instances()]
+        self._log("Closing SSH connection on all nodes...")
+        args = [(self._single_ssh_close, instance) for instance in self._get_running_instances()]
         pool = Pool(ChainspaceNetwork.threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
+        self._log("Closed SSH connection on all nodes...")
 
     def get_ips(self):
-        return [instance.public_ip_address for instance in self._get_instances()]
+        return [instance.public_ip_address for instance in self._get_running_instances()]
 
     def terminate(self):
         self._log("Terminating all nodes...")
-        self._get_instances().terminate()
+        self._get_all_instances().terminate()
         self._log("All nodes terminated.")
 
+    def start(self):
+        self._log("Starting all nodes...")
+        self._get_stopped_instances().start()
+        self._log("Started all nodes.")
 
-def _tags_from_instance(instance):
-    return dict(map(lambda x: (x['Key'], x['Value']), instance.tags or []))
+    def stop(self):
+        self._log("Stopping all nodes...")
+        self._get_running_instances().stop()
+        self._log("Stopped all nodes.")
+
+    def start_core(self):
+        self._log("Starting Chainspace core on all nodes...")
+        command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main'
+        self.ssh_exec(command)
+        self._log("Started Chainspace core on all nodes.")
+
+    def stop_core(self):
+        self._log("Stopping Chainspace core on all nodes...")
+        command = 'killall java' # hacky; should use pid file
+        self.ssh_exec(command)
+        self._log("Stopping Chainspace core on all nodes.")
+
+    def clean_core(self):
+        # TODO: reset state on cores.
+        pass
+
+    def config_core(self, shards, nodes_per_shard):
+        # TODO: configure cores.
+        pass
 
 
 def _multi_args_wrapper(args):
