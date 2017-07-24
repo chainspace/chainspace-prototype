@@ -48,9 +48,9 @@ class ChainspaceNetwork(object):
     def _single_install_deps(self, instance):
         self._log_instance(instance, "Installing Chainspace dependencies...")
         commands = (
-            'sudo apt update',
-            'sudo apt install -t jessie-backports openjdk-8-jdk -y',
-            'sudo apt install git python-pip maven screen psmisc -y',
+            'until sudo apt update; do :; done',
+            'until sudo apt install -t jessie-backports openjdk-8-jdk -y; do :; done',
+            'until sudo apt install git python-pip maven screen psmisc -y; do :; done',
         )
         for command in commands:
             self._single_ssh_exec(instance, command)
