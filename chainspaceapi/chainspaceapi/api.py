@@ -10,4 +10,4 @@ class ChainspaceClient(object):
         return 'http://{}:{}'.format(self.host, self.port)
 
     def push_transaction(self, transaction):
-        requests.post(self.url, transaction)
+        requests.post(self.url, json=transaction)
