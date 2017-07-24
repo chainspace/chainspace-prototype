@@ -13,7 +13,7 @@ class AbortTransactionException extends Exception {
      */
     AbortTransactionException(String message) {
 
-        super("[TRANSACTION_ABORT] " + message);
+        super("[ERROR_TRANSACTIONABORT] " + message);
 
     }
 }
