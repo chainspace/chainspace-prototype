@@ -197,13 +197,15 @@ class ChainspaceNetwork(object):
 
     def uninstall_core(self):
         self._log("Uninstalling Chainspace core on all nodes...")
-        command = 'rm -rf chainspace; rm node1.sqlite; sudo pip uninstall -y chainspacecontract'
+        command = 'rm -rf chainspace; sudo pip uninstall -y chainspacecontract'
         self.ssh_exec(command)
         self._log("Uninstalled Chainspace core on all nodes.")
 
     def clean_core(self):
-        # TODO: reset state on cores.
-        pass
+        self_log("Resetting Chainspace core configuration and state...")
+        command = 'rm node1.sqlite'
+        self.ssh_exec(command)
+        self_log("Reset Chainspace core configuration and state.")
 
     def config_core(self, shards, nodes_per_shard):
         # TODO: configure cores.
