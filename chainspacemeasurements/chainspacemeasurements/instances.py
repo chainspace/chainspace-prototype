@@ -103,7 +103,7 @@ class ChainspaceNetwork(object):
         self.ec2.create_instances(
             BlockDeviceMappings=[
                 {
-                    'DeviceName': '/dev/sda1',
+                    'DeviceName': '/dev/xvda',
                     'Ebs': {
                         'Encrypted': False,
                         'DeleteOnTermination': True,
