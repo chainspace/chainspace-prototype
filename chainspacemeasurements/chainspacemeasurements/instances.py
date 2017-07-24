@@ -113,6 +113,7 @@ class ChainspaceNetwork(object):
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
         command += 'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
 
     def ssh_connect(self):
