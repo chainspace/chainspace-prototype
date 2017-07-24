@@ -101,6 +101,16 @@ class ChainspaceNetwork(object):
     def launch(self, count, key_name):
         self._log("Launching {} instances...".format(count))
         self.ec2.create_instances(
+            BlockDeviceMappings=[
+                {
+                    'DeviceName': '/dev/sda1',
+                    'Ebs': {
+                        'Encrypted': False,
+                        'DeleteOnTermination': True,
+                        'VolumeSize': 2,
+                    },
+                },
+            ],
             ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
             InstanceType='t2.micro',
             MinCount=count,
