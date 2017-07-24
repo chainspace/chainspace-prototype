@@ -158,15 +158,16 @@ class Core {
      * This method format a packet and call the checker in order to verify the transaction.
      */
     private void callChecker(TransactionForChecker transactionForChecker)
-            throws IOException, AbortTransactionException
-    {
+            throws IOException, AbortTransactionException, StartCheckerException {
 
-        // get checker URL
-        // TODO: This URL should be loaded from a config file (depending on the contractID)
-        String checkerURL = "http://127.0.0.1:5001/bank/transfer";
+        // TODO: fix absolute path requirement
+        String path = "/Users/alberto/GitHub/chainspace/chainspacecore/checkers/10.py";
+
+        // check if checker is already started
+        PythonChecker checker =  PythonChecker.getFromCache(path, transactionForChecker.getContractID());
 
         // call the checker
-        String responseString = Utils.makePostRequest(checkerURL, transactionForChecker.toJson());
+        String responseString = checker.check(transactionForChecker);
         JSONObject responseJson = new JSONObject(responseString);
 
         // throw error if the checker declines the transaction

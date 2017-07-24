@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
  *
  */
 class TransactionForChecker {
-    private int      contractID;
+    private String   contractID;
     private String[] inputs;
     private String[] referenceInputs;
     private String[] parameters;
@@ -23,7 +23,7 @@ class TransactionForChecker {
      * constructor
      */
     TransactionForChecker(
-            int      contractID,
+            String   contractID,
             String[] inputs,
             String[] referenceInputs,
             String[] parameters,
@@ -87,7 +87,7 @@ class TransactionForChecker {
     /*
         getters
      */
-    int getContractID() {
+    String getContractID() {
         return contractID;
     }
 
