@@ -15,12 +15,25 @@ import java.io.Serializable;
 import java.util.TreeMap;
 
 public class Transaction implements Serializable {
-    private List<String> inputs;
-    private List<String> outputs;
+    public String id;
+    public List<String> inputs;
+    public List<String> outputs;
+
+    // Transaction states
+    public static final String VALID = "valid";
+    public static final String INVALID_NOOBJECT = "Invalid: Input object(s) doesn't exist.";
+    public static final String INVALID_NOMANAGEDOBJECT = "Invalid: None of the input object(s) is managed by this shard.";
+    public static final String REJECTED_LOCKEDOBJECT = "Rejected: Input object(s) is locked. ";
+    public static final String INVALID_INACTIVEOBJECT = "Invalid: Input object(s) is inactive.";
+    public static final String INVALID_BADTRANSACTION = "Invalid: Malformed transaction.";
 
     public Transaction() {
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
+    }
+
+    public void addID(String id) {
+        this.id = id;
     }
 
     public void addInput(String in) {
@@ -67,19 +80,6 @@ public class Transaction implements Serializable {
             System.out.println("Exception: " + e.getMessage());
             return null;
         }
-    }
-
-    public String isValid(TreeMap<String, String> table) {
-        System.out.println("Checking if transaction is valid");
-        for(String str: inputs) {
-            String readValue = table.get(str);
-            if (readValue == null || readValue.equals("0")) {
-                System.out.println("Fail");
-                return "Fail";
-            }
-        }
-        System.out.println("Success");
-        return "Success";
     }
 
 }

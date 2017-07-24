@@ -4,13 +4,13 @@ package foo.gettingstarted;
  * Created by sheharbano on 12/07/2017.
  */
 public class TransactionSequence {
-    boolean PREPARE_T;
-    boolean PREPARED_T_ABORT;
-    boolean PREPARED_T_COMMIT;
-    boolean ACCEPT_T_ABORT;
-    boolean ACCEPT_T_COMMIT;
-    boolean ACCEPTED_T_ABORT;
-    boolean ACCEPTED_T_COMMIT;
+    public boolean PREPARE_T;
+    public boolean PREPARED_T_ABORT;
+    public boolean PREPARED_T_COMMIT;
+    public boolean ACCEPT_T_ABORT;
+    public boolean ACCEPT_T_COMMIT;
+    public boolean ACCEPTED_T_ABORT;
+    public boolean ACCEPTED_T_COMMIT;
 
     public TransactionSequence() {
         PREPARE_T = false;

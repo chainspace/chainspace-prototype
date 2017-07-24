@@ -1,4 +1,6 @@
 package foo.gettingstarted.client;
+import java.nio.charset.Charset;
+import java.util.HashMap;
 
 import foo.gettingstarted.RequestType;
 import foo.gettingstarted.Transaction;
@@ -13,9 +15,7 @@ public class ConsoleClient {
             System.exit(0);
         }
 
-        MapClient[] clients = new MapClient[2];
-        clients[0] = new MapClient(0, "config0" );
-       //clients[1] = new MapClient(1, "config1" );
+        MapClient client = new MapClient();
 
         Scanner sc = new Scanner(System.in);
         Scanner console = new Scanner(System.in);
@@ -24,7 +24,7 @@ public class ConsoleClient {
 
             System.out.println("Select a shard (type 0 or 1):");
             int cmd = sc.nextInt();
-            MapClient client = clients[cmd];
+            client.defaultShardID = cmd;
 
             System.out.println("Select an option:");
             System.out.println("1. ADD A KEY AND VALUE TO THE MAP");
@@ -32,13 +32,15 @@ public class ConsoleClient {
             System.out.println("3. REMOVE AND ENTRY FROM THE MAP");
             System.out.println("4. GET THE SIZE OF THE MAP");
             System.out.println("5. VALIDATE A TRANSACTION");
-            System.out.println("6. COMMIT A TRANSACTION");
+            System.out.println("6. SUBMIT A TRANSACTION");
             System.out.println("7. PREPARE_T");
+            System.out.println("9. ACCEPT_T_COMMIT");
 
             cmd = sc.nextInt();
             String key, input;
 
             switch (cmd) {
+                // All the tests below operate on client.testShardID which is user specified at the console
                 case RequestType.PUT:
                     System.out.println("Putting value in the map");
                     System.out.println("Enter the key:");
@@ -67,94 +69,113 @@ public class ConsoleClient {
                     int size = client.size();
                     System.out.println("Map size: " + size);
                     break;
-                case RequestType.TRANSACTION_VALIDITY:
-                    System.out.println("Checking if a transaction is valid");
-                    Transaction tran = new Transaction();
 
-                    System.out.println("Enter transaction ID:");
-                    input = console.nextLine();
-                    tran.addID(input);
-
-                    System.out.println("Enter inputs, one per line (type 'q' to stop):");
-                    input = console.nextLine();
-
-                    while (!(input.equalsIgnoreCase("q"))) {
-                        tran.addInput(input);
-                        input=console.nextLine();
-                    }
-
-                    System.out.println("Enter outputs, one per line (type 'q' to stop):");
-                    input=console.nextLine();
-                    while (!(input.equalsIgnoreCase("q"))) {
-                        tran.addOutput(input);
-                        input=console.nextLine();
-                    }
-
-                    System.out.println("Transaction to be added is:");
-                    tran.print();
-                    result = client.checkTransactionValidity(tran);
-                    System.out.println("Transaction status: " + result);
-                    break;
-
-                case RequestType.TRANSACTION_COMMIT:
+                // All the tests below operate on whichever shards are relevant to the transaction
+                // The shard ID provided by user at the console is ignored
+                case RequestType.TRANSACTION_SUBMIT:
                     System.out.println("Committing  a transaction");
-                    Transaction t = new Transaction();
+                    Transaction t2 = new Transaction();
 
                     System.out.println("Enter transaction ID:");
                     input = console.nextLine();
-                    t.addID(input);
+                    t2.addID(input);
 
                     System.out.println("Enter inputs, one per line (type 'q' to stop):");
                     input = console.nextLine();
 
                     while (!(input.equalsIgnoreCase("q"))) {
-                        t.addInput(input);
+                        t2.addInput(input);
                         input=console.nextLine();
                     }
 
                     System.out.println("Enter outputs, one per line (type 'q' to stop):");
                     input=console.nextLine();
                     while (!(input.equalsIgnoreCase("q"))) {
-                        t.addOutput(input);
+                        t2.addOutput(input);
                         input=console.nextLine();
                     }
 
                     System.out.println("Transaction to be added is:");
-                    t.print();
-                    result = client.commitTransaction(t);
+                    t2.print();
+                    result = client.submitTransaction(t2);
                     System.out.println("Transaction status: " + result);
                     break;
 
                 case RequestType.PREPARE_T:
                     System.out.println("Doing PREPARE_T");
-                    Transaction tt = new Transaction();
+                    Transaction t3 = new Transaction();
 
                     System.out.println("Enter transaction ID:");
                     input = console.nextLine();
-                    tt.addID(input);
+                    t3.addID(input);
 
                     System.out.println("Enter inputs, one per line (type 'q' to stop):");
                     input = console.nextLine();
 
                     while (!(input.equalsIgnoreCase("q"))) {
-                        tt.addInput(input);
+                        t3.addInput(input);
                         input=console.nextLine();
                     }
 
                     System.out.println("Enter outputs, one per line (type 'q' to stop):");
                     input=console.nextLine();
                     while (!(input.equalsIgnoreCase("q"))) {
-                        tt.addOutput(input);
+                        t3.addOutput(input);
                         input=console.nextLine();
                     }
 
                     System.out.println("Transaction to be added is:");
-                    tt.print();
-                    result = client.prepare_t(tt);
-                    System.out.println("Transaction status: " + result);
+                    t3.print();
+
+                    byte[] reply = client.prepare_t(t3);
+                    if(reply != null) {
+                        try {
+                            System.out.println("Transaction status: " + new String(reply, "UTF-8"));
+                        }
+                        catch(Exception e) {
+                            System.out.println("Transaction status: Exception "+ e.toString());
+                        }
+                    }
+                    else
+                        System.out.println("Transaction status: null");
                     break;
 
+                case RequestType.ACCEPT_T_COMMIT:
+                    System.out.println("Doing ACCEPT_T_COMMIT");
+                    Transaction t4 = new Transaction();
+
+                    System.out.println("Enter transaction ID:");
+                    input = console.nextLine();
+                    t4.addID(input);
+
+                    System.out.println("Enter inputs, one per line (type 'q' to stop):");
+                    input = console.nextLine();
+
+                    while (!(input.equalsIgnoreCase("q"))) {
+                        t4.addInput(input);
+                        input=console.nextLine();
+                    }
+
+                    System.out.println("Enter outputs, one per line (type 'q' to stop):");
+                    input=console.nextLine();
+                    while (!(input.equalsIgnoreCase("q"))) {
+                        t4.addOutput(input);
+                        input=console.nextLine();
+                    }
+
+                    System.out.println("Transaction to be added is:");
+                    t4.print();
+
+                    String strReply = client.accept_t_commit(t4);
+                    /*
+                    if(strReply != null)
+                            System.out.println("Transaction status: " + strReply);
+                    else
+                        System.out.println("Transaction status: null");
+                        */
+                    break;
             }
         }
     }
+
 }
