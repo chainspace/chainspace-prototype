@@ -59,7 +59,7 @@ def create_account(inputs, reference_inputs, parameters, pub):
 def auth_transfer(inputs, reference_inputs, parameters, priv):
 
     # compute outputs
-    amount = int(parameters['amount'])
+    amount = loads(parameters[0])
     new_from_account = loads(inputs[0])
     new_to_account   = loads(inputs[1])
     new_from_account["balance"] -= amount
@@ -69,7 +69,7 @@ def auth_transfer(inputs, reference_inputs, parameters, priv):
     hasher = sha256()
     hasher.update(dumps(inputs).encode('utf8'))
     hasher.update(dumps(reference_inputs).encode('utf8'))
-    hasher.update(dumps({"amount" : parameters["amount"]}).encode('utf8'))
+    hasher.update(dumps(parameters[0]).encode('utf8'))
 
     # sign message
     G = setup()[0]
@@ -78,9 +78,7 @@ def auth_transfer(inputs, reference_inputs, parameters, priv):
     # return
     return {
         'outputs': (dumps(new_from_account), dumps(new_to_account)),
-        'extra_parameters' : {
-            'signature' : pack(sig)
-        }
+        'extra_parameters' : (pack(sig),)
     }
 
 # ------------------------------------------------------------------
@@ -133,11 +131,12 @@ def create_account_checker(inputs, reference_inputs, parameters, outputs, return
 @contract.checker('auth_transfer')
 def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
-        amount = int(parameters['amount'])
+        amount = loads(parameters[0])
         input_from_account = loads(inputs[0])
         input_to_account = loads(inputs[1])
         output_from_account = loads(outputs[0])
         output_to_account = loads(outputs[1])
+        sig = unpack(parameters[1])
 
         # check format
         if len(inputs) != 2 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
@@ -170,15 +169,16 @@ def auth_transfer_checker(inputs, reference_inputs, parameters, outputs, returns
         hasher = sha256()
         hasher.update(dumps(inputs).encode('utf8'))
         hasher.update(dumps(reference_inputs).encode('utf8'))
-        hasher.update(dumps({"amount" : parameters["amount"]}).encode('utf8'))
+        hasher.update(dumps(parameters[0]).encode('utf8'))
 
         # recompose signed digest
         pub = unpack(input_from_account['pub'])
-        sig = unpack(parameters['signature'])
 
         # verify signature
         (G, _, _, _) = setup()
         return do_ecdsa_verify(G, pub, sig, hasher.digest())
+
+        return True
 
     except (KeyError, Exception):
         return False
