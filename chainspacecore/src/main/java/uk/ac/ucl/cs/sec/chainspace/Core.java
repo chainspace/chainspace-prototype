@@ -160,31 +160,20 @@ class Core {
     private void callChecker(TransactionForChecker transactionForChecker)
             throws IOException, AbortTransactionException, StartCheckerException {
 
-        // TODO: fix absolute path requirement
-        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/bank_authenticated.py ";
+        // TODO: path
+        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/bank_authenticated.pyc";
 
         // check if checker is already started
-        /*
         PythonChecker checker =  PythonChecker.getFromCache(
                 checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
         );
 
-
         // call the checker
         String responseString = checker.check(transactionForChecker);
-        */
-        String url = "http://127.0.0.1:5000/" + transactionForChecker.getContractID() +  "/" + transactionForChecker.getMethodID();
-        System.out.println(url);
-        System.out.println(transactionForChecker.toJson());
-        String responseString = Utils.makePostRequest(url, transactionForChecker.toJson());
-
         JSONObject responseJson = new JSONObject(responseString);
 
         // throw error if the checker declines the transaction
-        if (responseJson.getString("success").equalsIgnoreCase("False")) {
-            throw new AbortTransactionException(responseJson.getString("message"));
-        }
-        else if(! responseJson.getString("success").equalsIgnoreCase("True")) {
+        if (! responseJson.getBoolean("success")) {
             throw new AbortTransactionException("The checker declined the transaction.");
         }
 

@@ -21,6 +21,7 @@ from chainspacecontract.examples.utils import setup, key_gen, pack
 # authenticated bank transfer
 ####################################################################
 class TestBankAuthenticated(unittest.TestCase):
+
     # --------------------------------------------------------------
     # test init
     # --------------------------------------------------------------
@@ -28,11 +29,9 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## run service
         ##
-        """
-        checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        checker_service_process.start()
-        time.sleep(0.1)
-        """
+        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
+        #checker_service_process.start()
+        #time.sleep(0.1)
 
         ##
         ## create transaction
@@ -45,21 +44,18 @@ class TestBankAuthenticated(unittest.TestCase):
         response = requests.post(
             'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
         )
-        print response.json()
+        #print response.json()
         self.assertTrue(response.json()['success'])
 
         ##
         ## stop service
         ##
-        """
-        checker_service_process.terminate()
-        checker_service_process.join()
-        """
+        #checker_service_process.terminate()
+        #checker_service_process.join()
 
     # --------------------------------------------------------------
     # test create account
     # --------------------------------------------------------------
-    """
     def test_create_account(self):
         ##
         ## run service
@@ -92,6 +88,7 @@ class TestBankAuthenticated(unittest.TestCase):
         response = requests.post(
             'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
         )
+        #print response.json()
         self.assertTrue(response.json()['success'])
 
         ##
@@ -99,10 +96,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         #checker_service_process.terminate()
         #checker_service_process.join()
-    """
-
-
-    """
+  
     # --------------------------------------------------------------
     # test an authenticated bank transfer
     # --------------------------------------------------------------
@@ -110,9 +104,9 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## run service
         ##
-        checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        checker_service_process.start()
-        time.sleep(0.1)
+        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
+        #checker_service_process.start()
+        #time.sleep(0.1)
 
         ##
         ## create transaction
@@ -146,7 +140,7 @@ class TestBankAuthenticated(unittest.TestCase):
         bob_account = create_bob_account_transaction['outputs'][1]
 
         # pack transaction
-        transaction_dict = bank_authenticated.auth_transfer(
+        transaction = bank_authenticated.auth_transfer(
             [alice_account, bob_account],
             None,
             [dumps(3)],
@@ -157,16 +151,16 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/auth_transfer', json=transaction_to_solution(transaction_dict)
+            'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
         )
-        self.assertTrue(response.json()['success'])
+        #print response.json()
+        self.assertTrue(response.json()['success'] == 'True')
 
         ##
         ## stop service
         ##
-        checker_service_process.terminate()
-        checker_service_process.join()
-
+        #checker_service_process.terminate()
+        #checker_service_process.join()
 
     # --------------------------------------------------------------
     # test many authenticated bank transfers
@@ -175,9 +169,9 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## run service
         ##
-        checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        checker_service_process.start()
-        time.sleep(0.1)
+        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
+        #checker_service_process.start()
+        #time.sleep(0.1)
 
         ##
         ## create transaction
@@ -216,28 +210,29 @@ class TestBankAuthenticated(unittest.TestCase):
         transaction = {}
         input_obj = [alice_account, bob_account]
         for i in range(0, num_transfers):
-            transaction_dict = bank_authenticated.auth_transfer(
+            transaction = bank_authenticated.auth_transfer(
                 input_obj,
                 None,
                 [dumps(transfer_amount)],
                 pack(alice_priv)
             )
-            input_obj = transaction_dict['transaction']['outputs']
+            input_obj = transaction['transaction']['outputs']
 
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/auth_transfer', json=transaction_to_solution(transaction_dict)
+            'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
         )
+        #print response.json()
         self.assertTrue(response.json()['success'])
 
         ##
         ## stop service
         ##
-        checker_service_process.terminate()
-        checker_service_process.join()
+        #checker_service_process.terminate()
+        #checker_service_process.join()
 
     # --------------------------------------------------------------
     # test read account
@@ -246,9 +241,9 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         ## run service
         ##
-        checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        checker_service_process.start()
-        time.sleep(0.1)
+        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
+        #checker_service_process.start()
+        #time.sleep(0.1)
 
         ##
         ## create transaction
@@ -306,28 +301,29 @@ class TestBankAuthenticated(unittest.TestCase):
 
         # read bob's account
         bob_account = input_obj[1]
-        transaction_dict = bank_authenticated.read(
+        transaction = bank_authenticated.read(
             None,
             (bob_account,),
             None
         )
-        print transaction_dict['transaction']['returns']
+        print transaction['transaction']['returns']
 
 
         ##
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/' + bank_authenticated_contract.contract_name + '/read', json=transaction_to_solution(transaction_dict)
+            'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
         )
+        #print response.json()
         self.assertTrue(response.json()['success'])
 
         ##
         ## stop service
         ##
-        checker_service_process.terminate()
-        checker_service_process.join()
-    """
+        #checker_service_process.terminate()
+        #checker_service_process.join()
+
 
 ####################################################################
 # main

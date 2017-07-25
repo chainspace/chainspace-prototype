@@ -18,7 +18,7 @@ class PythonChecker {
     private Process checkerProcess;
 
     private static final String CHECKER_URL = "http://127.0.0.1:5000/";
-    private static final int CACHE_DEPTH = 20;
+    private static final int CACHE_DEPTH = 100000;
 
     private static final ArrayList<PythonChecker> cache = new ArrayList<>(CACHE_DEPTH);
 
@@ -29,22 +29,20 @@ class PythonChecker {
         this.contractID = contractID;
         this.methodID = methodID;
 
-        // if not, start a new checker
+        // start the checker
         this.startChecker();
 
     }
 
-    void startChecker() throws StartCheckerException {
+    private void startChecker() throws StartCheckerException {
 
         ProcessBuilder pb = new ProcessBuilder(Arrays.asList("python", this.pythonScriptPath));
         try {
 
             // start thread
-            System.out.println(30);
             this.checkerProcess = pb.start();
             // sleep
-            Thread.sleep(20);
-            System.out.println(30);
+            Thread.sleep(1000);
 
         } catch (IOException | InterruptedException e) {
             throw new StartCheckerException("Couldn't start checker.");
@@ -52,35 +50,26 @@ class PythonChecker {
 
     }
 
-    public String getPythonScriptPath() {
-        return pythonScriptPath;
-    }
-
-    public String getContractID() {
+    private String getContractID() {
         return contractID;
     }
+    private String getMethodID() {
+        return methodID;
+    }
+    private String getURL() {
 
-    void stopChecker() {
+        return CHECKER_URL + this.contractID + "/" + this.methodID;
+    }
+
+    private void stopChecker() {
 
         this.checkerProcess.destroy();
 
     }
 
-    String check(TransactionForChecker transactionForChecker) {
+    String check(TransactionForChecker transactionForChecker) throws IOException {
 
-        try {
-
-            String url = CHECKER_URL + this.contractID + "/" + this.methodID;
-            System.out.println(url);
-            return Utils.makePostRequest(url, transactionForChecker.toJson());
-
-        } catch (IOException e) {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("success", "False");
-            jsonObject.put("message", e.getMessage());
-            return jsonObject.toString();
-        }
-
+        return Utils.makePostRequest(this.getURL(), transactionForChecker.toJson());
     }
 
     static PythonChecker getFromCache(String pythonScriptPath, String contractID, String methodID)
@@ -89,7 +78,9 @@ class PythonChecker {
 
         // check if that checker is already in the cache
         for (PythonChecker aCache : cache) {
-            if (Objects.equals(contractID, aCache.getContractID())) {
+            if ( contractID.equals(aCache.getContractID())
+                    && methodID.equals(aCache.getMethodID()) ) {
+                System.out.println("in cache");
                 return aCache;
             }
         }
@@ -97,7 +88,10 @@ class PythonChecker {
         // otherwise, update cache
         PythonChecker newChecker = new PythonChecker(pythonScriptPath, contractID, methodID);
         cache.add(newChecker);
-        if (cache.size() > CACHE_DEPTH) {cache.remove(0);}
+        if (cache.size() > CACHE_DEPTH) {
+            cache.get(0).stopChecker();
+            cache.remove(0);
+        }
         return newChecker;
 
     }
