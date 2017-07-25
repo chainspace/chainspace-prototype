@@ -40,7 +40,7 @@ public class Main {
 
      */
     static final boolean DEBUG_ALLOW_REPEAT         = true;
-    static final boolean DEBUG_SKIP_CHECKER         = true;
+    static final boolean DEBUG_SKIP_CHECKER         = false;
     static final boolean DEBUG_NO_BROADCAST         = true;
     static final boolean DEBUG_IGNORE_DEPENDENCIES  = false;
 

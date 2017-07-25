@@ -35,6 +35,7 @@ class SQLiteConnector extends DatabaseConnector {
 
             // create table to store logs
             sql = "CREATE TABLE IF NOT EXISTS logs (" +
+                    "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
                     "transaction_id CHAR(32) NOT NULL UNIQUE," +
                     "transactionJson TEXT NOT NULL)";
             statement.executeUpdate(sql);
@@ -56,6 +57,7 @@ class SQLiteConnector extends DatabaseConnector {
 
             // create table to store logs
             sql = "CREATE TABLE IF NOT EXISTS logs (" +
+                    "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
                     "transaction_id CHAR(32) NOT NULL," +
                     "transactionJson TEXT NOT NULL)";
             statement.executeUpdate(sql);
@@ -158,7 +160,7 @@ class SQLiteConnector extends DatabaseConnector {
                 if (resultSet.isBeforeFirst() && resultSet.getInt("status") == 0) {
                     if (Main.VERBOSE) {
                         System.out.print("\tStatus: ");
-                        System.err.println("FAILLED");
+                        System.err.println("FAILED");
                     }
                     return true;
                 }
