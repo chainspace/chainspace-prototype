@@ -68,22 +68,6 @@ class TransactionForChecker {
         return Utils.hash(this.toJson());
     }
 
-
-
-    /**
-     * addParameters
-     * Add new parameters to the transaction.
-     */
-    void addParameters(String[] newParameters) {
-
-        String[] tmp = new String[this.parameters.length + newParameters.length];
-        System.arraycopy(this.parameters, 0, tmp, 0, this.parameters.length);
-        System.arraycopy(newParameters, 0, tmp, this.parameters.length, newParameters.length);
-        this.parameters = tmp;
-
-    }
-
-
     /*
         getters
      */

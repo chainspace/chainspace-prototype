@@ -101,7 +101,7 @@ class NodeService {
             String[] out = this.core.processTransaction(request.body());
 
             // create json response
-            responseJson.put("status", "OK");
+            responseJson.put("success", "True");
             responseJson.put("new objects", out);
             response.status(200);
 
@@ -109,7 +109,7 @@ class NodeService {
         catch (Exception e) {
 
             // create json  error response
-            responseJson.put("status", "ERROR");
+            responseJson.put("success", "False");
             responseJson.put("message", e.getMessage());
             response.status(400);
 

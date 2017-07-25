@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  *
@@ -38,9 +39,11 @@ class PythonChecker {
         try {
 
             // start thread
+            System.out.println(30);
             this.checkerProcess = pb.start();
             // sleep
-            Thread.sleep(1000);
+            Thread.sleep(100);
+            System.out.println(30);
 
         } catch (IOException | InterruptedException e) {
             throw new StartCheckerException("Couldn't start checker.");
@@ -70,7 +73,7 @@ class PythonChecker {
 
         } catch (IOException e) {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("status", "ERROR");
+            jsonObject.put("success", "False");
             jsonObject.put("message", e.getMessage());
             return jsonObject.toString();
         }
@@ -81,14 +84,14 @@ class PythonChecker {
 
         // check if that checker is already in the cache
         for (PythonChecker aCache : cache) {
-            if (contractID == aCache.getContractID()) {
+            if (Objects.equals(contractID, aCache.getContractID())) {
                 return aCache;
             }
         }
 
         // otherwise, update cache
         PythonChecker newChecker = new PythonChecker(pythonScriptPath, contractID);
-        cache.add(new PythonChecker(pythonScriptPath, contractID));
+        cache.add(newChecker);
         if (cache.size() > CACHE_DEPTH) {cache.remove(0);}
         return newChecker;
 

@@ -16,8 +16,8 @@ class Transaction {
     private String[] referenceInputIDs;
     private String[] parameters;
     private String[] returns;
-    private String[] outputIDs;
-    private String[] dependencies;
+    private String[] outputs;
+    private String[] dependencies; // private Transaction[] dependencies;
 
     /**
      * constructor
@@ -28,7 +28,7 @@ class Transaction {
             String[] referenceInputIDs,
             String[] parameters,
             String[] returns,
-            String[] outputIDs,
+            String[] outputs,
             String[] dependencies
     ) {
         this.contractID         = contractID;
@@ -36,7 +36,7 @@ class Transaction {
         this.referenceInputIDs  = referenceInputIDs;
         this.parameters         = parameters;
         this.returns            = returns;
-        this.outputIDs          = outputIDs;
+        this.outputs            = outputs;
         this.dependencies       = dependencies;
     }
 
@@ -92,8 +92,8 @@ class Transaction {
         return returns;
     }
 
-    String[] getOutputIDs() {
-        return outputIDs;
+    String[] getOutputs() {
+        return outputs;
     }
 
     String[] getDependencies() {

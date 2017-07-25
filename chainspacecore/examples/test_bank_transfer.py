@@ -147,6 +147,7 @@ def test_dependencies():
 # test 3
 # check a transaction with dependencies & returns
 # -------------------------------------------------------------------------------
+"""
 def test_dependencies_with_returns():
     # run checker and cspace
     t1 = Thread(target=start_checker, args=(app_checker,))
@@ -239,7 +240,7 @@ def test_dependencies_with_returns():
 
     finally:
         t1._Thread__stop()
-
+    """
 
 
 ##################################################################################

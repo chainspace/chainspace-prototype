@@ -55,7 +55,7 @@ class TransactionPackager {
 
             // create java objects
             transaction = Transaction.fromJson(requestJson.getJSONObject("transaction"));
-            store = Store.fromJson(requestJson.getJSONArray("store"));
+            store = Store.fromJson(requestJson.getJSONObject("store"));
 
             // check transaction's integrity
             if (! checkTransactionIntegrity(transaction, store)) {
@@ -70,30 +70,24 @@ class TransactionPackager {
         // assemble inputs objects
         String[] inputs = new String[transaction.getInputIDs().length];
         for (int i = 0; i < transaction.getInputIDs().length; i++) {
-            inputs[i] = store.getValueFromKey(transaction.getInputIDs()[i]);
+            inputs[i] = store.get(transaction.getInputIDs()[i]);
         }
 
         // assemble reference inputs objects
         String[] referenceInputs = new String[transaction.getReferenceInputIDs().length];
         for (int i = 0; i < transaction.getReferenceInputIDs().length; i++) {
-            referenceInputs[i] = store.getValueFromKey(transaction.getReferenceInputIDs()[i]);
-        }
-
-        // assemble output objects
-        String[] outputs = new String[transaction.getOutputIDs().length];
-        for (int i = 0; i < transaction.getOutputIDs().length; i++) {
-            outputs[i] = store.getValueFromKey(transaction.getOutputIDs()[i]);
+            referenceInputs[i] = store.get(transaction.getReferenceInputIDs()[i]);
         }
 
         // create full transaction
         return new TransactionForChecker(
-                transaction.getContractID(),
-                inputs,
-                referenceInputs,
-                transaction.getParameters().clone(),
-                transaction.getReturns().clone(),
-                outputs,
-                transaction.getDependencies()
+            transaction.getContractID(),
+            inputs,
+            referenceInputs,
+            transaction.getParameters().clone(),
+            transaction.getReturns().clone(),
+            transaction.getOutputs().clone(),
+            transaction.getDependencies()
         );
 
     }
@@ -106,21 +100,18 @@ class TransactionPackager {
     private static boolean checkTransactionIntegrity(Transaction transaction, Store store)
             throws NoSuchAlgorithmException
     {
-
         // check transaction's and store's format
         // all fields must be present. For instance, if a transaction has no parameters, an empty array should be sent
-        if (
-            store.getArray()                      == null
+        if ( store == null
             || transaction.getInputIDs()          == null
             || transaction.getReferenceInputIDs() == null
             || transaction.getReturns()           == null
             || transaction.getParameters()        == null
-            || transaction.getOutputIDs()         == null
+            || transaction.getOutputs()           == null
             || transaction.getDependencies()      == null
         ){
             return false;
         }
-
 
         /*
         TODO: for input and reference input objects, check that the ID in the store matche the value in the db.
