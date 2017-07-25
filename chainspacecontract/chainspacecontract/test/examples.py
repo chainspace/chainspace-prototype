@@ -21,7 +21,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['1'],
             'outputs': ['2'],
             'parameters': [],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -31,7 +31,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['1'],
             'outputs': ['3'],
             'parameters': [],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -49,7 +49,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['1'],
             'outputs': ['2'],
             'parameters': [],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -59,7 +59,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['1'],
             'outputs': ['3'],
             'parameters': [],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -77,7 +77,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['{"name": "alice", "balance": 10}', '{"name": "bob", "balance": 10}'],
             'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 15, "name": "bob"}'],
             'parameters': ['5'],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -87,7 +87,7 @@ class TestExamples(unittest.TestCase):
             'inputs': ['{"balance": 10, "name": "alice"}', '{"balance": 10, "name": "bob"}'],
             'outputs': ['{"balance": 5, "name": "alice"}', '{"balance": 16, "name": "bob"}'],
             'parameters': ['5'],
-            'reference_inputs': [],
+            'referenceInputs': [],
             'returns': {},
         })
         response_json = response.json()
@@ -114,9 +114,9 @@ class TestExamples(unittest.TestCase):
                 'parameters': [],
                 'outputs': ('1', ),
                 'returns': {},
-                'reference_inputs': ()
+                'referenceInputs': ()
             }],
-            'reference_inputs': ()
+            'referenceInputs': ()
         })
         response_json = response.json()
         self.assertTrue(response_json['success'])
@@ -134,9 +134,9 @@ class TestExamples(unittest.TestCase):
                 'parameters': [],
                 'outputs': ('0', ),
                 'returns': {},
-                'reference_inputs': ()
+                'referenceInputs': ()
             }],
-            'reference_inputs': ()
+            'referenceInputs': ()
         })
         response_json = response.json()
         self.assertFalse(response_json['success'])
@@ -162,9 +162,9 @@ class TestExamples(unittest.TestCase):
                 'parameters': ['0'],
                 'outputs': ('1', ),
                 'returns': {},
-                'reference_inputs': ()
+                'referenceInputs': ()
             }],
-            'reference_inputs': ()
+            'referenceInputs': ()
         })
         response_json = response.json()
         self.assertTrue(response_json['success'])
@@ -182,9 +182,9 @@ class TestExamples(unittest.TestCase):
                 'parameters': ['0'],
                 'outputs': ('0', ),
                 'returns': {},
-                'reference_inputs': ()
+                'referenceInputs': ()
             }],
-            'reference_inputs': ()
+            'referenceInputs': ()
         })
         response_json = response.json()
         self.assertFalse(response_json['success'])

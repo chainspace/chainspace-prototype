@@ -59,14 +59,14 @@ class ChainspaceContract(object):
                 dependencies = (request.json['dependencies'] if 'dependencies' in request.json else [])
                 for dependency in dependencies:
                     dependency['inputs'] = tuple(dependency['inputs'])
-                    dependency['reference_inputs'] = tuple(dependency['reference_inputs'])
+                    dependency['referenceInputs'] = tuple(dependency['referenceInputs'])
                     dependency['outputs'] = tuple(dependency['outputs'])
                     dependency['parameters'] = tuple(dependency['parameters'])
                     dependency['returns'] = tuple(dependency['returns'])
 
                 return function_wrapper(
                     tuple(request.json['inputs']),
-                    tuple(request.json['reference_inputs']),
+                    tuple(request.json['referenceInputs']),
                     tuple(request.json['parameters']),
                     tuple(request.json['outputs']),
                     tuple(request.json['returns']),
@@ -113,7 +113,7 @@ class ChainspaceContract(object):
 
                 if checker_mode:
                     result['inputs'] = inputs
-                    result['reference_inputs'] = reference_inputs
+                    result['referenceInputs'] = reference_inputs
                 else:
                     store = {}
                     for obj in inputs + reference_inputs:
@@ -217,14 +217,14 @@ def transaction_to_solution(data):
 
     for single_transaction in (transaction,) + tuple(transaction['dependencies']):
         single_transaction['inputs'] = []
-        single_transaction['reference_inputs'] = []
+        single_transaction['referenceInputs'] = []
         for object_id in single_transaction['inputIDs']:
             single_transaction['inputs'].append(store[object_id])
         for object_id in single_transaction['referenceInputIDs']:
-            single_transaction['reference_inputs'].append(store[object_id])
+            single_transaction['referenceInputs'].append(store[object_id])
         del single_transaction['inputIDs']
         del single_transaction['referenceInputIDs']
         single_transaction['inputs'] = tuple(single_transaction['inputs'])
-        single_transaction['reference_inputs'] = tuple(single_transaction['reference_inputs'])
+        single_transaction['referenceInputs'] = tuple(single_transaction['referenceInputs'])
 
     return transaction
