@@ -104,7 +104,7 @@ class ChainspaceContract(object):
                     result = function(inputs, reference_inputs, parameters, *args, **kwargs)
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
-                    if key not in result or key is None:
+                    if key not in result or result[key] is None:
                         result[key] = tuple()
 
                 result['parameters'] = parameters
@@ -195,8 +195,9 @@ class ChainspaceObject(str):
         """
         obj = transaction['outputs'][output_index]
         transaction_digest = hashlib.sha256(json.dumps(transaction)).hexdigest()
-        object_digest = hashlib.sha256(json.dumps(transaction['outputs'][output_index]))
+        object_digest = hashlib.sha256(json.dumps(transaction['outputs'][output_index])).hexdigest()
         object_id = '{}|{}|{}'.format(transaction_digest, object_digest, output_index)
+        object_id = hashlib.sha256(object_id).hexdigest()
         return ChainspaceObject(object_id, obj)
 
 
