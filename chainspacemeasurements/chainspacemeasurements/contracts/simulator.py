@@ -21,4 +21,4 @@ def create(inputs, reference_inputs, parameters):
 
 @contract.method('consume')
 def consume(inputs, reference_inputs, parameters):
-    pass
+    return {}
