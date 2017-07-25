@@ -104,7 +104,7 @@ class ChainspaceContract(object):
                     result = function(inputs, reference_inputs, parameters, *args, **kwargs)
 
                 for key in ('outputs', 'returns', 'extra_parameters'):
-                    if key not in result or result['key'] is None:
+                    if key not in result or result[key] is None:
                         result[key] = tuple()
 
                 result['parameters'] = parameters
