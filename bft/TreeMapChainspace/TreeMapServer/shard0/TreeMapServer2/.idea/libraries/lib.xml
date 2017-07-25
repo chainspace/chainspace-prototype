@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.5.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/netty-all-4.1.9.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/core-0.1.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-jdk14-1.5.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-codec-1.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

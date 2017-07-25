@@ -108,6 +108,7 @@ class TestExamples(unittest.TestCase):
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
+                'methodID': 'increment',
                 'inputs': ('0', ),
                 'contractID': increment_contract.contract_name,
                 'parameters': [],
@@ -127,6 +128,7 @@ class TestExamples(unittest.TestCase):
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
+                'methodID': 'increment',
                 'inputs': ('0', ),
                 'contractID': increment_contract.contract_name,
                 'parameters': [],
@@ -154,6 +156,7 @@ class TestExamples(unittest.TestCase):
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
+                'methodID': 'increment',
                 'inputs': ('0', ),
                 'contractID': increment_twice_contract.contract_name,
                 'parameters': ['0'],
@@ -173,6 +176,7 @@ class TestExamples(unittest.TestCase):
             'outputs': ('1', ),
             'returns': {},
             'dependencies': [{
+                'methodID': 'increment',
                 'inputs': ('0', ),
                 'contractID': increment_twice_contract.contract_name,
                 'parameters': ['0'],

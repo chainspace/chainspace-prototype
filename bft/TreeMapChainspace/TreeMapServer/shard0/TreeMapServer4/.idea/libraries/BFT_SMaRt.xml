@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="BFT-SMaRt">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/bin/BFT-SMaRt.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

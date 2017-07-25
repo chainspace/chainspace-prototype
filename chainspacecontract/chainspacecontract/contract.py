@@ -123,6 +123,7 @@ class ChainspaceContract(object):
                     result['referenceInputIDs'] = [obj.object_id for obj in reference_inputs]
 
                 result['contractID'] = self.contract_name
+                result['methodID'] = method_name
 
                 result['dependencies'] = self.dependent_transactions_log
 

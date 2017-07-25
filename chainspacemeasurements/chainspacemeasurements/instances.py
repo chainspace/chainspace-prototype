@@ -45,29 +45,6 @@ class ChainspaceNetwork(object):
         message = '[instance {}] {}'.format(instance.id, message)
         self._log(message)
 
-    def _single_install_deps(self, instance):
-        self._log_instance(instance, "Installing Chainspace dependencies...")
-        commands = (
-            'sudo apt update',
-            'sudo apt install -t jessie-backports openjdk-8-jdk -y',
-            'sudo apt install git python-pip maven screen psmisc -y',
-        )
-        for command in commands:
-            self._single_ssh_exec(instance, command)
-        self._log_instance(instance, "Installed Chainspace dependencies.")
-
-    def _single_install_core(self, instance):
-        self._log_instance(instance, "Installing Chainspace core...")
-        commands = (
-            'git clone https://github.com/musalbas/chainspace',
-            'sudo pip install chainspace/chainspacecontract',
-            'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java',
-            'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single',
-        )
-        for command in commands:
-            self._single_ssh_exec(instance, command)
-        self._log_instance(instance, "Installed Chainspace core.")
-
     def _single_ssh_connect(self, instance):
         self._log_instance(instance, "Initiating SSH connection...")
         client = paramiko.SSHClient()
@@ -122,20 +99,21 @@ class ChainspaceNetwork(object):
 
     def install_deps(self):
         self._log("Installing Chainspace dependencies on all nodes...")
-        args = [(self._single_install_deps, instance) for instance in self._get_running_instances()]
-        pool = Pool(ChainspaceNetwork.threads)
-        pool.map(_multi_args_wrapper, args)
-        pool.close()
-        pool.join()
+        command = 'until '
+        command += 'sudo apt update'
+        command += '&& sudo apt install -t jessie-backports openjdk-8-jdk -y'
+        command += '&& sudo apt install git python-pip maven screen psmisc -y'
+        command += '; do :; done'
+        self.ssh_exec(command)
         self._log("Installed Chainspace dependencies on all nodes.")
 
     def install_core(self):
         self._log("Installing Chainspace core on all nodes...")
-        args = [(self._single_install_core, instance) for instance in self._get_running_instances()]
-        pool = Pool(ChainspaceNetwork.threads)
-        pool.map(_multi_args_wrapper, args)
-        pool.close()
-        pool.join()
+        command = 'git clone https://github.com/musalbas/chainspace;'
+        command += 'sudo pip install chainspace/chainspacecontract;'
+        command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
+        command += 'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
 
     def ssh_connect(self):
@@ -197,15 +175,16 @@ class ChainspaceNetwork(object):
 
     def uninstall_core(self):
         self._log("Uninstalling Chainspace core on all nodes...")
-        command = 'rm -rf chainspace; sudo pip uninstall -y chainspacecontract'
+        command = 'rm -rf chainspace;'
+        command += 'sudo pip uninstall -y chainspacecontract'
         self.ssh_exec(command)
         self._log("Uninstalled Chainspace core on all nodes.")
 
     def clean_core(self):
-        self_log("Resetting Chainspace core configuration and state...")
+        self._log("Resetting Chainspace core configuration and state...")
         command = 'rm node1.sqlite'
         self.ssh_exec(command)
-        self_log("Reset Chainspace core configuration and state.")
+        self._log("Reset Chainspace core configuration and state.")
 
     def config_core(self, shards, nodes_per_shard):
         # TODO: configure cores.
