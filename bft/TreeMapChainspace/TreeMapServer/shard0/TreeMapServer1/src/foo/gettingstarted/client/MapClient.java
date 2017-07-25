@@ -250,8 +250,84 @@ public class MapClient implements Map<String, String> {
         }
     }
 
-    public String submitTransaction(Transaction t) {
+    public HashMap<String,Boolean> createObjects(List<String> outputObjects) {
+        return createObjects(outputObjects,invokeAsynchTimeout);
+    }
 
+    public HashMap<String,Boolean> createObjects(List<String> outputObjects, int invokeTimeoutAsynch) {
+        HashMap<Integer,Integer> shardToReq = new HashMap<Integer,Integer>();; // Request IDs indexed by shard IDs
+        TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
+        boolean earlyTerminate = false;
+        String finalResponse = null;
+
+        try {
+            System.out.println("CREATE_OBJECT (DRIVER): Sending CREATE_OBJECT to relevant shards");
+
+            // Send a request to each shard relevant to the ouputs
+            for(String output: outputObjects) {
+                int shardID = mapObjectToShard(output);
+                if(shardID == -1) {
+                    System.out.println("ACCEPT_T(DRIVER): Cannot map input "+output+" to a shard.");
+                    earlyTerminate = true;
+                    return null;
+                }
+
+                ByteArrayOutputStream bs = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bs);
+                oos.writeInt(RequestType.CREATE_OBJECT);
+                oos.writeUTF(output);
+                oos.close();
+
+                int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynch(shardID), reqType);
+                System.out.println("CREATE_OBJECT (DRIVER): Sent to shard ID " + shardID + ", req ID " + req + " client ID " + shardToClientAsynch.get(shardID));
+                shardToReq.put(shardID, req);
+            }
+            Thread.sleep(invokeTimeoutAsynch);//how long to wait for replies from all shards before doing cleanup and returning
+        }
+        catch(Exception e){
+            System.out.println("CREATE_OBJECT (DRIVER): Experienced Exception: " + e.getMessage());
+        }
+
+        finally {
+            // Initialize replies with false for each object. This will be returned to the caller
+            HashMap<String,Boolean> replies = new HashMap<String,Boolean>();
+            for(String each: outputObjects) {
+                replies.put(each, false);
+            }
+            if(!earlyTerminate) {
+                // Now responses from all shards should be in asynchReplies
+                for(String output: outputObjects) {
+                    int shard = mapObjectToShard(output);
+                    int client = shardToClientAsynch.containsKey(shard) ? shardToClientAsynch.get(shard) : -1;
+                    int req = shardToReq.containsKey(shard) ? shardToReq.get(shard) : -1;
+                    String key = getKeyAsynchReplies(client, req, reqType.toString());
+                    TOMMessage m = asynchReplies.get(key);
+
+                    // finalResponse is ABORT if at least one shard replies ABORT or does not reply at all
+                    if (m != null) {
+                        byte[] reply = m.getContent();
+                        String strReply = new String(reply, Charset.forName("UTF-8"));
+
+                        System.out.println("CREATE_OBJECT (DRIVER): Shard ID "+shard+" replied: "+strReply);
+
+                        if (strReply.equals(ResponseType.CREATED_OBJECT))
+                            replies.put(output, true);
+                        else
+                            replies.put(output, false);
+                    } else {
+                        replies.put(output, false);
+                    }
+                    asynchReplies.remove(key);
+                }
+            }
+            else {
+                System.out.println("CREATE_OBJECT (DRIVER): Could not be submitted!");
+            }
+            return replies;
+        }
+    }
+
+    public String submitTransaction(Transaction t) {
         try {
             ByteArrayOutputStream bs = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bs);

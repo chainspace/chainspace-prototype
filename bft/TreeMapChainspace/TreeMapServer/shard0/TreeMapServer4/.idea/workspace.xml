@@ -33,11 +33,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MapClient.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="MapClient.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="46">
-              <caret line="507" column="0" lean-forward="true" selection-start-line="507" selection-start-column="0" selection-end-line="507" selection-end-column="0" />
+              <caret line="507" column="0" lean-forward="false" selection-start-line="507" selection-start-column="0" selection-end-line="507" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#5392#5393#0" expanded="true" />
@@ -71,6 +71,18 @@
             <state relative-caret-position="109">
               <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TreeMapServer.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="78">
+              <caret line="33" column="22" lean-forward="false" selection-start-line="33" selection-start-column="22" selection-end-line="33" selection-end-column="22" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -124,8 +136,8 @@
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/RequestType.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/Transaction.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/ResponseType.java" />
-        <option value="$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java" />
+        <option value="$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java" />
       </list>
     </option>
   </component>
@@ -686,15 +698,16 @@
       <updated>1499851291951</updated>
       <workItem from="1499851294976" duration="17625000" />
       <workItem from="1500369328366" duration="377000" />
-      <workItem from="1500370394985" duration="60773000" />
+      <workItem from="1500370394985" duration="64391000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="78775000" />
+    <option name="totallyTimeSpent" value="82393000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="711" y="462" width="799" height="377" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -809,7 +822,7 @@
         <state relative-caret-position="3450">
           <caret line="250" column="1" lean-forward="true" selection-start-line="250" selection-start-column="1" selection-end-line="250" selection-end-column="1" />
           <folding>
-            <element signature="imports" expanded="false" />
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -881,7 +894,7 @@
         <state relative-caret-position="3465">
           <caret line="251" column="0" lean-forward="true" selection-start-line="251" selection-start-column="0" selection-end-line="251" selection-end-column="0" />
           <folding>
-            <element signature="imports" expanded="false" />
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -927,20 +940,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="36" column="23" lean-forward="true" selection-start-line="0" selection-start-column="0" selection-end-line="421" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="46">
-          <caret line="507" column="0" lean-forward="true" selection-start-line="507" selection-start-column="0" selection-end-line="507" selection-end-column="0" />
+          <caret line="507" column="0" lean-forward="false" selection-start-line="507" selection-start-column="0" selection-end-line="507" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#5392#5393#0" expanded="true" />
@@ -963,6 +966,16 @@
             <element signature="e#12894#12911#0" expanded="true" />
             <element signature="e#17513#17514#0" expanded="true" />
             <element signature="e#17582#17583#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="78">
+          <caret line="33" column="22" lean-forward="false" selection-start-line="33" selection-start-column="22" selection-end-line="33" selection-end-column="22" />
+          <folding>
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>

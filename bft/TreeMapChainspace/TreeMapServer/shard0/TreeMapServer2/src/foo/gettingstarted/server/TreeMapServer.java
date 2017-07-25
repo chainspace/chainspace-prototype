@@ -76,7 +76,14 @@ public class TreeMapServer extends DefaultRecoverable {
                     resultBytes = oldValue.getBytes();
                 }
                 return resultBytes;
-            } else if (reqType == RequestType.REMOVE) {
+            }
+            else if (reqType == RequestType.CREATE_OBJECT) {
+                String object = ois.readUTF();
+                String status = ObjectStatus.ACTIVE; // New objects are active
+                table.put(object, status);
+                return ResponseType.CREATED_OBJECT.getBytes("UTF-8");
+            }
+            else if (reqType == RequestType.REMOVE) {
                 String key = ois.readUTF();
                 String removedValue = table.remove(key);
                 byte[] resultBytes = null;
@@ -350,36 +357,6 @@ public class TreeMapServer extends DefaultRecoverable {
             if (shardID == thisShard) {
                 table.put(input, status);
             }
-        }
-        return true;
-    }
-
-
-    public boolean createTransactionOutputObjects(Transaction t) {
-        List<String> outputObjects = t.outputs;
-
-        // Send a request to each shard relevant to this transaction
-        for(String output: outputObjects) {
-            int shardID = client.mapObjectToShard(output);
-
-            if(shardID == -1) {
-                System.out.println("Cannot map output "+output+" in transaction ID "+t.id+" to a shard.");
-                return false;
-            }
-
-            // Create output object locally
-            if(shardID == thisShard) {
-                table.put(output, ObjectStatus.ACTIVE);
-            }
-            // Tell the other shard to create this object
-            // TODO: ? I send a put request to the target shard which will run BFT and
-            // TODO: at the end all nodes in the shard would have created this new object
-            else {
-                client.defaultShardID = shardID; // This is a hack to get the client to send messages to a given shard
-                // since it is not allowed to change signature of put function
-                client.put(output,ObjectStatus.ACTIVE);
-            }
-
         }
         return true;
     }

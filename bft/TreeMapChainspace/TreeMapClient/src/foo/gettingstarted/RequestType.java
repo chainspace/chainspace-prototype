@@ -10,4 +10,5 @@ public class RequestType {
     public static final int PREPARE_T = 7;
     public static final int ACCEPT_T_ABORT = 8;
     public static final int ACCEPT_T_COMMIT = 9;
+    public static final int CREATE_OBJECT = 10;
 }

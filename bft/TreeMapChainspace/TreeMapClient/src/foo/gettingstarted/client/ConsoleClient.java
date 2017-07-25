@@ -174,6 +174,41 @@ public class ConsoleClient {
                         System.out.println("Transaction status: null");
                         */
                     break;
+                case RequestType.CREATE_OBJECT:
+                    System.out.println("Doing CREATE_OBJECT");
+                    Transaction t5 = new Transaction();
+
+                    System.out.println("Enter transaction ID:");
+                    input = console.nextLine();
+                    t5.addID(input);
+
+                    System.out.println("Enter inputs, one per line (type 'q' to stop):");
+                    input = console.nextLine();
+
+                    while (!(input.equalsIgnoreCase("q"))) {
+                        t5.addInput(input);
+                        input=console.nextLine();
+                    }
+
+                    System.out.println("Enter outputs, one per line (type 'q' to stop):");
+                    input=console.nextLine();
+                    while (!(input.equalsIgnoreCase("q"))) {
+                        t5.addOutput(input);
+                        input=console.nextLine();
+                    }
+
+                    System.out.println("Transaction whose outputs are to be created is:");
+                    t5.print();
+
+                    HashMap<String, Boolean> replies = client.createObjects(t5.outputs);
+                    if(replies != null) {
+                        for(String output: replies.keySet())
+                            System.out.println("Output "+output+" has been added result: "+replies.get(output));
+                    }
+                    else
+                        System.out.println("Replies to CREATE_OBJECT is null");
+                    break;
+
             }
         }
     }

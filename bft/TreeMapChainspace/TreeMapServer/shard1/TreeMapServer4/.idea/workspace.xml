@@ -13,11 +13,11 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="TreeMapServer.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TreeMapServer.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="104">
-              <caret line="37" column="28" lean-forward="false" selection-start-line="37" selection-start-column="28" selection-end-line="37" selection-end-column="28" />
+            <state relative-caret-position="95">
+              <caret line="37" column="37" lean-forward="true" selection-start-line="37" selection-start-column="37" selection-end-line="37" selection-end-column="37" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -25,11 +25,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MapClient.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="MapClient.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="23">
-              <caret line="501" column="16" lean-forward="true" selection-start-line="501" selection-start-column="16" selection-end-line="501" selection-end-column="16" />
+            <state relative-caret-position="53">
+              <caret line="503" column="9" lean-forward="false" selection-start-line="503" selection-start-column="9" selection-end-line="503" selection-end-column="9" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#5392#5393#0" expanded="true" />
@@ -60,8 +60,8 @@
       <file leaf-file-name="RequestType.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/RequestType.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="127">
-              <caret line="12" column="1" lean-forward="false" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
+            <state relative-caret-position="52">
+              <caret line="7" column="38" lean-forward="false" selection-start-line="7" selection-start-column="38" selection-end-line="7" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -116,8 +116,8 @@
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/RequestType.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/ResponseType.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/Transaction.java" />
-        <option value="$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java" />
         <option value="$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java" />
+        <option value="$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java" />
       </list>
     </option>
   </component>
@@ -128,8 +128,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="735" />
-    <option name="y" value="404" />
+    <option name="x" value="605" />
+    <option name="y" value="382" />
     <option name="width" value="856" />
     <option name="height" value="398" />
   </component>
@@ -678,15 +678,16 @@
       <updated>1499853519725</updated>
       <workItem from="1499853523269" duration="654000" />
       <workItem from="1500369347241" duration="237000" />
-      <workItem from="1500370822207" duration="27490000" />
+      <workItem from="1500370822207" duration="30622000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="28381000" />
+    <option name="totallyTimeSpent" value="31513000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="735" y="404" width="856" height="398" extended-state="0" />
+    <frame x="605" y="382" width="856" height="398" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -742,14 +743,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/RequestType.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="127">
-          <caret line="12" column="1" lean-forward="false" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/ResponseType.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="38">
@@ -766,20 +759,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="104">
-          <caret line="37" column="28" lean-forward="false" selection-start-line="37" selection-start-column="28" selection-end-line="37" selection-end-column="28" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/client/MapClient.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="23">
-          <caret line="501" column="16" lean-forward="true" selection-start-line="501" selection-start-column="16" selection-end-line="501" selection-end-column="16" />
+        <state relative-caret-position="53">
+          <caret line="503" column="9" lean-forward="false" selection-start-line="503" selection-start-column="9" selection-end-line="503" selection-end-column="9" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#5392#5393#0" expanded="true" />
@@ -802,6 +785,24 @@
             <element signature="e#12894#12911#0" expanded="true" />
             <element signature="e#17513#17514#0" expanded="true" />
             <element signature="e#17582#17583#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/RequestType.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="52">
+          <caret line="7" column="38" lean-forward="false" selection-start-line="7" selection-start-column="38" selection-end-line="7" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/foo/gettingstarted/server/TreeMapServer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="37" column="37" lean-forward="true" selection-start-line="37" selection-start-column="37" selection-end-line="37" selection-end-column="37" />
+          <folding>
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
