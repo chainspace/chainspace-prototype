@@ -161,15 +161,23 @@ class Core {
             throws IOException, AbortTransactionException, StartCheckerException {
 
         // TODO: fix absolute path requirement
-        String path = "/Users/alberto/GitHub/chainspace/chainspacecore/checkers/11.py";
+        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/bank_authenticated.py ";
 
         // check if checker is already started
-        System.out.println(10);
-        PythonChecker checker =  PythonChecker.getFromCache(path, transactionForChecker.getContractID());
-        System.out.println(20);
+        /*
+        PythonChecker checker =  PythonChecker.getFromCache(
+                checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
+        );
+
 
         // call the checker
         String responseString = checker.check(transactionForChecker);
+        */
+        String url = "http://127.0.0.1:5000/" + transactionForChecker.getContractID() +  "/" + transactionForChecker.getMethodID();
+        System.out.println(url);
+        System.out.println(transactionForChecker.toJson());
+        String responseString = Utils.makePostRequest(url, transactionForChecker.toJson());
+
         JSONObject responseJson = new JSONObject(responseString);
 
         // throw error if the checker declines the transaction

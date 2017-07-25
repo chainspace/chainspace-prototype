@@ -18,6 +18,7 @@ class Transaction {
     private String[] returns;
     private String[] outputs;
     private String[] dependencies; // private Transaction[] dependencies;
+    private String   methodID;
 
     /**
      * constructor
@@ -38,6 +39,7 @@ class Transaction {
         this.returns            = returns;
         this.outputs            = outputs;
         this.dependencies       = dependencies;
+        this.methodID           = methodID;
     }
 
 
@@ -98,5 +100,9 @@ class Transaction {
 
     String[] getDependencies() {
         return dependencies;
+    }
+
+    String getMethodID() {
+        return methodID;
     }
 }

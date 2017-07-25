@@ -18,6 +18,7 @@ class TransactionForChecker {
     private String[] returns;
     private String[] outputs;
     private String[] dependencies;
+    private String   methodID;
 
     /**
      * constructor
@@ -29,7 +30,8 @@ class TransactionForChecker {
             String[] parameters,
             String[] returns,
             String[] outputs,
-            String[] dependencies
+            String[] dependencies,
+            String   methodID
     ) {
         this.contractID       = contractID;
         this.inputs           = inputs;
@@ -38,6 +40,7 @@ class TransactionForChecker {
         this.returns          = returns;
         this.outputs          = outputs;
         this.dependencies     = dependencies;
+        this.methodID         = methodID;
     }
 
 
@@ -102,5 +105,9 @@ class TransactionForChecker {
     String[] getOutputs() {
 
         return outputs;
+    }
+
+    String getMethodID() {
+        return methodID;
     }
 }

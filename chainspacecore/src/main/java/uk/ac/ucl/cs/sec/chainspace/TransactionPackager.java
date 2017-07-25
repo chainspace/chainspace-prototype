@@ -87,7 +87,8 @@ class TransactionPackager {
             transaction.getParameters().clone(),
             transaction.getReturns().clone(),
             transaction.getOutputs().clone(),
-            transaction.getDependencies()
+            transaction.getDependencies(),
+            transaction.getMethodID()
         );
 
     }
