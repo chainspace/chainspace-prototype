@@ -60,9 +60,13 @@ class Core {
         // return and save outputs upon successful execution
         String[] outForClient = new String[]{};
         for (Pair anOut : out) {
-            // loop over outputs
+            // get transactions
             Transaction transaction = (Transaction) anOut.getKey();
             TransactionForChecker transactionForChecker = (TransactionForChecker) anOut.getValue();
+            // make input objects inactive (consumed)
+            if (! Main.DEBUG_ALLOW_REPEAT) {
+                this.databaseConnector.setInactive(transaction.getInputIDs());
+            }
             // save outputs
             this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
             // log transaction
@@ -141,12 +145,6 @@ class Core {
          */
         // TODO: check that all inputs are active.
 
-
-
-        // make input (consumed) objects inactive
-        if (! Main.DEBUG_ALLOW_REPEAT) {
-            this.databaseConnector.setInactive(transaction.getInputIDs());
-        }
 
         // return
         return new Pair[]{new Pair<>(transaction, transactionForChecker)};
