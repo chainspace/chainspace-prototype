@@ -19,6 +19,6 @@ def create(inputs, reference_inputs, parameters):
     }
 
 
-def @contract.method('consume')
+@contract.method('consume')
 def consume(inputs, reference_inputs, parameters):
     pass
