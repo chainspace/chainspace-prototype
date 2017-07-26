@@ -54,7 +54,7 @@ class ChainspaceContract(object):
 
         cli()
 
-    def run_checker_service(self, port):
+    def run_checker_service(self, port=5000):
         self._populate_empty_checkers()
         self.flask_app.run(port=port)
 
