@@ -5,7 +5,6 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
 
@@ -16,7 +15,6 @@ import java.sql.SQLException;
 class NodeService {
 
     // instance variables
-    private int nodeID;
     private Core core;
 
 
@@ -24,16 +22,12 @@ class NodeService {
      * Constructor
      * Runs a node service and init a database.
      */
-    NodeService(int nodeID) throws SQLException, ClassNotFoundException {
-
-        // save node ID
-        this.nodeID = nodeID;
+    NodeService(int port) throws SQLException, ClassNotFoundException {
 
         // run one core
-        this.core = new Core(nodeID);
+        this.core = new Core();
 
         // start service on given port
-        int port = 3000 + nodeID;
         addRoutes(Service.ignite().port(port));
 
         // print init message
@@ -58,10 +52,10 @@ class NodeService {
     private void addRoutes(Service service) {
 
         // returns a json containing the node ID
-        service.path("/api", () -> service.path("/1.0", () -> {
+        service.path("/api", () -> service.path("/"+Main.VERSION, () -> {
 
-            // return node ID
-            service.get("/node/id", (request, response) -> new JSONObject().put("Node ID", nodeID).toString());
+            // debug
+            service.get("/", (request, response) -> "Hello, world!");
 
             // process a transaction
             service.post("/transaction/process", this::processTransactionRequest);
@@ -79,19 +73,6 @@ class NodeService {
 
         // verbose print
         if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
-
-        // broadcast transaction to other nodes
-        if (! Main.DEBUG_NO_BROADCAST) {
-            try {
-
-                broadcastTransaction(request.body());
-
-            } catch (IOException ignored) {
-                // NOTE: this exception is ignored
-                if (Main.VERBOSE) { Utils.printStacktrace(ignored); }
-            }
-        }
-
 
         // process the transaction & create response
         JSONObject responseJson = new JSONObject();
@@ -129,31 +110,13 @@ class NodeService {
 
 
     /**
-     * broadcastTransaction
-     * Broadcast the transaction to other nodes.
-     */
-    private void broadcastTransaction(String data) throws IOException {
-
-        // debug: avoid infinite loop
-        // TODO: get the nodes ID and addresses from a config file
-        if (this.nodeID == 1) {
-            for (int i = 2; i <= Main.CORES; i++) {
-                String url = "http://127.0.0.1:300" + i + "/api/1.0/transaction/process";
-                Utils.makePostRequest(url, data);
-            }
-        }
-
-    }
-
-
-    /**
      * printInitMessage
      * Print on the console an init message.
      */
     private void printInitMessage(int port) {
 
         // print node info
-        System.out.println("\nNode service #" +nodeID+ " is running on port " +port);
+        System.out.println("\nNode service is running on port " +port);
 
     }
 
@@ -165,7 +128,7 @@ class NodeService {
     private void printRequestDetails(Request request, String response) {
 
         // print request summary
-        System.out.println("\nNode service #" +nodeID+ " [POST] @" +request.url()+ " from " +request.ip());
+        System.out.println("\nNode service [POST] @" +request.url()+ " from " +request.ip());
         System.out.println("\trequest content: " + request.body());
         System.out.println("\tresponse content: " + response);
         if (Main.VERBOSE) { Utils.printLine(); }

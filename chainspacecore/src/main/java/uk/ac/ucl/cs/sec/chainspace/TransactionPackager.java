@@ -3,68 +3,29 @@ package uk.ac.ucl.cs.sec.chainspace;
 import org.json.JSONObject;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  * TransactionPackager
  *
- * This class provides a some utilisties to retrieve transactions objects from JSON strings (comming from the HTTP
+ * This class provides a some utilities to retrieve transactions objects from JSON strings (comming from the HTTP
  * requests). This is a separate class, so if we decide to change the transaction's format in the future (change the
  * key-value store, use tree structure, etc), the core is not modified: the core only requires the original transaction
  * (the one with the IDs) and the packet to send to the checker.
  */
 class TransactionPackager {
 
-    /**
-     * makeTransaction
-     * Extract a transaction object from the json request.
-     */
-    static Transaction makeTransaction(String request) throws AbortTransactionException {
-        // get json request
-        JSONObject requestJson = new JSONObject(request);
-
-        // get the transaction and the key-value store as java objects
-        Transaction transaction;
-        try {
-
-            // create java objects
-            transaction = Transaction.fromJson(requestJson.getJSONObject("transaction"));
-
-        }
-        catch (Exception e) {
-            throw new AbortTransactionException("Malformed transaction.");
-        }
-
-        // return transaction
-        return transaction;
-    }
-
 
     /**
      * makeFullTransaction
      * convert a key-value store and a transaction into a fullTransaction java object
      */
-    static TransactionForChecker makeFullTransaction(String request) throws AbortTransactionException {
-
-        // get json request
-        JSONObject requestJson = new JSONObject(request);
-
-        // get the transaction and the key-value store as java objects
-        Transaction transaction;
-        Store store;
-        try {
-
-            // create java objects
-            transaction = Transaction.fromJson(requestJson.getJSONObject("transaction"));
-            store = Store.fromJson(requestJson.getJSONObject("store"));
-
-            // check transaction's integrity
-            if (! checkTransactionIntegrity(transaction, store)) {
-                throw new Exception();
-            }
-
-        }
-        catch (Exception e) {
-            throw new AbortTransactionException("Malformed transaction or key-value store.");
+    static TransactionForChecker makeTransactionForChecker(Transaction transaction, Store store)
+            throws AbortTransactionException, NoSuchAlgorithmException
+    {
+        // check transaction's integrity
+        if (! checkTransactionIntegrity(transaction, store)) {
+            throw new AbortTransactionException ("Malformed transaction or id-value store.");
         }
 
         // assemble inputs objects
@@ -79,7 +40,7 @@ class TransactionPackager {
             referenceInputs[i] = store.get(transaction.getReferenceInputIDs()[i]);
         }
 
-        // create full transaction
+        // create transaction for checker
         return new TransactionForChecker(
             transaction.getContractID(),
             inputs,
@@ -87,7 +48,7 @@ class TransactionPackager {
             transaction.getParameters().clone(),
             transaction.getReturns().clone(),
             transaction.getOutputs().clone(),
-            transaction.getDependencies(),
+            Transaction.toStringArray(transaction.getDependencies()),
             transaction.getMethodID()
         );
 
@@ -127,6 +88,7 @@ class TransactionPackager {
 
         */
 
+        // otherwise
         return true;
 
     }

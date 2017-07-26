@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  *
@@ -63,14 +64,6 @@ class TransactionForChecker {
     }
 
 
-    /**
-     * getID
-     * Get the transaction's ID.
-     */
-    String getID() throws NoSuchAlgorithmException {
-        return Utils.hash(this.toJson());
-    }
-
     /*
         getters
      */
@@ -78,36 +71,23 @@ class TransactionForChecker {
         return contractID;
     }
 
-    String[] getInputs() {
-
-        return inputs;
-    }
-
-    String[] getReferenceInputs() {
-        return referenceInputs;
-    }
-
-    String[] getParameters() {
-
-        return parameters;
-    }
-
-    String[] getReturns() {
-
-        return returns;
-    }
-
-    String[] getDependencies() {
-
-        return dependencies;
-    }
-
-    String[] getOutputs() {
-
-        return outputs;
-    }
+    String[] getOutputs() { return outputs;}
 
     String getMethodID() {
         return methodID;
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionForChecker{" +
+                "contractID='" + contractID + '\'' +
+                ", inputs=" + Arrays.toString(inputs) +
+                ", referenceInputs=" + Arrays.toString(referenceInputs) +
+                ", parameters=" + Arrays.toString(parameters) +
+                ", returns=" + Arrays.toString(returns) +
+                ", outputs=" + Arrays.toString(outputs) +
+                ", dependencies=" + Arrays.toString(dependencies) +
+                ", methodID='" + methodID + '\'' +
+                '}';
     }
 }

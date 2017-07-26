@@ -4,6 +4,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 
 /**
@@ -21,7 +22,7 @@ class Core {
      * Constructor
      * Runs a node service and init a database.
      */
-    Core(int nodeID) throws ClassNotFoundException, SQLException {
+    Core() throws ClassNotFoundException, SQLException {
 
         // init cache
         // here we are implementing a simple cache of complexity O(n). Any caching system implementing the Cache
@@ -30,7 +31,7 @@ class Core {
 
         // init the database connection
         // here we're using SQLite as an example, but the core supports any extension of databaseConnector.
-        this.databaseConnector = new SQLiteConnector(nodeID);
+        this.databaseConnector = new SQLiteConnector();
 
     }
 
@@ -51,28 +52,47 @@ class Core {
      */
     String[] processTransaction(String request) throws Exception {
 
-        // accumulate all output objects and IDs in the variable out
+        // parse request
+        JSONObject requestJson = new JSONObject(request);
+
+        // extract transaction
+        Transaction transaction;
+        try { transaction = Transaction.fromJson(requestJson.getJSONObject("transaction")); }
+        catch (Exception e) { throw new AbortTransactionException("Malformed transaction."); }
+
+        // extract id-value store
+        Store store;
+        try { store = Store.fromJson(requestJson.getJSONObject("store")); }
+        catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
+
+        // accumulate all output objects and their IDs in the variable out
         // Note: Java passes to the callee only the reference of the array 'out' (not a copy of it)
         // thus, the array is modified by the callee functions (in C-style)
         Pair[] out = new Pair[]{};
-        out = processTransactionVM(request, out);
+        out = processTransactionVM(transaction, store, out);
 
         // return and save outputs upon successful execution
         String[] outForClient = new String[]{};
         for (Pair anOut : out) {
+
             // get transactions
-            Transaction transaction = (Transaction) anOut.getKey();
-            TransactionForChecker transactionForChecker = (TransactionForChecker) anOut.getValue();
+            Transaction atransaction = (Transaction) anOut.getValue1();
+            TransactionForChecker atransactionForChecker = (TransactionForChecker) anOut.getValue2();
+
             // make input objects inactive (consumed)
             if (! Main.DEBUG_ALLOW_REPEAT) {
-                this.databaseConnector.setInactive(transaction.getInputIDs());
+                this.databaseConnector.setInactive(atransaction.getInputIDs());
             }
+
             // save outputs
-            this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
+            this.databaseConnector.saveObject(atransaction.getID(), atransactionForChecker.getOutputs());
+
             // log transaction
-            this.databaseConnector.logTransaction(transaction.getID(), transaction.toJson());
+            this.databaseConnector.logTransaction(atransaction.getID(), transaction.toJson());
+
             // convert the pair's array into a string's array
-            outForClient = Utils.concatenate(outForClient, transactionForChecker.getOutputs());
+            outForClient = Utils.concatenate(outForClient, atransactionForChecker.getOutputs());
+
         }
         return outForClient;
 
@@ -84,11 +104,10 @@ class Core {
      * This method processes a transaction object, call the checker, and store the outputs in the database if
      * everything goes fine.
      */
-    private Pair[] processTransactionVM(String request, Pair[] out) throws Exception {
+    private Pair[] processTransactionVM(Transaction transaction, Store store, Pair[] out) throws Exception {
 
-        // get the transactions
-        Transaction transaction = TransactionPackager.makeTransaction(request);
-        TransactionForChecker transactionForChecker = TransactionPackager.makeFullTransaction(request);
+        // make packet for checker
+        TransactionForChecker transactionForChecker = TransactionPackager.makeTransactionForChecker(transaction, store);
 
         // recursively loop over dependencies
         if (! Main.DEBUG_IGNORE_DEPENDENCIES) {
@@ -96,7 +115,7 @@ class Core {
 
                 if (Main.VERBOSE) { System.out.println("\n[PROCESSING DEPENDENCY #" +i+ "]"); }
                 // recursively process the transaction
-                Pair[] tmp = processTransactionVM(transaction.getDependencies()[i], out);
+                Pair[] tmp = processTransactionVM(transaction.getDependencies()[i], store, out);
                 out = Utils.concatenate(out, tmp);
                 // updates the parameters of the caller transaction
                 if (Main.VERBOSE) { System.out.println("\n[END DEPENDENCY #" +i+ "]"); }
@@ -138,14 +157,6 @@ class Core {
             callChecker(transactionForChecker);
         }
 
-
-
-        /*
-            This is the part where we call BFTSmart.
-         */
-        // TODO: check that all inputs are active.
-
-
         // return
         return new Pair[]{new Pair<>(transaction, transactionForChecker)};
     }
@@ -159,13 +170,13 @@ class Core {
             throws IOException, AbortTransactionException, StartCheckerException {
 
         // TODO: path
-        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/bank_authenticated.pyc";
+        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/" +transactionForChecker.getContractID()+ ".py";
 
         // check if checker is already started
         PythonChecker checker =  PythonChecker.getFromCache(
                 checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
         );
-
+        
         // call the checker
         String responseString = checker.check(transactionForChecker);
         JSONObject responseJson = new JSONObject(responseString);

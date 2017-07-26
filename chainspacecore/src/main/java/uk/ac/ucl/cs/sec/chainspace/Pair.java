@@ -4,29 +4,27 @@ package uk.ac.ucl.cs.sec.chainspace;
  *
  *
  */
-public class Pair<K, V> {
+class Pair<V, W> {
 
-    private K key;
-    private V value;
+    private V value1;
+    private W value2;
 
-    Pair(K key, V value) {
-        this.key   = key;
-        this.value = value;
+    Pair(V value1, W value2) {
+        this.value1 = value1;
+        this.value2 = value2;
     }
 
-    K getKey() {
-        return key;
+
+    /*
+        Getters
+     */
+
+    V getValue1() {
+        return value1;
     }
 
-    V getValue() {
-        return value;
+    W getValue2() {
+        return value2;
     }
 
-    @Override
-    public String toString() {
-        return "{" +
-                "key=" + key +
-                ", value=" + value +
-                '}';
-    }
 }
