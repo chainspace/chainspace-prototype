@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+import click
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -41,11 +42,21 @@ class ChainspaceContract(object):
         contract.register_callback(self.local_callback)
 
     def run(self):
-        self.run_checker_service()
+        @click.group(help='Chainspace contract: {}'.format(self.contract_name))
+        def cli():
+            pass
 
-    def run_checker_service(self):
+        @cli.command()
+        @click.option('-p', '--port', default=5000, help='Port to listen on.', type=int)
+        def checker(port):
+            """Run checker service."""
+            self.run_checker_service(port)
+
+        cli()
+
+    def run_checker_service(self, port=5000):
         self._populate_empty_checkers()
-        self.flask_app.run()
+        self.flask_app.run(port=port)
 
     def checker(self, method_name):
         def checker_decorator(function):

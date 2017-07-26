@@ -8,5 +8,6 @@ setup(
     install_requires = [
         'flask',
         'requests',
+        'click',
     ],
 )

@@ -169,8 +169,8 @@ class Core {
     private void callChecker(TransactionForChecker transactionForChecker)
             throws IOException, AbortTransactionException, StartCheckerException {
 
-        // TODO: path
-        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/" +transactionForChecker.getContractID()+ ".py";
+        // relative path
+        String checkerPath = "contracts/" +transactionForChecker.getContractID()+ ".py";
 
         // check if checker is already started
         PythonChecker checker =  PythonChecker.getFromCache(

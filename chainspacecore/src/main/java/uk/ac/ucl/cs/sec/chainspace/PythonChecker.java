@@ -14,10 +14,13 @@ class PythonChecker {
     private String contractID, methodID;
     private Process checkerProcess;
 
-    private static final String CHECKER_URL = "http://127.0.0.1:5000/";
-    private static final int CACHE_DEPTH    = 100000;
+    private static final String CHECKER_HOST = "127.0.0.1";
+    private static final int CACHE_DEPTH    = 10000;
 
     private static final ArrayList<PythonChecker> cache = new ArrayList<>(CACHE_DEPTH);
+
+    private static int latestPort = 5000;
+    private int port;
 
 
     /**
@@ -30,6 +33,13 @@ class PythonChecker {
         this.contractID = contractID;
         this.methodID = methodID;
 
+        // set port
+        if (latestPort == 65535) {
+            latestPort = 5000;
+        }
+        latestPort += 1;
+        port = latestPort;
+
         // start the checker
         this.startChecker();
 
@@ -41,7 +51,13 @@ class PythonChecker {
      */
     private void startChecker() throws StartCheckerException {
 
-        ProcessBuilder pb = new ProcessBuilder(Arrays.asList("python", this.pythonScriptPath));
+        ProcessBuilder pb = new ProcessBuilder(Arrays.asList(
+                "python",
+                this.pythonScriptPath,
+                "checker",
+                "--port",
+                String.valueOf(this.port)
+        ));
         try {
 
             // start thread
@@ -75,7 +91,7 @@ class PythonChecker {
      */
     private String getURL() {
 
-        return CHECKER_URL + this.contractID + "/" + this.methodID;
+        return "http://" + CHECKER_HOST + ":" + this.port + "/" + this.contractID + "/" + this.methodID;
 
     }
 
