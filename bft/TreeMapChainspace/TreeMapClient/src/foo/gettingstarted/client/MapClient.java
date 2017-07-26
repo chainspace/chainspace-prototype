@@ -45,21 +45,14 @@ public class MapClient implements Map<String, String> {
     // will be always unique (as per class TomSender)
     private HashMap<String,TOMMessage> asynchReplies  = null;
 
-    public int invokeAsynchTimeout = 8000;
+    private int invokeAsynchTimeout = 5000;
 
-    /*
-    public void saveTransaction(Transaction t) {
-        transactions.put(t.id, t);
-    }
-
-    public void removeTransaction(String id) {
-        transactions.remove(id);
-    }
-    */
-
-    public MapClient() {
+    public MapClient(String shardConfigFile) {
         // Shards
-        initializeShards();
+        if(!initializeShards(shardConfigFile)) {
+            System.out.println("Could not read shard configuration file. Now exiting.");
+            System.exit(0);
+        }
 
         // Clients
         Random rand = new Random(System.currentTimeMillis());
@@ -85,26 +78,47 @@ public class MapClient implements Map<String, String> {
         return currClientID;
     }
 
-    private void initializeShards() {
+
+    private boolean initializeShards(String configFile) {
+        // The format pf configFile is <shardID> \t <pathToShardConfigFile>
 
         // Shard-to-Configuration Mapping
         shardToConfig = new HashMap<Integer,String>();
-        int shardID;
 
-        // TODO: Read shard from a file
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
 
-        shardID = 0;
-        shardToConfig.put(shardID, "config0");
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+",limit);
 
-        shardID = 1;
-        shardToConfig.put(shardID, "config1");
+                if(tokens.length == 2) {
+                    int shardID = Integer.parseInt(tokens[0]);
+                    String shardConfig = tokens[1];
+                    shardToConfig.put(shardID, shardConfig);
+                }
+                else
+                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+            }
+            lineReader.close();
+            return true;
+        } catch (Exception e) {
+            System.out.println("There was an exception reading shard configuration file: "+ e.toString());
+            return false;
+        }
+
     }
 
 
     private void initializeShardClients() {
-        // Shard-to-Client Mapping
+        // Clients IDs indexed by shard IDs
         shardToClient = new HashMap<Integer,Integer>();
         shardToClientAsynch = new HashMap<Integer,Integer>();
+
+        // Client objects indexed by shard IDs
         clientProxyAsynch = new HashMap<Integer,AsynchServiceProxy>();
         clientProxy = new HashMap<Integer,ServiceProxy>();
 
@@ -327,10 +341,10 @@ public class MapClient implements Map<String, String> {
         }
     }
 
-
     public String submitTransaction(Transaction t) {
         return submitTransaction(t, invokeAsynchTimeout);
     }
+
 
     public String submitTransaction(Transaction t, int invokeTimeoutAsynch) {
         Set<Integer> targetShards = new HashSet<Integer>();; // The shards relevant to this transaction
@@ -415,7 +429,6 @@ public class MapClient implements Map<String, String> {
         }
     }
 
-
     public byte[] prepare_t(Transaction t) {
         try {
             ByteArrayOutputStream bs = new ByteArrayOutputStream();
@@ -473,9 +486,9 @@ public class MapClient implements Map<String, String> {
 
                 if(shardID == -1) {
                     System.out.println("ACCEPT_T(DRIVER): Cannot map input "+input+" in transaction ID "+transactionID+" to a shard.");
-                    finalResponse = "Local Error: Cannot map transaction to a shard" ;
+                    finalResponse = ResponseType.ACCEPT_T_SYSTEM_ERROR;
                     earlyTerminate = true;
-                    return finalResponse;
+                    break;
                 }
 
                 if(!targetShards.contains(shardID)) {
@@ -491,49 +504,91 @@ public class MapClient implements Map<String, String> {
                 }
             }
 
-            Thread.sleep(invokeTimeoutAsynch);//how long to wait for replies from all shards before doing cleanup and returning
+            if(!earlyTerminate) {
+
+                // all timeout values in milliseconds
+                int minWait = 1; // First wait will be minWait long
+                boolean firstAttempt = true;
+                int maxWait = 10000;
+                int timeoutIncrement = 2; // subsequent wait will proceed in timeoutIncrement until all shards reply
+                // or waitedSoFar becomes greater than maxWait
+                int waitedSoFar = 0;
+
+
+                // Wait until we have waited for more than maxTimeoutVal
+                while(waitedSoFar < maxWait) {
+
+                    System.out.println("ACCEPT_T(DRIVER): Checking shard replies; been waiting for : " + waitedSoFar);
+
+                    boolean abortShardReplies = false; // at least 1 shard replied abort
+                    boolean missingShardReplies = false; // at least 1 shard reply is missing (null)
+
+                    // Check responses from all shards in asynchReplies
+                    for (int shard : targetShards) {
+
+                        // Get a shard reply
+                        int client = shardToClientAsynch.containsKey(shard) ? shardToClientAsynch.get(shard) : -1;
+                        int req = shardToReq.containsKey(shard) ? shardToReq.get(shard) : -1;
+                        String key = getKeyAsynchReplies(client, req, reqType.toString());
+                        TOMMessage m = asynchReplies.get(key);
+
+                        if (m == null) {
+                            missingShardReplies = true;
+                            break; // A shard hasn't replied yet, we need to wait more
+                        }
+
+                        else {
+                            byte[] reply = m.getContent();
+                            String strReply = new String(reply, Charset.forName("UTF-8"));
+
+                            System.out.println("ACCEPT_T(DRIVER): Shard ID " + shard + " replied: " + strReply);
+
+                            if (strReply.equals(ResponseType.ACCEPTED_T_ABORT))
+                                abortShardReplies = true;
+                        }
+                    }
+
+                    if(!missingShardReplies) {
+                        if(!abortShardReplies) // Commit if all shards have replied and their reply is to commit
+                            finalResponse = ResponseType.ACCEPTED_T_COMMIT;
+                        else
+                            finalResponse = ResponseType.ACCEPTED_T_ABORT;
+                        System.out.println("ACCEPT_T(DRIVER): All shards replied; final response is: " + finalResponse);
+                        break;
+                    }
+
+                    if(firstAttempt) {
+                        Thread.sleep(minWait);
+                        waitedSoFar += minWait;
+                        firstAttempt = false;
+                    }
+                    else {
+                        Thread.sleep(timeoutIncrement);
+                        waitedSoFar += timeoutIncrement;
+                    }
+
+                    if(waitedSoFar > maxWait) // We are about to exit this loop and haven't yet heard from all shards
+                    {
+                        System.out.println("ACCEPT_T(DRIVER): Timed out waiting for all shard replies; Doing : " + finalResponse);
+                        finalResponse = ResponseType.ACCEPTED_T_ABORT;
+                    }
+                }
+            }
         } catch(Exception e){
             System.out.println("ACCEPT_T(DRIVER): Transaction ID "+transactionID+" experienced Exception: " + e.getMessage());
+            finalResponse = ResponseType.ACCEPT_T_SYSTEM_ERROR;
         }
 
         finally {
-            // TODO: If msgType is ACCEPT_T_ABORT, then can we straight away respond with ACCEPTED_T_ABORT?
-            if(!earlyTerminate) {
-
-                // Now responses from all shards should be in asynchReplies
-
-                for (int shard : targetShards) {
-                    int client = shardToClientAsynch.containsKey(shard) ? shardToClientAsynch.get(shard) : -1;
-                    int req = shardToReq.containsKey(shard) ? shardToReq.get(shard) : -1;
-                    String key = getKeyAsynchReplies(client, req, reqType.toString());
-                    TOMMessage m = asynchReplies.get(key);
-
-                    // finalResponse is ABORT if at least one shard replies ABORT or does not reply at all
-                    if (m != null) {
-                        byte[] reply = m.getContent();
-                        String strReply = new String(reply, Charset.forName("UTF-8"));
-
-                        System.out.println("ACCEPT_T(DRIVER): Shard ID "+shard+" replied: "+strReply);
-
-                        if (strReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                            System.out.println("ACCEPT_T(DRIVER): ACCEPTED_T_ABORT->Abort reply from shard ID "+shard);
-                            return ResponseType.ACCEPTED_T_ABORT;
-                        }
-                    } else {
-                        System.out.println("ACCEPT_T(DRIVER):ACCEPTED_T_ABORT->Null reply from shard ID "+shard);
-                        return ResponseType.ACCEPTED_T_ABORT;
-                    }
-                    asynchReplies.remove(key);
-                    // clientProxyAsynch.get(client).cleanAsynchRequest(req);
-                }
-
-                System.out.println("ACCEPT_T(DRIVER):ACCEPTED_T_COMMIT from all shards");
-                return ResponseType.ACCEPTED_T_COMMIT;
+            // Clean up
+            for (int shard : targetShards) {
+                int client = shardToClientAsynch.containsKey(shard) ? shardToClientAsynch.get(shard) : -1;
+                int req = shardToReq.containsKey(shard) ? shardToReq.get(shard) : -1;
+                String key = getKeyAsynchReplies(client, req, reqType.toString());
+                asynchReplies.remove(key);
             }
-            else {
-                System.out.println("ACCEPT_T(DRIVER): ACCEPT_T_SYSTEM_ERROR->Transaction ID " + transactionID + " could not be submitted!");
-                return ResponseType.ACCEPT_T_SYSTEM_ERROR;
-            }
+
+            return finalResponse;
         }
     }
 
@@ -619,8 +674,13 @@ public class MapClient implements Map<String, String> {
 
     private int getReplyQuorum(int shardID) {
         AsynchServiceProxy c = clientProxyAsynch.get(shardID);
-        return (int) Math.ceil((c.getViewManager().getCurrentViewN()
+
+        if (c.getViewManager().getStaticConf().isBFT()) {
+            return (int) Math.ceil((c.getViewManager().getCurrentViewN()
                     + c.getViewManager().getCurrentViewF()) / 2) + 1;
+        } else {
+            return (int) Math.ceil((c.getViewManager().getCurrentViewN()) / 2) + 1;
+        }
     }
 }
 

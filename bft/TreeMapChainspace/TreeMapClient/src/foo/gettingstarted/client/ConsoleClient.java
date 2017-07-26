@@ -1,21 +1,89 @@
 package foo.gettingstarted.client;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
+import bftsmart.tom.ServiceReplica;
+import foo.gettingstarted.Config;
 import foo.gettingstarted.RequestType;
 import foo.gettingstarted.Transaction;
 
 import java.util.Scanner;
+import java.util.TreeMap;
 
 public class ConsoleClient {
 
+    static HashMap<String,String> configData;
+    static String shardConfigFile; // Contains info about shards and corresponding config files.
+    // This info should be passed on the client class.
+    static int thisClient;
+
+    private static boolean loadConfiguration() {
+        boolean done = true;
+
+        if(configData.containsKey(Config.thisClient))
+            thisClient = Integer.parseInt(configData.get(Config.thisClient));
+        else {
+            System.out.println("Could not find configuration for thisClient.");
+            done = false;
+        }
+
+        if(configData.containsKey(Config.shardConfigFile))
+            shardConfigFile = configData.get(Config.shardConfigFile);
+        else {
+            System.out.println("Could not find configuration for shardConfigFile.");
+            done = false;
+        }
+
+        return done;
+    }
+
+    private static boolean readConfiguration(String configFile) {
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
+
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+",limit);
+
+                if(tokens.length == 2) {
+                    String token = tokens[0];
+                    String value = tokens[1];
+                    configData.put(token, value);
+                }
+                else
+                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+            }
+            lineReader.close();
+            return true;
+        } catch (Exception e) {
+            System.out.println("There was an exception reading configuration file: "+ e.toString());
+            return false;
+        }
+
+    }
+
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.out.println("Usage: ConsoleClient <client id>");
+            System.out.println("Usage: ConsoleClient <config file path>");
             System.exit(0);
         }
 
-        MapClient client = new MapClient();
+        String configFile = args[0];
+
+        configData = new HashMap<String,String>(); // will be filled with config data by readConfiguration()
+        readConfiguration(configFile);
+        if(!loadConfiguration()) {
+            System.out.println("Could not load configuration. Now exiting.");
+            System.exit(0);
+        }
+
+        MapClient client = new MapClient(shardConfigFile); // Create clients for talking with other shards
+        client.defaultShardID = 0;
 
         Scanner sc = new Scanner(System.in);
         Scanner console = new Scanner(System.in);
@@ -34,7 +102,9 @@ public class ConsoleClient {
             System.out.println("5. VALIDATE A TRANSACTION");
             System.out.println("6. SUBMIT A TRANSACTION");
             System.out.println("7. PREPARE_T");
+            System.out.println("8. ACCEPT_T_ABORT");
             System.out.println("9. ACCEPT_T_COMMIT");
+            System.out.println("10. CREATE_OBJECT");
 
             cmd = sc.nextInt();
             String key, input;
