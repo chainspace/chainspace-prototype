@@ -15,10 +15,12 @@ def init():
 
 @contract.method('increment')
 def increment(inputs, reference_inputs, parameters):
-    integer = int(inputs[0])
-    return {
-        'outputs': (str(integer + 1),)
-    }
+
+	integer = int(inputs[0])
+
+	return {
+	    'outputs': (str(integer + 1),)
+	}
 
 if __name__ == '__main__':
     contract.run()

@@ -18,11 +18,11 @@ class SQLiteConnector extends DatabaseConnector {
      * constructor
      * Initialise the database connection and create a table to store object (if it does not already exist).
      */
-    SQLiteConnector(int nodeID) throws SQLException, ClassNotFoundException {
+    SQLiteConnector() throws SQLException, ClassNotFoundException {
 
         // create database connection
         Class.forName("org.sqlite.JDBC");
-        this.connection = DriverManager.getConnection("jdbc:sqlite:node" + nodeID + ".sqlite");
+        this.connection = DriverManager.getConnection("jdbc:sqlite:" +Main.DATABASE_NAME+ ".sqlite");
         Statement statement = connection.createStatement();
 
         if (! Main.DEBUG_ALLOW_REPEAT) {
@@ -37,7 +37,7 @@ class SQLiteConnector extends DatabaseConnector {
             sql = "CREATE TABLE IF NOT EXISTS logs (" +
                     "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
                     "transaction_id CHAR(32) NOT NULL UNIQUE," +
-                    "transactionJson TEXT NOT NULL)";
+                    "transaction_json TEXT NOT NULL)";
             statement.executeUpdate(sql);
 
             // create table to store logs head
@@ -59,7 +59,7 @@ class SQLiteConnector extends DatabaseConnector {
             sql = "CREATE TABLE IF NOT EXISTS logs (" +
                     "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
                     "transaction_id CHAR(32) NOT NULL," +
-                    "transactionJson TEXT NOT NULL)";
+                    "transaction_json TEXT NOT NULL)";
             statement.executeUpdate(sql);
 
             // create table to store logs head
@@ -110,28 +110,6 @@ class SQLiteConnector extends DatabaseConnector {
 
     }
 
-    /**
-     * registerObject
-     * Blindly insert an object into the database if it does not already exist.
-     */
-    public void saveObject(String objectID, String object) throws AbortTransactionException {
-
-        String sql = "INSERT INTO data (object_id, object, status) VALUES (?, ?, 1)";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, objectID);
-            statement.setString(2, object);
-            statement.executeUpdate();
-
-            if (Main.VERBOSE) {
-                System.out.println("\nNew object has been created:");
-                System.out.println("\tID: " + objectID);
-                System.out.println("\tObject: " + object);
-            }
-        } catch (SQLException e) {
-            throw new AbortTransactionException(e.getMessage());
-        }
-
-    }
 
     /**
      * isObjectInactive
@@ -177,6 +155,7 @@ class SQLiteConnector extends DatabaseConnector {
 
     }
 
+
     /**
      * setObjectInactive
      * Make object inactive (the object is now consumed).
@@ -215,7 +194,7 @@ class SQLiteConnector extends DatabaseConnector {
     {
 
         // add transaction to the logs
-        String sql = "INSERT INTO logs (transaction_id, transactionJson) VALUES (?, ?)";
+        String sql = "INSERT INTO logs (transaction_id, transaction_json) VALUES (?, ?)";
         PreparedStatement statement;
         statement = connection.prepareStatement(sql);
         statement.setString(1, transactionID);

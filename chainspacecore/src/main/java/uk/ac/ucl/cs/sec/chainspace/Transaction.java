@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  *
@@ -17,7 +18,7 @@ class Transaction {
     private String[] parameters;
     private String[] returns;
     private String[] outputs;
-    private String[] dependencies; // private Transaction[] dependencies;
+    private Transaction[] dependencies; // private Transaction[] dependencies;
     private String   methodID;
 
     /**
@@ -30,7 +31,8 @@ class Transaction {
             String[] parameters,
             String[] returns,
             String[] outputs,
-            String[] dependencies
+            Transaction[] dependencies,
+            String   methodID
     ) {
         this.contractID         = contractID;
         this.inputIDs           = inputIDs;
@@ -98,11 +100,51 @@ class Transaction {
         return outputs;
     }
 
-    String[] getDependencies() {
+    Transaction[] getDependencies() {
         return dependencies;
     }
 
-    String getMethodID() {
-        return methodID;
+    String getMethodID() { return methodID; }
+
+
+    /*
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "contractID='" + contractID + '\'' +
+                ", inputIDs=" + Arrays.toString(inputIDs) +
+                ", referenceInputIDs=" + Arrays.toString(referenceInputIDs) +
+                ", parameters=" + Arrays.toString(parameters) +
+                ", returns=" + Arrays.toString(returns) +
+                ", outputs=" + Arrays.toString(outputs) +
+                ", methodID='" + methodID + '\'' +
+                '}';
+    }
+    */
+
+    /**
+     * toStringArray
+     * Convert an array of transactions into an array of strings. Only first-level dependencies are included.
+     * @param transactionArray Transaction[]
+     * @return String[]
+     */
+    static String[] toStringArray(Transaction[] transactionArray) {
+
+        // TODO: fix this
+        return new String[]{};
+
+        /*
+        // check empty arrays
+        if ( transactionArray == null || transactionArray.length == 0) { return new String[]{}; }
+
+        // convert transactions into strings
+        String[] stringArray = new String[transactionArray.length];
+        for (int i = 0; i < transactionArray.length; i++) {
+            stringArray[i] = transactionArray[i].toJson();
+        }
+
+        return stringArray;
+        */
+
     }
 }

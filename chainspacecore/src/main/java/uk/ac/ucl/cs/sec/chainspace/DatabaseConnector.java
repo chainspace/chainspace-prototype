@@ -10,8 +10,6 @@ abstract class DatabaseConnector {
 
     abstract void saveObject(String transactionID, String[] objects) throws AbortTransactionException;
 
-    abstract void saveObject(String objectID, String object) throws AbortTransactionException;
-
     abstract boolean isInactive(String[] objectIDs) throws AbortTransactionException;
 
     abstract void setInactive(String[] objectIDs) throws AbortTransactionException;
