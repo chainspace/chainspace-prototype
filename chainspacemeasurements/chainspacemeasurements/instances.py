@@ -112,7 +112,9 @@ class ChainspaceNetwork(object):
         command = 'git clone https://github.com/musalbas/chainspace;'
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
-        command += 'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        command += 'cd ~/chainspace; mkdir contracts'
+        command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py ~/chainspace/contracts'
         self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
 
@@ -182,7 +184,7 @@ class ChainspaceNetwork(object):
 
     def clean_core(self):
         self._log("Resetting Chainspace core configuration and state...")
-        command = 'rm node1.sqlite'
+        command = 'rm database.sqlite'
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
