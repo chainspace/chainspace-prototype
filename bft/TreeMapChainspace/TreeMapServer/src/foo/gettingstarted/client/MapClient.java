@@ -57,7 +57,7 @@ public class MapClient implements Map<String, String> {
         // Clients
         Random rand = new Random(System.currentTimeMillis());
         currClientID = Math.abs(rand.nextInt()); // Initializing with a random number because the program hangs
-        // if there are two or more clients with the same ID
+                                       // if there are two or more clients with the same ID
 
         initializeShardClients();
 
@@ -511,7 +511,7 @@ public class MapClient implements Map<String, String> {
                 boolean firstAttempt = true;
                 int maxWait = 10000;
                 int timeoutIncrement = 2; // subsequent wait will proceed in timeoutIncrement until all shards reply
-                // or waitedSoFar becomes greater than maxWait
+                                          // or waitedSoFar becomes greater than maxWait
                 int waitedSoFar = 0;
 
 
