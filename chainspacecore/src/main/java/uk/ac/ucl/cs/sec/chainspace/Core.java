@@ -60,9 +60,13 @@ class Core {
         // return and save outputs upon successful execution
         String[] outForClient = new String[]{};
         for (Pair anOut : out) {
-            // loop over outputs
+            // get transactions
             Transaction transaction = (Transaction) anOut.getKey();
             TransactionForChecker transactionForChecker = (TransactionForChecker) anOut.getValue();
+            // make input objects inactive (consumed)
+            if (! Main.DEBUG_ALLOW_REPEAT) {
+                this.databaseConnector.setInactive(transaction.getInputIDs());
+            }
             // save outputs
             this.databaseConnector.saveObject(transaction.getID(), transactionForChecker.getOutputs());
             // log transaction
@@ -142,12 +146,6 @@ class Core {
         // TODO: check that all inputs are active.
 
 
-
-        // make input (consumed) objects inactive
-        if (! Main.DEBUG_ALLOW_REPEAT) {
-            this.databaseConnector.setInactive(transaction.getInputIDs());
-        }
-
         // return
         return new Pair[]{new Pair<>(transaction, transactionForChecker)};
     }
@@ -160,21 +158,20 @@ class Core {
     private void callChecker(TransactionForChecker transactionForChecker)
             throws IOException, AbortTransactionException, StartCheckerException {
 
-        // TODO: fix absolute path requirement
-        String path = "/Users/alberto/GitHub/chainspace/chainspacecore/checkers/10.py";
+        // TODO: path
+        String checkerPath = "/Users/alberto/GitHub/chainspace/chainspacecontract/chainspacecontract/examples/bank_authenticated.pyc";
 
         // check if checker is already started
-        PythonChecker checker =  PythonChecker.getFromCache(path, transactionForChecker.getContractID());
+        PythonChecker checker =  PythonChecker.getFromCache(
+                checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
+        );
 
         // call the checker
         String responseString = checker.check(transactionForChecker);
         JSONObject responseJson = new JSONObject(responseString);
 
         // throw error if the checker declines the transaction
-        if (responseJson.getString("status").equalsIgnoreCase("ERROR")) {
-            throw new AbortTransactionException(responseJson.getString("message"));
-        }
-        else if(! responseJson.getString("status").equalsIgnoreCase("OK")) {
+        if (! responseJson.getBoolean("success")) {
             throw new AbortTransactionException("The checker declined the transaction.");
         }
 

@@ -18,6 +18,7 @@ class TransactionForChecker {
     private String[] returns;
     private String[] outputs;
     private String[] dependencies;
+    private String   methodID;
 
     /**
      * constructor
@@ -29,7 +30,8 @@ class TransactionForChecker {
             String[] parameters,
             String[] returns,
             String[] outputs,
-            String[] dependencies
+            String[] dependencies,
+            String   methodID
     ) {
         this.contractID       = contractID;
         this.inputs           = inputs;
@@ -38,6 +40,7 @@ class TransactionForChecker {
         this.returns          = returns;
         this.outputs          = outputs;
         this.dependencies     = dependencies;
+        this.methodID         = methodID;
     }
 
 
@@ -67,22 +70,6 @@ class TransactionForChecker {
     String getID() throws NoSuchAlgorithmException {
         return Utils.hash(this.toJson());
     }
-
-
-
-    /**
-     * addParameters
-     * Add new parameters to the transaction.
-     */
-    void addParameters(String[] newParameters) {
-
-        String[] tmp = new String[this.parameters.length + newParameters.length];
-        System.arraycopy(this.parameters, 0, tmp, 0, this.parameters.length);
-        System.arraycopy(newParameters, 0, tmp, this.parameters.length, newParameters.length);
-        this.parameters = tmp;
-
-    }
-
 
     /*
         getters
@@ -118,5 +105,9 @@ class TransactionForChecker {
     String[] getOutputs() {
 
         return outputs;
+    }
+
+    String getMethodID() {
+        return methodID;
     }
 }

@@ -181,10 +181,10 @@ class ChainspaceNetwork(object):
         self._log("Uninstalled Chainspace core on all nodes.")
 
     def clean_core(self):
-        self_log("Resetting Chainspace core configuration and state...")
+        self._log("Resetting Chainspace core configuration and state...")
         command = 'rm node1.sqlite'
         self.ssh_exec(command)
-        self_log("Reset Chainspace core configuration and state.")
+        self._log("Reset Chainspace core configuration and state.")
 
     def config_core(self, shards, nodes_per_shard):
         # TODO: configure cores.

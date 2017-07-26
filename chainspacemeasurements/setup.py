@@ -8,5 +8,6 @@ setup(
     install_requires = [
         'paramiko',
         'boto3',
+        'matplotlib',
     ],
 )
