@@ -47,19 +47,12 @@ public class MapClient implements Map<String, String> {
 
     private int invokeAsynchTimeout = 5000;
 
-    /*
-    public void saveTransaction(Transaction t) {
-        transactions.put(t.id, t);
-    }
-
-    public void removeTransaction(String id) {
-        transactions.remove(id);
-    }
-    */
-
-    public MapClient() {
+    public MapClient(String shardConfigFile) {
         // Shards
-        initializeShards();
+        if(!initializeShards(shardConfigFile)) {
+            System.out.println("Could not read shard configuration file. Now exiting.");
+            System.exit(0);
+        }
 
         // Clients
         Random rand = new Random(System.currentTimeMillis());
@@ -85,26 +78,47 @@ public class MapClient implements Map<String, String> {
         return currClientID;
     }
 
-    private void initializeShards() {
+
+    private boolean initializeShards(String configFile) {
+        // The format pf configFile is <shardID> \t <pathToShardConfigFile>
 
         // Shard-to-Configuration Mapping
         shardToConfig = new HashMap<Integer,String>();
-        int shardID;
 
-        // TODO: Read shard from a file
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
 
-        shardID = 0;
-        shardToConfig.put(shardID, "config0");
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+",limit);
 
-        shardID = 1;
-        shardToConfig.put(shardID, "config1");
+                if(tokens.length == 2) {
+                    int shardID = Integer.parseInt(tokens[0]);
+                    String shardConfig = tokens[1];
+                    shardToConfig.put(shardID, shardConfig);
+                }
+                else
+                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+            }
+            lineReader.close();
+            return true;
+        } catch (Exception e) {
+            System.out.println("There was an exception reading shard configuration file: "+ e.toString());
+            return false;
+        }
+
     }
 
 
     private void initializeShardClients() {
-        // Shard-to-Client Mapping
+        // Clients IDs indexed by shard IDs
         shardToClient = new HashMap<Integer,Integer>();
         shardToClientAsynch = new HashMap<Integer,Integer>();
+
+        // Client objects indexed by shard IDs
         clientProxyAsynch = new HashMap<Integer,AsynchServiceProxy>();
         clientProxy = new HashMap<Integer,ServiceProxy>();
 

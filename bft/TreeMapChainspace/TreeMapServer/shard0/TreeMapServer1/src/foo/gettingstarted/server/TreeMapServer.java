@@ -18,6 +18,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 
 public class TreeMapServer extends DefaultRecoverable {
@@ -25,27 +27,93 @@ public class TreeMapServer extends DefaultRecoverable {
     Map<String, String> table;
     HashMap<String, TransactionSequence> sequences; // Indexed by Transaction ID
     int thisShard; // the shard this replica is part of
+    int thisReplica; // ID of this replica within thisShard
     MapClient client;
     String conn;
+    HashMap<String,String> configData;
+    String shardConfigFile; // Contains info about shards and corresponding config files.
+                            // This info should be passed on the client class.
 
-    public TreeMapServer(int id) {
+    public TreeMapServer(String configFile) {
+
+        configData = new HashMap<String,String>(); // will be filled with config data by readConfiguration()
+        readConfiguration(configFile);
+        if(!loadConfiguration()) {
+            System.out.println("Could not load configuration. Now exiting.");
+            System.exit(0);
+        }
+
         table = new TreeMap<>(); // contains objects and their state
         sequences = new  HashMap<>(); // contains operation sequences for transactions
-        // TODO: Hardcoded for now, make configurable
-        thisShard = 0;
-        client = new MapClient();
+        conn = "[?->"+thisShard+"] "; // This string is used in debug messages
+
+        client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
-        conn = "[?->"+thisShard+"] ";
-        new ServiceReplica(id, this, this);
+        new ServiceReplica(thisReplica, this, this); // Create the server
+
+    }
+
+    private boolean loadConfiguration() {
+        boolean done = true;
+
+        if(configData.containsKey(Config.thisShard))
+            thisShard = Integer.parseInt(configData.get(Config.thisShard));
+        else {
+            System.out.println("Could not find configuration for thisShardID.");
+            done = false;
+        }
+
+        if(configData.containsKey(Config.shardConfigFile))
+            shardConfigFile = configData.get(Config.shardConfigFile);
+        else {
+            System.out.println("Could not find configuration for shardConfigFile.");
+            done = false;
+        }
+
+        if(configData.containsKey(Config.thisReplica))
+            thisReplica = Integer.parseInt(configData.get(Config.thisReplica));
+        else {
+            System.out.println("Could not find configuration for thisReplica.");
+            done = false;
+        }
+        return done;
+    }
+
+    private boolean readConfiguration(String configFile) {
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
+
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+",limit);
+
+                if(tokens.length == 2) {
+                    String token = tokens[0];
+                    String value = tokens[1];
+                    configData.put(token, value);
+                }
+                else
+                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+            }
+            lineReader.close();
+            return true;
+        } catch (Exception e) {
+            System.out.println("There was an exception reading configuration file: "+ e.toString());
+            return false;
+        }
+
     }
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.out.println("Usage: HashMapServer <server id>");
+            System.out.println("Usage: HashMapServer <configuration file>");
             System.exit(0);
         }
 
-        new TreeMapServer(Integer.parseInt(args[0]));
+        new TreeMapServer(args[0]);
     }
 
     @Override
@@ -219,9 +287,12 @@ public class TreeMapServer extends DefaultRecoverable {
                     else
                         System.out.println(conn+"TRANSACTION_SUBMIT: Reply to PREPARE_T is null");
 
-                    // ACCEPT_T_ABORT
+                    // PREPARED_T_ABORT, ACCEPT_T_ABORT
                     if(replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
                         sequences.get(t.id).PREPARED_T_ABORT = true;
+
+                        // Alberto: Do application-specific stuff here
+                        executePreparedTAbort(t);
 
                         // TODO: Can we skip BFT here and return to client?
                         sequences.get(t.id).ACCEPT_T_ABORT = true;
@@ -233,17 +304,19 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: it will always abort this transaction.
                         if(true) {
                             sequences.get(t.id).ACCEPTED_T_ABORT = true;
-                            executeAcceptedTAbort(t.id);
+                            // Alberto: Do application-specific work here
+                            executeAcceptedTAbort(t);
                         }
                         System.out.println(conn+"TRANSACTION_SUBMIT: ABORTED and reply to ACCEPT_T_ABORT is "+strReplyAcceptT);
                     }
-                    // ACCEPT_T_COMMIT
+                    // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                     else if(strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
                         sequences.get(t.id).PREPARED_T_COMMIT = true;
-                        sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
-                        // Lock transaction input objects
-                        setTransactionInputStatus(t, ObjectStatus.LOCKED);
+                        //Alberto: Do application-specific stuff here
+                        executePreparedTCommit(t);
+
+                        sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
                         System.out.println(conn+"TRANSACTION_SUBMIT: Sending ACCEPT_T_COMMIT");
                         strReplyAcceptT = client.accept_t_commit(t);
@@ -252,15 +325,11 @@ public class TreeMapServer extends DefaultRecoverable {
 
                         if(strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
                             sequences.get(t.id).ACCEPTED_T_ABORT = true;
-                            executeAcceptedTAbort(t.id);
-                            // Unlock transaction input objects
-                            setTransactionInputStatus(t, ObjectStatus.ACTIVE);
+                            executeAcceptedTAbort(t);
                         }
                         else if(strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
                             sequences.get(t.id).ACCEPTED_T_COMMIT = true;
-                            executeAcceptedTCommit(t.id);
-                            // Inactivate transaction input objects
-                            setTransactionInputStatus(t, ObjectStatus.INACTIVE);
+                            executeAcceptedTCommit(t);
                         }
                         System.out.println(conn+"TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is "+strReplyAcceptT);
                     }
@@ -289,13 +358,39 @@ public class TreeMapServer extends DefaultRecoverable {
         }
     }
 
-    private void executeAcceptedTAbort(String transactionID){
-        // TODO: Things to do when transaction is ACCEPTED_T_ABORT
+    // Alberto: Implement the following functions
+    // ============
+    // BLOCK BEGINS
+    // ============
+    private void executePreparedTAbort(Transaction t){
+        // TODO: Things to do when transaction is PREPARED_T_ABORT
     }
 
-    private void executeAcceptedTCommit(String transactionID){
-        // TODO: Things to do when transaction is ACCEPTED_T_COMMIT
+    private void executePreparedTCommit(Transaction t){
+        // TODO: Things to do when transaction is PREPARED_T_COMMIT
+
+        // Lock transaction input objects
+        setTransactionInputStatus(t, ObjectStatus.LOCKED);
     }
+
+    private void executeAcceptedTAbort(Transaction t){
+        // TODO: Things to do when transaction is ACCEPTED_T_ABORT
+
+        // Unlock transaction input objects
+        setTransactionInputStatus(t, ObjectStatus.ACTIVE);
+    }
+
+    private void executeAcceptedTCommit(Transaction t){
+        // TODO: Things to do when transaction is ACCEPTED_T_COMMIT
+        // Inactivate transaction input objects
+        setTransactionInputStatus(t, ObjectStatus.INACTIVE);
+
+        // Create output objects (local as well as those on other shards)
+        int timeout = 0; // How long to wait for replies to be accumulated in replies.
+                         // Default is no wait; just let object creation happen asynchronously.
+        HashMap<String,Boolean> replies = client.createObjects(t.outputs, timeout);
+    }
+
 
     private String checkPrepareT(Transaction t) {
         // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
@@ -337,6 +432,9 @@ public class TreeMapServer extends DefaultRecoverable {
 
         return reply;
     }
+    // ============
+    // BLOCK ENDS
+    // ============
 
     private String checkAcceptT(Transaction t) {
         if(sequences.containsKey(t.id) && sequences.get(t.id).ACCEPT_T_COMMIT)
