@@ -1,0 +1,2 @@
+0 ChainSpaceConfig/shards/config0
+1 ChainSpaceConfig/shards/config1
