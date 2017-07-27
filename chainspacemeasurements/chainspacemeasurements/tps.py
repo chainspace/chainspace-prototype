@@ -4,7 +4,7 @@ import sqlite3
 
 def tps(con):
     cur = con.cursor()
-    cur.execute('SELECT strftime("%s", time_stamp) from logs')
+    cur.execute('SELECT strftime("%s", time_stamp) FROM logs')
 
     tx_count = 0
     first_tx = 0
