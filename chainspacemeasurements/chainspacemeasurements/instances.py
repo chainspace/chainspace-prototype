@@ -17,6 +17,7 @@ class ChainspaceNetwork(object):
         self.ec2 = boto3.resource('ec2', region_name=aws_region)
 
         self.ssh_connections = {}
+        self.shards = {}
 
     def _get_running_instances(self):
         return self.ec2.instances.filter(Filters=[
@@ -112,7 +113,9 @@ class ChainspaceNetwork(object):
         command = 'git clone https://github.com/musalbas/chainspace;'
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
-        command += 'cd chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        command += 'cd ~/chainspace; mkdir contracts'
+        command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py ~/chainspace/contracts'
         self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
 
@@ -142,9 +145,6 @@ class ChainspaceNetwork(object):
         pool.close()
         pool.join()
         self._log("Closed SSH connection on all nodes...")
-
-    def get_ips(self):
-        return [instance.public_ip_address for instance in self._get_running_instances()]
 
     def terminate(self):
         self._log("Terminating all nodes...")
@@ -182,13 +182,19 @@ class ChainspaceNetwork(object):
 
     def clean_core(self):
         self._log("Resetting Chainspace core configuration and state...")
-        command = 'rm node1.sqlite'
+        command = 'rm database.sqlite'
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
     def config_core(self, shards, nodes_per_shard):
+        instances = [instance for instance in self._get_running_instances()]
+
+        if shards * nodes_per_shard > len(instances):
+            raise ValueError("Number of total nodes exceeds the number of running instances.")
+
+        for shard in range(shards):
+            self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
         # TODO: configure cores.
-        pass
 
 
 def _multi_args_wrapper(args):

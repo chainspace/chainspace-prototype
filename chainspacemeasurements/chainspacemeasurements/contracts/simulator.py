@@ -22,3 +22,6 @@ def create(inputs, reference_inputs, parameters):
 @contract.method('consume')
 def consume(inputs, reference_inputs, parameters):
     return {}
+
+if __name__ == '__main__':
+    contract.run()
