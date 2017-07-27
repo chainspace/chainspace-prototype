@@ -108,6 +108,9 @@ public class TreeMapServer extends DefaultRecoverable {
     }
 
     public static void main(String[] args) {
+
+        System.out.println("Starting server...");
+
         if (args.length < 1) {
             System.out.println("Usage: HashMapServer <configuration file>");
             System.exit(0);
@@ -396,6 +399,10 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private String checkPrepareT(Transaction t) {
         // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
+
+        System.out.println("\n\n\n\nHERE!!!!!!\n\n\n");
+        TransactionExtended transactionExtended = (TransactionExtended) t;
+        System.out.println(transactionExtended.getChainspaceTransactionJson());
 
         // Check if all input objects are active
         // and at least one of the input objects is managed by this shard

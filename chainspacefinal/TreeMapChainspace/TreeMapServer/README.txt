@@ -6,3 +6,5 @@ java -classpath bin/BFT-SMaRt.jar:lib/*:out/production/TreeMapServer1/ foo/getti
 
 Configuration files here:
 ChainSpaceConfig
+run:
+find . -name "currentView" -type f -delete
