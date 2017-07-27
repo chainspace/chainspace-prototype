@@ -73,5 +73,37 @@
             <artifactId>spark-core</artifactId>
             <version>2.6.0</version>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.dev-smart</groupId>
+            <artifactId>devsmart-core</artifactId>
+            <version>0.1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.9.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.5.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.5.8</version>
+        </dependency>
+        <dependency>
+            <groupId>BFT-SMaRt</groupId>
+            <artifactId>BFT-SMaRt</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/BFT-SMaRt.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>
