@@ -1,13 +1,10 @@
-package foo.gettingstarted.client;
+package uk.ac.ucl.cs.sec.chainspace.bft;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import bftsmart.tom.ServiceReplica;
-import foo.gettingstarted.Config;
-import foo.gettingstarted.RequestType;
-import foo.gettingstarted.Transaction;
 
 import java.util.Scanner;
 import java.util.TreeMap;
@@ -22,15 +19,15 @@ public class ConsoleClient {
     private static boolean loadConfiguration() {
         boolean done = true;
 
-        if(configData.containsKey(Config.thisClient))
-            thisClient = Integer.parseInt(configData.get(Config.thisClient));
+        if(configData.containsKey(ClientConfig.thisClient))
+            thisClient = Integer.parseInt(configData.get(ClientConfig.thisClient));
         else {
             System.out.println("Could not find configuration for thisClient.");
             done = false;
         }
 
-        if(configData.containsKey(Config.shardConfigFile))
-            shardConfigFile = configData.get(Config.shardConfigFile);
+        if(configData.containsKey(ClientConfig.shardConfigFile))
+            shardConfigFile = configData.get(ClientConfig.shardConfigFile);
         else {
             System.out.println("Could not find configuration for shardConfigFile.");
             done = false;
