@@ -68,6 +68,9 @@ public class ConsoleClient {
     }
 
     public static void main(String[] args) {
+
+        System.out.println("\nStarting client...");
+        
         if (args.length < 1) {
             System.out.println("Usage: ConsoleClient <config file path>");
             System.exit(0);
@@ -282,5 +285,57 @@ public class ConsoleClient {
             }
         }
     }
+
+
+    /*******************
+        ADDED
+    *******************/
+
+    // instance variable
+    private MapClient client;
+
+    /**
+     * ConsoleClient
+     * Loads and reads the config file
+     */
+    public ConsoleClient(String configFile) {
+
+        // read config
+        configData = new HashMap<String,String>(); 
+        readConfiguration(configFile);
+
+        // check config's format
+        if(!loadConfiguration()) {
+            System.out.println("Could not load configuration. Now exiting.");
+            System.exit(0);
+        }
+
+        // instantiate the client
+        client = new MapClient(shardConfigFile);
+        client.defaultShardID = 0;
+    }
+
+    /**
+     * sendTransaction
+     * Sends a transaction to the indicated shard.
+     * @param shardID           Indicates the shard to which to send the transaction
+     * @param chainspaceTransactionJson   A JSON representation of the transaction
+     */
+    public void sendTransaction(int shardID, String chainspaceTransactionJson) {
+
+        // set shard id
+        client.defaultShardID = shardID;
+
+        // create transaction
+        Transaction transaction = new foo.gettingstarted.TransactionExtended(chainspaceTransactionJson);
+
+        // submit transaction
+        client.submitTransaction(transaction);
+
+    }
+
+    /*******************
+        END ADDED
+    *******************/
 
 }
