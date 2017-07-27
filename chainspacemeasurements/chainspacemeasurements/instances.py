@@ -17,6 +17,7 @@ class ChainspaceNetwork(object):
         self.ec2 = boto3.resource('ec2', region_name=aws_region)
 
         self.ssh_connections = {}
+        self.shards = {}
 
     def _get_running_instances(self):
         return self.ec2.instances.filter(Filters=[
@@ -145,9 +146,6 @@ class ChainspaceNetwork(object):
         pool.join()
         self._log("Closed SSH connection on all nodes...")
 
-    def get_ips(self):
-        return [instance.public_ip_address for instance in self._get_running_instances()]
-
     def terminate(self):
         self._log("Terminating all nodes...")
         self._get_all_instances().terminate()
@@ -189,8 +187,14 @@ class ChainspaceNetwork(object):
         self._log("Reset Chainspace core configuration and state.")
 
     def config_core(self, shards, nodes_per_shard):
+        instances = [instance for instance in self._get_running_instances()]
+
+        if shards * nodes_per_shard > len(instances):
+            raise ValueError("Number of total nodes exceeds the number of running instances.")
+
+        for shard in range(shards):
+            self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
         # TODO: configure cores.
-        pass
 
 
 def _multi_args_wrapper(args):
