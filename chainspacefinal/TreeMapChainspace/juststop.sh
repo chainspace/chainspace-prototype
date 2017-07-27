@@ -8,4 +8,4 @@ screen -X -S s1n1 kill
 screen -X -S s1n2 kill
 screen -X -S s1n3 kill
 
-rm -rf TreeMapServer0 TreeMapServer1
+rm -rf TreeMapServer-*
