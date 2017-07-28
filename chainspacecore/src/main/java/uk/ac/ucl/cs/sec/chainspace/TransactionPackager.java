@@ -1,26 +1,20 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-import org.json.JSONObject;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 /**
  * TransactionPackager
  *
- * This class provides a some utilities to retrieve transactions objects from JSON strings (comming from the HTTP
- * requests). This is a separate class, so if we decide to change the transaction's format in the future (change the
- * key-value store, use tree structure, etc), the core is not modified: the core only requires the original transaction
- * (the one with the IDs) and the packet to send to the checker.
  */
-class TransactionPackager {
+public class TransactionPackager {
 
 
     /**
      * makeFullTransaction
      * convert a key-value store and a transaction into a fullTransaction java object
      */
-    static TransactionForChecker makeTransactionForChecker(Transaction transaction, Store store)
+    public static TransactionForChecker makeTransactionForChecker(CSTransaction transaction, Store store)
             throws AbortTransactionException, NoSuchAlgorithmException
     {
         // check transaction's integrity
@@ -48,7 +42,7 @@ class TransactionPackager {
             transaction.getParameters().clone(),
             transaction.getReturns().clone(),
             transaction.getOutputs().clone(),
-            Transaction.toStringArray(transaction.getDependencies()),
+            CSTransaction.toStringArray(transaction.getDependencies()),
             transaction.getMethodID()
         );
 
@@ -59,7 +53,7 @@ class TransactionPackager {
      * checkTransactionIntegrity
      * Check the transaction's integrity.
      */
-    private static boolean checkTransactionIntegrity(Transaction transaction, Store store)
+    private static boolean checkTransactionIntegrity(CSTransaction transaction, Store store)
             throws NoSuchAlgorithmException
     {
         // check transaction's and store's format

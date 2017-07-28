@@ -42,7 +42,7 @@ public class MapClient implements Map<String, String> {
     // will be always unique (as per class TomSender)
     private HashMap<String,TOMMessage> asynchReplies  = null;
 
-    private int invokeAsynchTimeout = 5000;
+    private int invokeAsynchTimeout = 15000;
 
     public MapClient(String shardConfigFile) {
         // Shards
@@ -64,8 +64,13 @@ public class MapClient implements Map<String, String> {
     }
 
     public int mapObjectToShard(String object) {
+        /*
+        TODO
+
         int iObject = Integer.parseInt(object);
         return iObject% shardToConfig.size();
+         */
+        return 0;
     }
 
     // This function returns a unique client ID every time it is called
@@ -357,9 +362,12 @@ public class MapClient implements Map<String, String> {
 
             List<String> inputObjects = t.inputs;
 
+
             // Send a request to each shard relevant to this transaction
             for(String input: inputObjects) {
                 int shardID = mapObjectToShard(input);
+
+                System.out.println("\n>> ADDING INPUT TO TRANSACTION: "+input);
 
                 if(shardID == -1) {
                     System.out.println("SUBMIT_T(DRIVER): Cannot map input "+input+" in transaction ID "+transactionID+" to a shard.");

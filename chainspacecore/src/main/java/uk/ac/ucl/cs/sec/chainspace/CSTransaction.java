@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
@@ -11,28 +12,30 @@ import java.util.Arrays;
  *
  *
  */
-class Transaction {
-    private String   contractID;
+public class CSTransaction implements Serializable {
+
+    // instance variables
+    private String contractID;
     private String[] inputIDs;
     private String[] referenceInputIDs;
     private String[] parameters;
     private String[] returns;
     private String[] outputs;
-    private Transaction[] dependencies; // private Transaction[] dependencies;
-    private String   methodID;
+    private CSTransaction[] dependencies;
+    private String methodID;
 
     /**
      * constructor
      */
-    Transaction(
-            String   contractID,
-            String[] inputIDs,
-            String[] referenceInputIDs,
-            String[] parameters,
-            String[] returns,
-            String[] outputs,
-            Transaction[] dependencies,
-            String   methodID
+    public CSTransaction(
+        String contractID,
+        String[] inputIDs,
+        String[] referenceInputIDs,
+        String[] parameters,
+        String[] returns,
+        String[] outputs,
+        CSTransaction[] dependencies,
+        String methodID
     ) {
         this.contractID         = contractID;
         this.inputIDs           = inputIDs;
@@ -49,9 +52,9 @@ class Transaction {
      * fromJson
      * Returns a transaction object from a json string representing it
      */
-    static Transaction fromJson(JSONObject json) {
+    public static CSTransaction fromJson(JSONObject json) {
         Gson gson = new GsonBuilder().create();
-        return gson.fromJson(json.toString(), Transaction.class);
+        return gson.fromJson(json.toString(), CSTransaction.class);
     }
 
     /**
@@ -67,7 +70,7 @@ class Transaction {
      * getID
      * Get the transaction's ID.
      */
-    String getID() throws NoSuchAlgorithmException {
+    public String getID() throws NoSuchAlgorithmException {
         return Utils.hash(this.toJson());
     }
 
@@ -76,11 +79,11 @@ class Transaction {
         getters
      */
 
-    String getContractID() {
+    public String getContractID() {
         return contractID;
     }
 
-    String[] getInputIDs() {
+    public String[] getInputIDs() {
         return inputIDs;
     }
 
@@ -96,11 +99,11 @@ class Transaction {
         return returns;
     }
 
-    String[] getOutputs() {
+    public String[] getOutputs() {
         return outputs;
     }
 
-    Transaction[] getDependencies() {
+    CSTransaction[] getDependencies() {
         return dependencies;
     }
 
@@ -128,7 +131,7 @@ class Transaction {
      * @param transactionArray Transaction[]
      * @return String[]
      */
-    static String[] toStringArray(Transaction[] transactionArray) {
+    static String[] toStringArray(CSTransaction[] transactionArray) {
 
         // TODO: fix this
         return new String[]{};

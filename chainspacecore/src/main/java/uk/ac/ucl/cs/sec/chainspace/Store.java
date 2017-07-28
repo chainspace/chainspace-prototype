@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 
@@ -11,7 +12,7 @@ import java.util.HashMap;
  *
  * Simple key-value store.
  */
-class Store extends HashMap<String, String> {
+public class Store extends HashMap<String, String> implements Serializable {
 
     /**
      * fromJson
@@ -19,7 +20,7 @@ class Store extends HashMap<String, String> {
      * @param json JSONObject
      * @return Store
      */
-    static Store fromJson(JSONObject json) {
+    public static Store fromJson(JSONObject json) {
         Gson gson = new Gson();
         return gson.fromJson(json.toString(), Store.class);
     }

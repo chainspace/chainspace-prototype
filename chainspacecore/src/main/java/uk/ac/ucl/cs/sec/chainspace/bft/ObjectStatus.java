@@ -9,10 +9,14 @@ public class ObjectStatus {
     public static final String INACTIVE = "2";
 
     public static int mapObjectToShard(String object) {
+        // TODO: objects are not integers
+        /*
         int iObject = Integer.parseInt(object);
         if(iObject%2 == 0)
             return 0;
         else
             return 1;
+        */
+        return 0;
     }
 }
