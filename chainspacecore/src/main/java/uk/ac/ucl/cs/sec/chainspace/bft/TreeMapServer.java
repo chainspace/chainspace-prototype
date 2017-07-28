@@ -275,15 +275,31 @@ public class TreeMapServer extends DefaultRecoverable {
                     Transaction t = (Transaction) ois.readObject();
                     t.print();
 
-                    // TODO: What if the same transaction is submitted again?
-                    // TODO: We should check in sequences and reject if it already exists
+                    // Early Reject: A transaction will only be processed again if the system
+                    // previously aborted it. We do not process transactions that are already being
+                    // processed or were previously committed
+                    if(sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                        return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
+                    }
+
                     sequences.put(t.id, new TransactionSequence());
                     sequences.get(t.id).PREPARE_T = true;
 
                     // Send PREPARE_T
                     System.out.println(conn+"TRANSACTION_SUBMIT: Sending PREPARE_T");
-                    client.defaultShardID = thisShard;
-                    byte[] replyPrepareT = client.prepare_t(t);
+
+                    byte[] replyPrepareT = null;
+                    // If the replica has already processed prepare_t based on request from
+                    // another replica, use the existing response
+                    if(sequences.get(t.id).PREPARED_T_ABORT)
+                        replyPrepareT = ResponseType.PREPARED_T_ABORT.getBytes("UTF-8");
+                    else if(sequences.get(t.id).PREPARED_T_COMMIT)
+                        replyPrepareT = ResponseType.PREPARED_T_COMMIT.getBytes("UTF-8");
+                    // Otherwise send prepare_t request to all other replicas
+                    else {
+                        client.defaultShardID = thisShard;
+                        replyPrepareT = client.prepare_t(t);
+                    }
 
                     // Process response to PREPARE_T, and send ACCEPT_T
                     String strReplyAcceptT;
