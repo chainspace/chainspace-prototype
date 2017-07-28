@@ -11,7 +11,7 @@ import java.util.Arrays;
  *
  *
  */
-class TransactionForChecker {
+public class TransactionForChecker {
     private String   contractID;
     private String[] inputs;
     private String[] referenceInputs;
@@ -70,9 +70,8 @@ class TransactionForChecker {
     String getContractID() {
         return contractID;
     }
-
-    String[] getOutputs() { return outputs;}
-
+    public String[] getInputs() { return inputs;}
+    public String[] getOutputs() { return outputs;}
     String getMethodID() {
         return methodID;
     }

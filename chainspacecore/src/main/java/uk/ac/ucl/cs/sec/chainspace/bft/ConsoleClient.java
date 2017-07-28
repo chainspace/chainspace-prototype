@@ -2,9 +2,13 @@ package uk.ac.ucl.cs.sec.chainspace.bft;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 import bftsmart.tom.ServiceReplica;
+import uk.ac.ucl.cs.sec.chainspace.AbortTransactionException;
+import uk.ac.ucl.cs.sec.chainspace.CSTransaction;
+import uk.ac.ucl.cs.sec.chainspace.Store;
 
 import java.util.Scanner;
 import java.util.TreeMap;
@@ -102,6 +106,10 @@ public class ConsoleClient {
             System.out.println("8. ACCEPT_T_ABORT");
             System.out.println("9. ACCEPT_T_COMMIT");
             System.out.println("10. CREATE_OBJECT");
+            System.out.println("11. TEST_CORE_1");
+            System.out.println("12. TEST_CORE_2");
+            System.out.println("13. TEST_CORE_3");
+
 
             cmd = sc.nextInt();
             String key, input;
@@ -140,9 +148,8 @@ public class ConsoleClient {
                 // All the tests below operate on whichever shards are relevant to the transaction
                 // The shard ID provided by user at the console is ignored
                 case RequestType.TRANSACTION_SUBMIT:
-                    System.out.println("Committing  a transaction");
-                    Transaction t2 = new Transaction();
 
+                    Transaction t2 = new Transaction();
                     System.out.println("Enter transaction ID:");
                     input = console.nextLine();
                     t2.addID(input);
@@ -161,6 +168,7 @@ public class ConsoleClient {
                         t2.addOutput(input);
                         input=console.nextLine();
                     }
+
 
                     System.out.println("Transaction to be added is:");
                     t2.print();
@@ -274,6 +282,99 @@ public class ConsoleClient {
                     }
                     else
                         System.out.println("Replies to CREATE_OBJECT is null");
+                    break;
+
+                case 11:
+                    System.out.println("\n>> PREPARING TO SEND TRANSACTION...\n");
+
+                    CSTransaction csTransaction11 = new CSTransaction(
+                            "addition",
+                            new String[]{"hash_input_0"},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{"1"},
+                            new CSTransaction[]{},
+                            "increment"
+                    );
+                    Store store11 = new Store();
+                    store11.put("hash_input_0", "0");
+
+
+                    Transaction t11 = null;
+                    try {
+                        t11 = new Transaction(csTransaction11, store11);
+                    } catch (NoSuchAlgorithmException e) {
+                        System.err.print("\n>> [ERROR] "); e.printStackTrace();
+                        System.exit(-1);
+                    }
+
+                    System.out.println("Transaction to be added is:");
+                    t11.print();
+                    result = client.submitTransaction(t11);
+                    System.out.println("Transaction status: " + result);
+                    break;
+
+                case 12:
+                    System.out.println("\n>> PREPARING TO SEND TRANSACTION...\n");
+
+                    CSTransaction csTransaction12 = new CSTransaction(
+                            "addition",
+                            new String[]{"hash_input_1"},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{"2"},
+                            new CSTransaction[]{},
+                            "increment"
+                    );
+                    Store store12 = new Store();
+                    store12.put("hash_input_1", "1");
+
+
+                    Transaction t12 = null;
+                    try {
+                        t12 = new Transaction(csTransaction12, store12);
+                    } catch (NoSuchAlgorithmException e) {
+                        System.err.print("\n>> [ERROR] "); e.printStackTrace();
+                        System.exit(-1);
+                    }
+
+                    System.out.println("Transaction to be added is:");
+                    t12.print();
+                    result = client.submitTransaction(t12);
+                    System.out.println("Transaction status: " + result);
+                    break;
+
+                case 13:
+                    System.out.println("\n>> PREPARING TO SEND TRANSACTION...\n");
+
+                    CSTransaction csTransaction13 = new CSTransaction(
+                            "addition",
+                            new String[]{"hash_input_2"},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{},
+                            new String[]{"3"},
+                            new CSTransaction[]{},
+                            "increment"
+                    );
+                    Store store13 = new Store();
+                    store13.put("hash_input_1", "2");
+
+
+                    Transaction t13 = null;
+                    try {
+                        t13 = new Transaction(csTransaction13, store13);
+                    } catch (NoSuchAlgorithmException e) {
+                        System.err.print("\n>> [ERROR] "); e.printStackTrace();
+                        System.exit(-1);
+                    }
+
+                    System.out.println("Transaction to be added is:");
+                    t13.print();
+                    result = client.submitTransaction(t13);
+                    System.out.println("Transaction status: " + result);
                     break;
 
             }
