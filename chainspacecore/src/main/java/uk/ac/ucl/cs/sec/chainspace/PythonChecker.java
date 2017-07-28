@@ -26,12 +26,11 @@ class PythonChecker {
     /**
      *
      */
-    private PythonChecker(String pythonScriptPath, String contractID, String methodID) throws StartCheckerException {
+    private PythonChecker(String contractID) throws StartCheckerException {
 
         // save variables
-        this.pythonScriptPath = pythonScriptPath;
+        this.pythonScriptPath = "contracts/" +contractID+ ".py";
         this.contractID = contractID;
-        this.methodID = methodID;
 
         // set port
         if (latestPort == 65535) {
@@ -89,9 +88,9 @@ class PythonChecker {
     /**
      *
      */
-    private String getURL() {
+    private String getURL(String methodID) {
 
-        return "http://" + CHECKER_HOST + ":" + this.port + "/" + this.contractID + "/" + this.methodID;
+        return "http://" + CHECKER_HOST + ":" + this.port + "/" + this.contractID + "/" + methodID;
 
     }
 
@@ -113,16 +112,16 @@ class PythonChecker {
 
         if(Main.VERBOSE) {
             System.out.println("\nChecker URL:");
-            System.out.println("\t" + getURL());
+            System.out.println("\t" + getURL(transactionForChecker.getMethodID()));
         }
-        return Utils.makePostRequest(this.getURL(), transactionForChecker.toJson());
+        return Utils.makePostRequest(this.getURL(transactionForChecker.getMethodID()), transactionForChecker.toJson());
     }
 
 
     /**
      *
      */
-    static PythonChecker getFromCache(String pythonScriptPath, String contractID, String methodID)
+    static PythonChecker getFromCache(String contractID)
             throws StartCheckerException
     {
 
@@ -131,7 +130,7 @@ class PythonChecker {
 
         // check if that checker is already in the cache
         for (PythonChecker aCache : cache) {
-            if ( contractID.equals(aCache.getContractID()) && methodID.equals(aCache.getMethodID()) ) {
+            if ( contractID.equals(aCache.getContractID()) ) {
 
                 if( Main.VERBOSE ) { System.out.println("\tChecker found in cache"); }
                 return aCache;
@@ -140,7 +139,7 @@ class PythonChecker {
         }
 
         // otherwise, update cache
-        PythonChecker newChecker = new PythonChecker(pythonScriptPath, contractID, methodID);
+        PythonChecker newChecker = new PythonChecker(contractID);
         if( Main.VERBOSE ) { System.out.println("\tNew checker created"); }
         cache.add(newChecker);
         if (cache.size() > CACHE_DEPTH) {
