@@ -380,14 +380,14 @@ public class TreeMapServer extends DefaultRecoverable {
         // TODO: Things to do when transaction is PREPARED_T_COMMIT
 
         // Lock transaction input objects
-        setTransactionInputStatus(t, ObjectStatus.LOCKED);
+        setTransactionInputStatus(t, ObjectStatus.LOCKED, ObjectStatus.ACTIVE);
     }
 
     private void executeAcceptedTAbort(Transaction t){
         // TODO: Things to do when transaction is ACCEPTED_T_ABORT
 
         // Unlock transaction input objects
-        setTransactionInputStatus(t, ObjectStatus.ACTIVE);
+        setTransactionInputStatus(t, ObjectStatus.ACTIVE, ObjectStatus.LOCKED);
     }
 
     private void executeAcceptedTCommit(Transaction t){
@@ -478,7 +478,23 @@ public class TreeMapServer extends DefaultRecoverable {
             int shardID = client.mapObjectToShard(input);
 
             if (shardID == thisShard) {
-                table.put(input, status);
+                String prev = table.put(input, status);
+                System.out.println("Input object "+input+": "+prev+" -> "+status);
+            }
+        }
+        return true;
+    }
+
+    public boolean setTransactionInputStatus(Transaction t, String status, String prevStatus) {
+        List<String> inputObjects = t.inputs;
+
+        // Set status of all input objects relevant to this transaction
+        for (String input : inputObjects) {
+            int shardID = client.mapObjectToShard(input);
+
+            if (shardID == thisShard && table.get(input).equals(prevStatus)) {
+                String prev = table.put(input, status);
+                System.out.println("Input object "+input+": "+prev+" -> "+status);
             }
         }
         return true;
