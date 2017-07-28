@@ -25,9 +25,13 @@ class SQLiteConnector extends DatabaseConnector {
         this.connection = DriverManager.getConnection("jdbc:sqlite:" +Main.DATABASE_NAME+ ".sqlite");
         Statement statement = connection.createStatement();
 
+        // don't wait for data to reach disk
+        String sql = "PRAGMA synchronous=OFF";
+        statement.execute(sql);
+
         if (! Main.DEBUG_ALLOW_REPEAT) {
             // create table to store objects
-            String sql = "CREATE TABLE IF NOT EXISTS data (" +
+            sql = "CREATE TABLE IF NOT EXISTS data (" +
                     "object_id CHAR(32) NOT NULL UNIQUE," +
                     "object TEXT NOT NULL," +
                     "status INTEGER NOT NULL)";
@@ -49,7 +53,7 @@ class SQLiteConnector extends DatabaseConnector {
         else {
             // removed all unique constraints for debug mode
             // create table to store objects
-            String sql = "CREATE TABLE IF NOT EXISTS data (" +
+            sql = "CREATE TABLE IF NOT EXISTS data (" +
                     "object_id CHAR(32) NOT NULL," +
                     "object TEXT NOT NULL," +
                     "status INTEGER NOT NULL)";
