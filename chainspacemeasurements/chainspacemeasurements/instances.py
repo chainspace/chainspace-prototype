@@ -214,7 +214,7 @@ class ChainspaceNetwork(object):
 
         for i, instances in enumerate(self.shards.values()):
             for j, instance in enumerate(instances):
-                command = self._config_shards_command('chainspace/chainspacecore/ChainspaceConfig')
+                command = self._config_shards_command('chainspace/chainspacecore/ChainSpaceConfig')
                 command += 'printf "shardConfigFile shardConfig.txt\nthisShard {0}\nthisReplica {1}" > config.txt;'.format(i, j)
                 command += 'cd ../;'
                 command += 'rm -rf config;'
