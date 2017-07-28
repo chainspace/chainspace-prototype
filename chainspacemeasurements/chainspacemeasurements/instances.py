@@ -86,7 +86,7 @@ class ChainspaceNetwork(object):
             command += 'cp -r shards/config0 shards/s{0};'.format(i)
             command += 'printf "" > shards/s{0}/hosts.config;'.format(i)
             for j, instance in enumerate(instances):
-                command += 'printf "{0} {1} 3001\n" >> shards/s{0}/hosts.config;'.format(i, instance.public_ip_address)
+                command += 'printf "{1} {2} 3001\n" >> shards/s{0}/hosts.config;'.format(i, j, instance.public_ip_address)
 
         return command
 
@@ -128,7 +128,7 @@ class ChainspaceNetwork(object):
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
         command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
-        command += 'cd ~/chainspace; mkdir contracts'
+        command += 'cd ~/chainspace; mkdir contracts;'
         command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py ~/chainspace/contracts'
         self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
