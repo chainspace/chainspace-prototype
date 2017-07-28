@@ -174,7 +174,7 @@ class Core {
 
         // check if checker is already started
         PythonChecker checker =  PythonChecker.getFromCache(
-                checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
+                transactionForChecker.getContractID()
         );
         
         // call the checker
