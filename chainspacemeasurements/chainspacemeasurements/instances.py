@@ -82,11 +82,11 @@ class ChainspaceNetwork(object):
         command += 'cd {0};'.format(directory)
         command += 'printf "" > shardConfig.txt;'
         for i, instances in enumerate(self.shards.values()):
-            command += 'printf "{0} shards/s{0}" >> shardConfig.txt;'.format(i)
+            command += 'printf "{0} shards/s{0}\n" >> shardConfig.txt;'.format(i)
             command += 'cp -r shards/config0 shards/s{0};'.format(i)
             command += 'printf "" > shards/s{0}/hosts.config;'.format(i)
             for j, instance in enumerate(instances):
-                command += 'printf "{0} {1} 3001" >> shards/s{0}/hosts.config;'.format(i, instance.public_ip_address)
+                command += 'printf "{0} {1} 3001\n" >> shards/s{0}/hosts.config;'.format(i, instance.public_ip_address)
 
         return command
 
@@ -215,7 +215,7 @@ class ChainspaceNetwork(object):
         for i, instances in enumerate(self.shards.values()):
             for j, instance in enumerate(instances):
                 command = self._config_shards_command('chainspace/chainspacecore/ChainSpaceConfig')
-                command += 'printf "shardConfigFile shardConfig.txt\nthisShard {0}\nthisReplica {1}" > config.txt;'.format(i, j)
+                command += 'printf "shardConfigFile shardConfig.txt\nthisShard {0}\nthisReplica {1}\n" > config.txt;'.format(i, j)
                 command += 'cd ../;'
                 command += 'rm -rf config;'
                 command == 'cp -r ChainspaceConfig/shards/s{0} config;'.format(i)
