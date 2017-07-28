@@ -77,7 +77,7 @@ class ChainspaceNetwork(object):
         client.close()
         self._log_instance(instance, "Closed SSH connection.")
 
-    def _config_shards_command(directory):
+    def _config_shards_command(self, directory):
         command = ''
         command += 'cd {0};'.format(directory)
         command += 'printf "" > shardConfig.txt;'
