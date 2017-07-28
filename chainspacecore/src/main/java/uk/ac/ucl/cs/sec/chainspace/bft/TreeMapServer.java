@@ -288,18 +288,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     // Send PREPARE_T
                     System.out.println(conn+"TRANSACTION_SUBMIT: Sending PREPARE_T");
 
-                    byte[] replyPrepareT = null;
-                    // If the replica has already processed prepare_t based on request from
-                    // another replica, use the existing response
-                    if(sequences.get(t.id).PREPARED_T_ABORT)
-                        replyPrepareT = ResponseType.PREPARED_T_ABORT.getBytes("UTF-8");
-                    else if(sequences.get(t.id).PREPARED_T_COMMIT)
-                        replyPrepareT = ResponseType.PREPARED_T_COMMIT.getBytes("UTF-8");
-                    // Otherwise send prepare_t request to all other replicas
-                    else {
-                        client.defaultShardID = thisShard;
-                        replyPrepareT = client.prepare_t(t);
-                    }
+                    byte[] replyPrepareT = client.prepare_t(t);
 
                     // Process response to PREPARE_T, and send ACCEPT_T
                     String strReplyAcceptT;
