@@ -1,3 +1,0 @@
-shardConfigFile ChainSpaceConfig/shardConfig.txt
-thisShard 0
-thisReplica 1
