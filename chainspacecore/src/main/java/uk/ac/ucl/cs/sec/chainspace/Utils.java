@@ -20,7 +20,7 @@ import java.security.NoSuchAlgorithmException;
  *
  * Some general purpose utilities.
  */
-class Utils {
+public class Utils {
 
     /**
      * hash
@@ -80,9 +80,10 @@ class Utils {
      * generateObjectID
      * Create an object ID from the object and the trasaction that created it.
      */
-    static String generateObjectID(String transactionID, String object, int idx) throws NoSuchAlgorithmException {
+    public static String generateObjectID(String transactionID, String object, int idx) throws NoSuchAlgorithmException {
         return Utils.hash(transactionID + "|" + Utils.hash(object) + "|" + idx);
     }
+
 
 
     /**

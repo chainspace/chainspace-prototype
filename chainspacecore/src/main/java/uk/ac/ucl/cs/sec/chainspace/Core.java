@@ -4,14 +4,13 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 
 /**
  *
  *
  */
-class Core {
+public class Core {
 
     // instance variables
     private DatabaseConnector databaseConnector;
@@ -22,7 +21,7 @@ class Core {
      * Constructor
      * Runs a node service and init a database.
      */
-    Core() throws ClassNotFoundException, SQLException {
+    public Core() throws ClassNotFoundException, SQLException {
 
         // init cache
         // here we are implementing a simple cache of complexity O(n). Any caching system implementing the Cache
@@ -50,20 +49,7 @@ class Core {
      * This method processes a transaction object, call the checker, and store the outputs in the database if
      * everything goes fine.
      */
-    String[] processTransaction(String request) throws Exception {
-
-        // parse request
-        JSONObject requestJson = new JSONObject(request);
-
-        // extract transaction
-        Transaction transaction;
-        try { transaction = Transaction.fromJson(requestJson.getJSONObject("transaction")); }
-        catch (Exception e) { throw new AbortTransactionException("Malformed transaction."); }
-
-        // extract id-value store
-        Store store;
-        try { store = Store.fromJson(requestJson.getJSONObject("store")); }
-        catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
+    public String[] processTransaction(CSTransaction transaction, Store store) throws Exception {
 
         // accumulate all output objects and their IDs in the variable out
         // Note: Java passes to the callee only the reference of the array 'out' (not a copy of it)
@@ -76,7 +62,7 @@ class Core {
         for (Pair anOut : out) {
 
             // get transactions
-            Transaction atransaction = (Transaction) anOut.getValue1();
+            CSTransaction atransaction = (CSTransaction) anOut.getValue1();
             TransactionForChecker atransactionForChecker = (TransactionForChecker) anOut.getValue2();
 
             // make input objects inactive (consumed)
@@ -85,10 +71,10 @@ class Core {
             }
 
             // save outputs
-            this.databaseConnector.saveObject(atransaction.getID(), atransactionForChecker.getOutputs());
+            //this.databaseConnector.saveObject(atransaction.getID(), atransactionForChecker.getOutputs());
 
             // log transaction
-            this.databaseConnector.logTransaction(atransaction.getID(), transaction.toJson());
+            //this.databaseConnector.logTransaction(atransaction.getID(), transaction.toJson());
 
             // convert the pair's array into a string's array
             outForClient = Utils.concatenate(outForClient, atransactionForChecker.getOutputs());
@@ -104,7 +90,7 @@ class Core {
      * This method processes a transaction object, call the checker, and store the outputs in the database if
      * everything goes fine.
      */
-    private Pair[] processTransactionVM(Transaction transaction, Store store, Pair[] out) throws Exception {
+    private Pair[] processTransactionVM(CSTransaction transaction, Store store, Pair[] out) throws Exception {
 
         // make packet for checker
         TransactionForChecker transactionForChecker = TransactionPackager.makeTransactionForChecker(transaction, store);
@@ -133,10 +119,11 @@ class Core {
      * processTransactionHelper
      * Helper for processTransaction: executed on each recursion.
      */
-    private Pair[] processTransactionHelper(Transaction transaction, TransactionForChecker transactionForChecker)
+    private Pair[] processTransactionHelper(CSTransaction transaction, TransactionForChecker transactionForChecker)
             throws Exception
     {
 
+        /*
         // check if the transaction is in the cache (has recently been processed)
         if (! Main.DEBUG_ALLOW_REPEAT) {
             if (this.cache.isInCache(transaction.toJson())) {
@@ -151,6 +138,7 @@ class Core {
         if (this.databaseConnector.isInactive(transaction.getReferenceInputIDs())) {
             throw new AbortTransactionException("At least one reference input is inactive.");
         }
+        */
 
         // call the checker
         if (! Main.DEBUG_SKIP_CHECKER) {
@@ -174,7 +162,7 @@ class Core {
 
         // check if checker is already started
         PythonChecker checker =  PythonChecker.getFromCache(
-                checkerPath, transactionForChecker.getContractID(), transactionForChecker.getMethodID()
+                transactionForChecker.getContractID()
         );
         
         // call the checker
