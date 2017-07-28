@@ -2,8 +2,8 @@ package uk.ac.ucl.cs.sec.chainspace;
 
 
 /**
- *
- *
+ * Main
+ * Main class, program entry point.
  */
 public class Main {
 
@@ -38,8 +38,8 @@ public class Main {
 
      */
     static final boolean DEBUG_ALLOW_REPEAT         = true;
-    static final boolean DEBUG_SKIP_CHECKER         = false;
-    static final boolean DEBUG_IGNORE_DEPENDENCIES  = false;
+    static final boolean DEBUG_SKIP_CHECKER         = true;
+    static final boolean DEBUG_IGNORE_DEPENDENCIES  = true;
 
 
     // version

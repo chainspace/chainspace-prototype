@@ -79,7 +79,8 @@ class NodeService {
         try {
 
             // pass transaction to the core
-            String[] out = this.core.processTransaction(request.body());
+            //String[] out = this.core.processTransaction(request.body());
+            String[] out = new String[]{};
 
             // create json response
             responseJson.put("success", "True");
