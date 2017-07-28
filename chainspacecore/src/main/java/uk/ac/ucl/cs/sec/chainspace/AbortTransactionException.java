@@ -4,14 +4,14 @@ package uk.ac.ucl.cs.sec.chainspace;
 /**
  * Custom exception. Thrown when a chainspace transaction aborts.
  */
-class AbortTransactionException extends Exception {
+public class AbortTransactionException extends Exception {
 
     /**
      * Message constructor.
      *
      * @param message the error message.
      */
-    AbortTransactionException(String message) {
+    public AbortTransactionException(String message) {
 
         super("[ERROR_TRANSACTIONABORT] " + message);
 

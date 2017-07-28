@@ -9,9 +9,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.Serializable;
+
+import org.json.JSONObject;
+import uk.ac.ucl.cs.sec.chainspace.*;
 
 public class Transaction implements Serializable {
     public String id;
@@ -30,6 +34,8 @@ public class Transaction implements Serializable {
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
     }
+
+
 
     public void addID(String id) {
         this.id = id;
@@ -80,6 +86,60 @@ public class Transaction implements Serializable {
             return null;
         }
     }
+
+
+    /*
+        BLOCK ADDED
+     */
+
+    private CSTransaction csTransaction;
+    private Store store;
+
+    Transaction(String request) throws AbortTransactionException {
+        this();
+
+        // parse request
+        JSONObject requestJson = new JSONObject(request);
+
+        // extract transaction
+        try { this.csTransaction = CSTransaction.fromJson(requestJson.getJSONObject("transaction")); }
+        catch (Exception e) { throw new AbortTransactionException("Malformed transaction."); }
+
+        // extract id-value store
+        try { this.store = Store.fromJson(requestJson.getJSONObject("store")); }
+        catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
+
+    }
+
+    // DEBUG CONSTRUCTOR
+    Transaction(CSTransaction csTransaction, Store store) throws NoSuchAlgorithmException {
+        this();
+
+        this.addID(csTransaction.getContractID());
+
+        this.csTransaction = csTransaction;
+        this.store = store;
+
+        for (int i = 0; i < csTransaction.getInputIDs().length; i++) {
+            this.addInput(csTransaction.getInputIDs()[i]);
+        }
+        for (int i = 0; i < csTransaction.getOutputs().length; i++) {
+            String objectID = Utils.generateObjectID(csTransaction.getID(), csTransaction.getOutputs()[i], i);
+            this.addOutput(objectID);
+        }
+
+    }
+
+    CSTransaction getCsTransaction() {
+        return csTransaction;
+    }
+    Store getStore() {
+        return store;
+    }
+
+    /*
+        END BLOCK
+     */
 
 }
 

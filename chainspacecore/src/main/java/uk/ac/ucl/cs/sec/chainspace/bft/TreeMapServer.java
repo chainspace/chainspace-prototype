@@ -14,9 +14,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.sql.SQLException;
 import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
+
+import uk.ac.ucl.cs.sec.chainspace.Core;
 
 
 public class TreeMapServer extends DefaultRecoverable {
@@ -31,7 +34,15 @@ public class TreeMapServer extends DefaultRecoverable {
     String shardConfigFile; // Contains info about shards and corresponding config files.
                             // This info should be passed on the client class.
 
+    private Core core;
+
     public TreeMapServer(String configFile) {
+
+        try { core = new Core(); }
+        catch (ClassNotFoundException | SQLException e) {
+            System.err.print(">> [ERROR] "); e.printStackTrace();
+            System.exit(-1);
+        }
 
         configData = new HashMap<String,String>(); // will be filled with config data by readConfiguration()
         readConfiguration(configFile);
@@ -394,41 +405,56 @@ public class TreeMapServer extends DefaultRecoverable {
     private String checkPrepareT(Transaction t) {
         // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
 
+        System.out.println("\n>> PROCESSING TRANSACTION...");
+        System.out.println(t.getCsTransaction().getContractID());
+
         // Check if all input objects are active
         // and at least one of the input objects is managed by this shard
-        int nManagedObj = 0;
         String reply = ResponseType.PREPARED_T_COMMIT;
         String strErr = "Unknown";
 
         for(String key: t.inputs) {
+            // get object's status
             String readValue = table.get(key);
-            boolean managedObj = (ObjectStatus.mapObjectToShard(key)==thisShard);
-            if(managedObj)
-                nManagedObj++;
-            if(managedObj && readValue == null) {
-                strErr = Transaction.INVALID_NOOBJECT;
+
+            //
+            if(ObjectStatus.mapObjectToShard(key) != thisShard) {
+                strErr = Transaction.INVALID_NOMANAGEDOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
-            else if(managedObj && readValue != null) {
-                if (readValue.equals(ObjectStatus.LOCKED)) {
-                    strErr = Transaction.REJECTED_LOCKEDOBJECT;
-                    reply = ResponseType.PREPARED_T_ABORT;
-                }
-                else if (managedObj && readValue.equals(ObjectStatus.INACTIVE)) {
-                    strErr = Transaction.INVALID_INACTIVEOBJECT;
+            /*
+            else if(readValue == null) {
+                //TODO: check whether it is an init function
+                //strErr = Transaction.INVALID_NOOBJECT;
+                //reply = ResponseType.PREPARED_T_ABORT;
+            }
+            */
+            else if ((ObjectStatus.LOCKED).equals(readValue)) {
+                strErr = Transaction.REJECTED_LOCKEDOBJECT;
+                reply = ResponseType.PREPARED_T_ABORT;
+            }
+            else if ((ObjectStatus.INACTIVE).equals(readValue)) {
+                strErr = Transaction.INVALID_INACTIVEOBJECT;
+                reply = ResponseType.PREPARED_T_ABORT;
+            }
+            else {
+                System.out.println("\n>> RUNNING CORE...");
+                try {
+                    String[] out = core.processTransaction(t.getCsTransaction(), t.getStore());
+                    System.out.println("\n>> PRINTING TRANSACTION'S OUTPUT...");
+                    System.out.println(Arrays.toString(out));
+                } catch (Exception e) {
+                    strErr = e.getMessage();
                     reply = ResponseType.PREPARED_T_ABORT;
                 }
             }
         }
-        // The case when this shard doesn't manage any of the input objects
-        if(nManagedObj == 0) {
-            strErr = Transaction.INVALID_NOMANAGEDOBJECT;
-            reply = ResponseType.PREPARED_T_ABORT;
-        }
 
+        // print out error
         if(reply.equals(ResponseType.PREPARED_T_ABORT))
             System.out.println("PREPARE_T (checkPrepareT): Returning PREPARED_T_ABORT->"+strErr);
 
+        // return
         return reply;
     }
     // ============
