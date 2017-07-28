@@ -42,7 +42,7 @@ public class MapClient implements Map<String, String> {
     // will be always unique (as per class TomSender)
     private HashMap<String,TOMMessage> asynchReplies  = null;
 
-    private int invokeAsynchTimeout = 5000;
+    private int invokeAsynchTimeout = 15000;
 
     public MapClient(String shardConfigFile) {
         // Shards
