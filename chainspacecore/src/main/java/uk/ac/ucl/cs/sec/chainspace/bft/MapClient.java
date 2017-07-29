@@ -272,14 +272,16 @@ public class MapClient implements Map<String, String> {
 
     public HashMap<String,Boolean> createObjects(List<String> outputObjects, int invokeTimeoutAsynch) {
         HashMap<Integer,Integer> shardToReq = new HashMap<Integer,Integer>();; // Request IDs indexed by shard IDs
-        TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
+        TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
         boolean earlyTerminate = false;
-        String finalResponse = null;
 
         try {
             System.out.println("CREATE_OBJECT (DRIVER): Sending CREATE_OBJECT to relevant shards");
 
-            // Send a request to each shard relevant to the ouputs
+            HashMap<Integer,ArrayList<String>> shardToObjects = new HashMap<>(); // Objects managed by a shard
+
+
+            // Group objects by the managing shard
             for(String output: outputObjects) {
                 int shardID = mapObjectToShard(output);
                 if(shardID == -1) {
@@ -287,16 +289,25 @@ public class MapClient implements Map<String, String> {
                     earlyTerminate = true;
                     return null;
                 }
+                if(!shardToObjects.containsKey(shardID)) {
+                    shardToObjects.put(shardID, new ArrayList<String>());
+                }
+                shardToObjects.get(shardID).add(output);
+            }
+
+            // Send a request to each shard relevant to the outputs
+            for(int shardID: shardToObjects.keySet()) {
 
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(bs);
                 oos.writeInt(RequestType.CREATE_OBJECT);
-                oos.writeUTF(output);
+                oos.writeObject(shardToObjects.get(shardID));
                 oos.close();
 
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynch(shardID), reqType);
                 System.out.println("CREATE_OBJECT (DRIVER): Sent to shard ID " + shardID + ", req ID " + req + " client ID " + shardToClientAsynch.get(shardID));
                 shardToReq.put(shardID, req);
+
             }
             Thread.sleep(invokeTimeoutAsynch);//how long to wait for replies from all shards before doing cleanup and returning
         }

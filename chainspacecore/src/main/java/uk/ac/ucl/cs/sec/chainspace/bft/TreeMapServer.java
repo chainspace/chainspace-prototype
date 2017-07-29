@@ -224,6 +224,19 @@ public class TreeMapServer extends DefaultRecoverable {
                     return null;
                 }
             }
+            else if (reqType == RequestType.CREATE_OBJECT) {
+                try {
+                    ArrayList<String> objects = (ArrayList<String>) ois.readObject();
+                    String status = ObjectStatus.ACTIVE; // New objects are active
+                    for(String object: objects) {
+                        table.put(object, status);
+                    }
+                }
+                catch(Exception e) {
+                    System.out.println(conn + "Exception: " + e.getMessage());
+                }
+                return null; // No reply expected by the caller
+            }
             else {
                 System.out.println(conn+"Unknown request type: " + reqType);
                 return null;
@@ -287,12 +300,6 @@ public class TreeMapServer extends DefaultRecoverable {
                 finally {
                     return null;  // No reply expected by the caller
                 }
-            }
-            else if (reqType == RequestType.CREATE_OBJECT) {
-                String object = ois.readUTF();
-                String status = ObjectStatus.ACTIVE; // New objects are active
-                table.put(object, status);
-                return null; // No reply expected by the caller
             }
             else if (reqType == RequestType.TRANSACTION_SUBMIT) {
                 try {
