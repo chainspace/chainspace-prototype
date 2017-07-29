@@ -262,8 +262,8 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 return sizeInBytes;
             }
-            else if (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
-                        reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT) {
+            else if (!isBFTInitiator() && (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
+                        reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT)) {
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     switch(reqType) {
@@ -300,81 +300,89 @@ public class TreeMapServer extends DefaultRecoverable {
                     Transaction t = (Transaction) ois.readObject();
                     t.print();
 
-                    // Early Reject: A transaction will only be processed again if the system
-                    // previously aborted it. We do not process transactions that are already being
-                    // processed or were previously committed
-                    if(sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
-                        return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
-                    }
+                    if(isBFTInitiator()) {
 
-                    sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
-                    sequences.get(t.id).PREPARE_T = true;
-
-                    // Send PREPARE_T
-                    System.out.println(conn+"TRANSACTION_SUBMIT: Sending PREPARE_T");
-
-                    byte[] replyPrepareT = client.prepare_t(t);
-
-                    // Process response to PREPARE_T, and send ACCEPT_T
-                    String strReplyAcceptT;
-
-                    // Process reply to PREPARE_T
-                    String strReplyPrepareT = "";
-                    if(replyPrepareT != null) {
-                        strReplyPrepareT = new String(replyPrepareT, "UTF-8");
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Reply to PREPARE_T is "+strReplyPrepareT);
-                    }
-                    else
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Reply to PREPARE_T is null");
-
-                    // PREPARED_T_ABORT, ACCEPT_T_ABORT
-                    if(replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
-
-                        // Alberto: Do application-specific stuff here
-                        executePreparedTAbort(t);
-
-                        // TODO: Can we skip BFT here and return to client?
-                        sequences.get(t.id).ACCEPT_T_ABORT = true;
-
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Sending ACCEPT_T_ABORT");
-                        strReplyAcceptT = client.accept_t_abort(t);
-
-                        // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
-                        // TODO: it will always abort this transaction.
-                        if(true) {
-                            // Alberto: Do application-specific work here
-                            executeAcceptedTAbort(t);
+                        // Early Reject: A transaction will only be processed again if the system
+                        // previously aborted it. We do not process transactions that are already being
+                        // processed or were previously committed
+                        if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                            return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
                         }
-                        System.out.println(conn+"TRANSACTION_SUBMIT: ABORTED and reply to ACCEPT_T_ABORT is "+strReplyAcceptT);
-                    }
-                    // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
-                    else if(strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
 
-                        //Alberto: Do application-specific stuff here
-                        executePreparedTCommit(t);
+                        sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
+                        sequences.get(t.id).PREPARE_T = true;
 
-                        sequences.get(t.id).ACCEPT_T_COMMIT = true;
+                        // Send PREPARE_T
+                        System.out.println(conn + "TRANSACTION_SUBMIT: Sending PREPARE_T");
 
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Sending ACCEPT_T_COMMIT");
-                        strReplyAcceptT = client.accept_t_commit(t);
+                        byte[] replyPrepareT = client.prepare_t(t);
 
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is "+strReplyAcceptT);
+                        // Process response to PREPARE_T, and send ACCEPT_T
+                        String strReplyAcceptT;
 
-                        if(strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                            executeAcceptedTAbort(t);
+                        // Process reply to PREPARE_T
+                        String strReplyPrepareT = "";
+                        if (replyPrepareT != null) {
+                            strReplyPrepareT = new String(replyPrepareT, "UTF-8");
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to PREPARE_T is " + strReplyPrepareT);
+                        } else
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to PREPARE_T is null");
+
+                        // PREPARED_T_ABORT, ACCEPT_T_ABORT
+                        if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
+
+                            // Alberto: Do application-specific stuff here
+                            executePreparedTAbort(t);
+
+                            // TODO: Can we skip BFT here and return to client?
+                            sequences.get(t.id).ACCEPT_T_ABORT = true;
+
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Sending ACCEPT_T_ABORT");
+                            strReplyAcceptT = client.accept_t_abort(t);
+
+                            // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
+                            // TODO: it will always abort this transaction.
+                            if (true) {
+                                // Alberto: Do application-specific work here
+                                executeAcceptedTAbort(t);
+                            }
+                            System.out.println(conn + "TRANSACTION_SUBMIT: ABORTED and reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
                         }
-                        else if(strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
-                            executeAcceptedTCommit(t);
+                        // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
+                        else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
+
+                            //Alberto: Do application-specific stuff here
+                            executePreparedTCommit(t);
+
+                            sequences.get(t.id).ACCEPT_T_COMMIT = true;
+
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Sending ACCEPT_T_COMMIT");
+                            strReplyAcceptT = client.accept_t_commit(t);
+
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+
+                            if (strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
+                                executeAcceptedTAbort(t);
+                            } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
+                                executeAcceptedTCommit(t);
+                            }
+                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                        } else {
+                            System.out.println("TRANSACTION_SUBMIT: Unknown error in processing PREPARE_T");
+                            strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
                         }
-                        System.out.println(conn+"TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is "+strReplyAcceptT);
+                        System.out.println(conn + "TRANSACTION_SUBMIT: Replying to client: " + strReplyAcceptT);
+                        // TODO: The final response should contain proof (bundle of signatures)
+                        // TODO: from replicas to convince the client that all replicas in the
+                        // TODO: shard agree on the final decision
+                        return strReplyAcceptT.getBytes("UTF-8");
                     }
+                    // TODO: Optimization: Non-BFTInitiator replicas should relay submitTransaction
+                    // TODO: to the BFTInitiator so it hears the msg even if the msg from client
+                    // TODO: failed to reach it
                     else {
-                        System.out.println("TRANSACTION_SUBMIT: Unknown error in processing PREPARE_T");
-                        strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
+                        return null;
                     }
-
-                    System.out.println(conn+"TRANSACTION_SUBMIT: Replying to client: "+strReplyAcceptT);
-                    return strReplyAcceptT.getBytes("UTF-8");
                 }
 
                 catch (Exception  e) {

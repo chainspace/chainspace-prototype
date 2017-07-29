@@ -272,7 +272,7 @@ public class MapClient implements Map<String, String> {
 
     public HashMap<String,Boolean> createObjects(List<String> outputObjects, int invokeTimeoutAsynch) {
         HashMap<Integer,Integer> shardToReq = new HashMap<Integer,Integer>();; // Request IDs indexed by shard IDs
-        TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
+        TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
         boolean earlyTerminate = false;
         String finalResponse = null;
 
@@ -342,6 +342,34 @@ public class MapClient implements Map<String, String> {
             return replies;
         }
     }
+
+
+    // The BFT initiator uses this function to inform other replicas about the
+    // decision of a BFT round.
+    // TODO: The message should include proof (e.g., bundle of signatures) that
+    // TODO: other replicas agree on this decision
+    public void broadcastBFTDecision(int msgType, Transaction t) {
+        TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
+        try {
+            ByteArrayOutputStream bs = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bs);
+            oos.writeInt(msgType);
+            oos.writeObject(t);
+            oos.close();
+
+            // BFT initiator will broadcast the final msg to replicas in its own shard only,
+            // even if the BFT itself involved multiple shards (such as in ACCEPT_T)
+            int shardID = defaultShardID;
+            int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
+                @Override
+                public void replyReceived(RequestContext context, TOMMessage reply) { }
+            }, reqType);
+        }
+        catch(Exception e){
+            System.out.println("Experienced Exception: " + e.getMessage());
+        }
+    }
+
 
     public String submitTransaction(Transaction t) {
         return submitTransaction(t, invokeAsynchTimeout);
