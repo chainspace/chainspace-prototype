@@ -152,12 +152,6 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
                 return resultBytes;
             }
-            else if (reqType == RequestType.CREATE_OBJECT) {
-                String object = ois.readUTF();
-                String status = ObjectStatus.ACTIVE; // New objects are active
-                table.put(object, status);
-                return ResponseType.CREATED_OBJECT.getBytes("UTF-8");
-            }
             else if (reqType == RequestType.REMOVE) {
                 String key = ois.readUTF();
                 String removedValue = table.remove(key);
@@ -268,16 +262,37 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 return sizeInBytes;
             }
-            else if (reqType == RequestType.PREPARED_T_COMMIT) {
+            else if (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
+                        reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT) {
                 try {
                     Transaction t = (Transaction) ois.readObject();
-                    executePreparedTCommit(t);
-                    return null;
+                    switch(reqType) {
+                        case RequestType.PREPARED_T_COMMIT:
+                            executePreparedTCommit(t);
+                            break;
+                        case RequestType.PREPARED_T_ABORT:
+                            executePreparedTAbort(t);
+                            break;
+                        case RequestType.ACCEPTED_T_COMMIT:
+                            executeAcceptedTCommit(t);
+                            break;
+                        case RequestType.ACCEPTED_T_ABORT:
+                            executeAcceptedTAbort(t);
+                            break;
+                    }
                 }
                 catch (Exception e) {
                     System.out.println(conn+"Exception reading data in the replica: " + e.getMessage());
-                    return null;
                 }
+                finally {
+                    return null;  // No reply expected by the caller
+                }
+            }
+            else if (reqType == RequestType.CREATE_OBJECT) {
+                String object = ois.readUTF();
+                String status = ObjectStatus.ACTIVE; // New objects are active
+                table.put(object, status);
+                return null; // No reply expected by the caller
             }
             else if (reqType == RequestType.TRANSACTION_SUBMIT) {
                 try {
