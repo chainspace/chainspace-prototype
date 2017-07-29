@@ -300,16 +300,17 @@ public class TreeMapServer extends DefaultRecoverable {
                     Transaction t = (Transaction) ois.readObject();
                     t.print();
 
+                    // Early Reject: A transaction will only be processed again if the system
+                    // previously aborted it. We do not process transactions that are already being
+                    // processed or were previously committed
+                    if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                        return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
+                    }
+
+                    sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
+
                     if(isBFTInitiator()) {
 
-                        // Early Reject: A transaction will only be processed again if the system
-                        // previously aborted it. We do not process transactions that are already being
-                        // processed or were previously committed
-                        if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
-                            return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
-                        }
-
-                        sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
                         sequences.get(t.id).PREPARE_T = true;
 
                         // Send PREPARE_T
@@ -434,10 +435,12 @@ public class TreeMapServer extends DefaultRecoverable {
         // Inactivate transaction input objects
         setTransactionInputStatus(t, ObjectStatus.INACTIVE);
 
-        // Create output objects (local as well as those on other shards)
-        int timeout = 0; // How long to wait for replies to be accumulated in replies.
-                         // Default is no wait; just let object creation happen asynchronously.
-        HashMap<String,Boolean> replies = client.createObjects(t.outputs, timeout);
+        if(isBFTInitiator()) {
+            // Create output objects (local as well as those on other shards)
+            int timeout = 0; // How long to wait for replies to be accumulated in replies.
+            // Default is no wait; just let object creation happen asynchronously.
+            HashMap<String, Boolean> replies = client.createObjects(t.outputs, timeout);
+        }
 
         sequences.get(t.id).ACCEPTED_T_COMMIT = true;
     }
