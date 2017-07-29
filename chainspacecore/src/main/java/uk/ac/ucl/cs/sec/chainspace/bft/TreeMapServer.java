@@ -57,8 +57,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
-        new ServiceReplica(thisReplica, this, this); // Create the server
-
+        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
     }
 
     private boolean loadConfiguration() {
@@ -503,6 +502,20 @@ public class TreeMapServer extends DefaultRecoverable {
             }
         }
         return true;
+    }
+
+    // We don't want every replica to start a separate BFT round for
+    // the same request. So within each shard, there is a designated
+    // BFT initiator which conducts BFT round and broadcasts the output
+    // to other replicas.
+    // TODO: This function considers replica with ID 0 to be the shard initiator.
+    // TODO: This should preferably be the SmartBFT leader defined in:
+    // TODO: tom.core.ExecutionManager.currentLeader, but I can't access it
+    // TODO: from the ServiceReplica object
+    boolean isBFTInitiator() {
+        if(thisReplica == 0)
+            return true;
+        return false;
     }
 
     @Override
