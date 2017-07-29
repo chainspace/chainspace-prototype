@@ -275,8 +275,9 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 return sizeInBytes;
             }
-            else if (!isBFTInitiator() && (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
-                        reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT)) {
+            // The BFTInitiator sends these messages to inform the replicas about the decision of a BFT round
+            else if (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
+                        reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT) {
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     switch(reqType) {
@@ -316,6 +317,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                     sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
 
+                    // If it is a BFTInitiator Replica
                     if(isBFTInitiator()) {
 
                         sequences.get(t.id).PREPARE_T = true;
@@ -339,8 +341,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
                         if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
 
-                            // Alberto: Do application-specific stuff here
-                            executePreparedTAbort(t);
+                            client.broadcastBFTDecision(RequestType.PREPARED_T_ABORT, t);
 
                             // TODO: Can we skip BFT here and return to client?
                             sequences.get(t.id).ACCEPT_T_ABORT = true;
@@ -351,16 +352,14 @@ public class TreeMapServer extends DefaultRecoverable {
                             // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
                             // TODO: it will always abort this transaction.
                             if (true) {
-                                // Alberto: Do application-specific work here
-                                executeAcceptedTAbort(t);
+                                client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t);
                             }
                             System.out.println(conn + "TRANSACTION_SUBMIT: ABORTED and reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
                         }
                         // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                         else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
 
-                            //Alberto: Do application-specific stuff here
-                            executePreparedTCommit(t);
+                            client.broadcastBFTDecision(RequestType.PREPARED_T_COMMIT, t);
 
                             sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
@@ -370,9 +369,9 @@ public class TreeMapServer extends DefaultRecoverable {
                             System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
 
                             if (strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                                executeAcceptedTAbort(t);
+                                client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t);
                             } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
-                                executeAcceptedTCommit(t);
+                                client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t);
                             }
                             System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
                         } else {
@@ -385,6 +384,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: shard agree on the final decision
                         return strReplyAcceptT.getBytes("UTF-8");
                     }
+                    // If it is a non-BFTInitiator Replica
                     // TODO: Optimization: Non-BFTInitiator replicas should relay submitTransaction
                     // TODO: to the BFTInitiator so it hears the msg even if the msg from client
                     // TODO: failed to reach it
