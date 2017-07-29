@@ -268,6 +268,17 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 return sizeInBytes;
             }
+            else if (reqType == RequestType.PREPARED_T_COMMIT) {
+                try {
+                    Transaction t = (Transaction) ois.readObject();
+                    executePreparedTCommit(t);
+                    return null;
+                }
+                catch (Exception e) {
+                    System.out.println(conn+"Exception reading data in the replica: " + e.getMessage());
+                    return null;
+                }
+            }
             else if (reqType == RequestType.TRANSACTION_SUBMIT) {
                 try {
                     System.out.println(conn+"TRANSACTION_SUBMIT: Received request");
@@ -281,7 +292,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
                     }
 
-                    sequences.put(t.id, new TransactionSequence());
+                    sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
                     sequences.get(t.id).PREPARE_T = true;
 
                     // Send PREPARE_T
@@ -303,7 +314,6 @@ public class TreeMapServer extends DefaultRecoverable {
 
                     // PREPARED_T_ABORT, ACCEPT_T_ABORT
                     if(replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
-                        sequences.get(t.id).PREPARED_T_ABORT = true;
 
                         // Alberto: Do application-specific stuff here
                         executePreparedTAbort(t);
@@ -317,7 +327,6 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
                         // TODO: it will always abort this transaction.
                         if(true) {
-                            sequences.get(t.id).ACCEPTED_T_ABORT = true;
                             // Alberto: Do application-specific work here
                             executeAcceptedTAbort(t);
                         }
@@ -325,7 +334,6 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                     // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                     else if(strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
-                        sequences.get(t.id).PREPARED_T_COMMIT = true;
 
                         //Alberto: Do application-specific stuff here
                         executePreparedTCommit(t);
@@ -338,11 +346,9 @@ public class TreeMapServer extends DefaultRecoverable {
                         System.out.println(conn+"TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is "+strReplyAcceptT);
 
                         if(strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                            sequences.get(t.id).ACCEPTED_T_ABORT = true;
                             executeAcceptedTAbort(t);
                         }
                         else if(strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
-                            sequences.get(t.id).ACCEPTED_T_COMMIT = true;
                             executeAcceptedTCommit(t);
                         }
                         System.out.println(conn+"TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is "+strReplyAcceptT);
@@ -378,20 +384,26 @@ public class TreeMapServer extends DefaultRecoverable {
     // ============
     private void executePreparedTAbort(Transaction t){
         // TODO: Things to do when transaction is PREPARED_T_ABORT
+
+        sequences.get(t.id).PREPARED_T_ABORT = true;
     }
 
     private void executePreparedTCommit(Transaction t){
         // TODO: Things to do when transaction is PREPARED_T_COMMIT
 
-        // Lock transaction input objects
+        // Lock transaction input objects that were previously active
         setTransactionInputStatus(t, ObjectStatus.LOCKED, ObjectStatus.ACTIVE);
+
+        sequences.get(t.id).PREPARED_T_COMMIT = true;
     }
 
     private void executeAcceptedTAbort(Transaction t){
         // TODO: Things to do when transaction is ACCEPTED_T_ABORT
 
-        // Unlock transaction input objects
+        // Unlock transaction input objects that were previously locked
         setTransactionInputStatus(t, ObjectStatus.ACTIVE, ObjectStatus.LOCKED);
+
+        sequences.get(t.id).ACCEPTED_T_ABORT = true;
     }
 
     private void executeAcceptedTCommit(Transaction t){
@@ -403,6 +415,8 @@ public class TreeMapServer extends DefaultRecoverable {
         int timeout = 0; // How long to wait for replies to be accumulated in replies.
                          // Default is no wait; just let object creation happen asynchronously.
         HashMap<String,Boolean> replies = client.createObjects(t.outputs, timeout);
+
+        sequences.get(t.id).ACCEPTED_T_COMMIT = true;
     }
 
 
