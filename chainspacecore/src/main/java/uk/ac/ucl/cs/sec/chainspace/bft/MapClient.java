@@ -723,7 +723,12 @@ public class MapClient implements Map<String, String> {
             return (int) Math.ceil((c.getViewManager().getCurrentViewN()
                     + c.getViewManager().getCurrentViewF()) / 2) + 1;
         } else {
-            return (int) Math.ceil((c.getViewManager().getCurrentViewN()) / 2) + 1;
+            //return (int) Math.ceil((c.getViewManager().getCurrentViewN()) / 2) + 1;
+            // For unordered asynch requests, a single reply is fine.
+            // Where such messages are used, either the reply doesn't matter
+            // (broadcastBFTDecision) or only a single replica is expected to
+            // reply (e.g., BFTInitiator in submitTransaction).
+            return 1;
         }
     }
 }
