@@ -439,6 +439,7 @@ public class TreeMapServer extends DefaultRecoverable {
             }
             else {
                 System.out.println("\n>> RUNNING CORE...");
+                System.out.println(t.getCsTransaction());
                 try {
                     String[] out = core.processTransaction(t.getCsTransaction(), t.getStore());
                     System.out.println("\n>> PRINTING TRANSACTION'S OUTPUT...");
