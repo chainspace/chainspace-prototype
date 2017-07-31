@@ -406,8 +406,10 @@ public class TreeMapServer extends DefaultRecoverable {
         // TODO: Check if the transaction is malformed, return INVALID_BADTRANSACTION
 
         System.out.println("\n>> PROCESSING TRANSACTION...");
-        System.out.println(t.getCsTransaction().getContractID());
-
+        if (t != null) {
+            System.out.println(t.getCsTransaction().getContractID());
+        }
+        
         // Check if all input objects are active
         // and at least one of the input objects is managed by this shard
         String reply = ResponseType.PREPARED_T_COMMIT;
@@ -437,7 +439,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 strErr = Transaction.INVALID_INACTIVEOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
-            else {
+            else if (t != null) { // debug compatible
                 System.out.println("\n>> RUNNING CORE...");
                 System.out.println(t.getCsTransaction());
                 try {
@@ -448,6 +450,9 @@ public class TreeMapServer extends DefaultRecoverable {
                     strErr = e.getMessage();
                     reply = ResponseType.PREPARED_T_ABORT;
                 }
+            }
+            else {
+                System.out.println("\n>> DEBUG MODE");
             }
         }
 
