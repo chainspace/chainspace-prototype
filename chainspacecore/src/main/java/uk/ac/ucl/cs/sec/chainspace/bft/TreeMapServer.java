@@ -29,7 +29,7 @@ public class TreeMapServer extends DefaultRecoverable {
     int thisShard; // the shard this replica is part of
     int thisReplica; // ID of this replica within thisShard
     MapClient client;
-    String conn;
+    String strLabel;
     HashMap<String,String> configData;
     String shardConfigFile; // Contains info about shards and corresponding config files.
                             // This info should be passed on the client class.
@@ -53,40 +53,45 @@ public class TreeMapServer extends DefaultRecoverable {
 
         table = new TreeMap<>(); // contains objects and their state
         sequences = new  HashMap<>(); // contains operation sequences for transactions
-        conn = "[?->"+thisShard+"] "; // This string is used in debug messages
+        strLabel = "["+thisShard+":"+ thisReplica+"] "; // This string is used in debug messages
 
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
+        client.thisShard = thisShard;
+        client.thisReplica = thisReplica;
+
         ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
     }
 
     private boolean loadConfiguration() {
+        String strModule = "loadConfiguration: ";
         boolean done = true;
 
         if(configData.containsKey(ServerConfig.thisShard))
             thisShard = Integer.parseInt(configData.get(ServerConfig.thisShard));
         else {
-            System.out.println("Could not find configuration for thisShardID.");
+            logMsg(strLabel,strModule,"Could not find configuration for thisShardID.");
             done = false;
         }
 
         if(configData.containsKey(ServerConfig.shardConfigFile))
             shardConfigFile = configData.get(ServerConfig.shardConfigFile);
         else {
-            System.out.println("Could not find configuration for shardConfigFile.");
+            logMsg(strLabel,strModule,"Could not find configuration for shardConfigFile.");
             done = false;
         }
 
         if(configData.containsKey(ServerConfig.thisReplica))
             thisReplica = Integer.parseInt(configData.get(ServerConfig.thisReplica));
         else {
-            System.out.println("Could not find configuration for thisReplica.");
+            logMsg(strLabel,strModule,"Could not find configuration for thisReplica.");
             done = false;
         }
         return done;
     }
 
     private boolean readConfiguration(String configFile) {
+        String strModule = "readConfiguration: ";
         try {
             BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
             String line;
@@ -103,12 +108,12 @@ public class TreeMapServer extends DefaultRecoverable {
                     configData.put(token, value);
                 }
                 else
-                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+                    logMsg(strLabel,strModule,"Skipping Line # "+countLine+" in config file: Insufficient tokens");
             }
             lineReader.close();
             return true;
         } catch (Exception e) {
-            System.out.println("There was an exception reading configuration file: "+ e.toString());
+            logMsg(strLabel,strModule,"There was an exception reading configuration file "+ e.toString());
             return false;
         }
 
@@ -136,12 +141,12 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private byte[] executeSingle(byte[] command, MessageContext msgCtx) {
         int reqType;
-        conn = "["+msgCtx.getSender()+"->"+thisShard+"] ";
+        String strModule = "executeSingle: ";
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
             reqType = ois.readInt();
-            System.out.println(conn+"Received a request of type "+reqType);
+            logMsg(strLabel,strModule,"Received a request of type "+reqType);
             if (reqType == RequestType.PUT) {
                 String key = ois.readUTF();
                 String value = ois.readUTF();
@@ -161,70 +166,70 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
                 return resultBytes;
             } else if (reqType == RequestType.PREPARE_T) {
+                strModule = "PREPARE_T (MAIN): ";
                 try {
-                    System.out.println(conn+"PREPARE_T (MAIN): Received request");
                     Transaction t = (Transaction) ois.readObject();
-                    t.print();
+                    logMsg(strLabel,strModule,"Received request for transaction "+t.id);
 
                     String reply = "";
                     // Check in sequences if it has been already decided
                     if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT) {
                         reply = ResponseType.PREPARED_T_COMMIT;
-                        System.out.println(conn+"PREPARE_T (MAIN): found in sequences! responding with: "+reply);
+                        logMsg(strLabel,strModule,"Found in sequences! responding with "+reply);
                     }
                     else if (sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_ABORT) {
-                            reply = ResponseType.PREPARED_T_ABORT;
-                            System.out.println(conn+"PREPARE_T (MAIN): found in sequences! responding with: "+reply);
+                        reply = ResponseType.PREPARED_T_ABORT;
+                        logMsg(strLabel,strModule,"Found in sequences! responding with "+reply);
                     }
                     // Run checkPrepareT function only when there is no information present in local sequences
                     else {
                         reply = checkPrepareT(t);
-                        System.out.println(conn+"PREPARE_T (MAIN): checkPrepare responding with: "+reply);
+                        logMsg(strLabel,strModule,"checkPrepare responding with "+reply);
                     }
-
                     return reply.getBytes("UTF-8");
                 }
                 catch (Exception  e) {
-                    System.out.println(conn+"PREPARE_T (MAIN): Exception: " + e.getMessage());
+                    logMsg(strLabel,strModule," Exception " + e.getMessage());
                     return ResponseType.PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
 
             }
             else if (reqType == RequestType.ACCEPT_T_COMMIT) {
+                strModule = "ACCEPT_T_COMMIT (MAIN): ";
                 try {
-                    System.out.println(conn+"ACCEPT_T_COMMIT (MAIN): Received request");
                     Transaction t = (Transaction) ois.readObject();
-                    t.print();
+                    logMsg(strLabel,strModule,"Received request for transaction "+t.id);
 
                     String reply = checkAcceptT(t);
-                    System.out.println(conn+"ACCEPT_T_COMMIT (MAIN): checkAcceptT responding with: "+reply);
+                    logMsg(strLabel,strModule,"checkAcceptT responding with "+reply);
 
                     return reply.getBytes("UTF-8");
                 }
 
                 catch (Exception  e) {
-                    System.out.println(conn+"ACCEPT_T_COMMIT (MAIN): Exception: " + e.getMessage());
+                    logMsg(strLabel,strModule,"Exception " + e.getMessage());
                     return null;
                 }
             }
             else if (reqType == RequestType.ACCEPT_T_ABORT) {
+                strModule = "ACCEPT_T_ABORT (MAIN): ";
                 try {
-                    System.out.println(conn+"ACCEPT_T_ABORT (MAIN): Received request");
                     Transaction t = (Transaction) ois.readObject();
-                    t.print();
+                    logMsg(strLabel,strModule,"Received request for transaction "+t.id);
 
                     String reply = checkAcceptT(t);
-                    System.out.println(conn+"ACCEPT_T_ABORT (MAIN): checkAcceptT responding with: "+reply);
+                    logMsg(strLabel,strModule,"checkAcceptT responding with "+reply);
 
                     return reply.getBytes("UTF-8");
                 }
 
                 catch (Exception  e) {
-                    System.out.println(conn+"ACCEPT_T_ABORT (MAIN): Exception: " + e.getMessage());
+                    logMsg(strLabel,strModule,"Exception " + e.getMessage());
                     return null;
                 }
             }
             else if (reqType == RequestType.CREATE_OBJECT) {
+                strModule = "CREATE_OBJECT (MAIN): ";
                 try {
                     ArrayList<String> objects = (ArrayList<String>) ois.readObject();
                     String status = ObjectStatus.ACTIVE; // New objects are active
@@ -233,16 +238,16 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                 }
                 catch(Exception e) {
-                    System.out.println(conn + "Exception: " + e.getMessage());
+                    logMsg(strLabel,strModule,"Exception " + e.getMessage());
                 }
                 return null; // No reply expected by the caller
             }
             else {
-                System.out.println(conn+"Unknown request type: " + reqType);
+                logMsg(strLabel,strModule,"Unknown request type " + reqType);
                 return null;
             }
         } catch (IOException e) {
-            System.out.println(conn+"Exception reading data in the replica: " + e.getMessage());
+            logMsg(strLabel,strModule,"Exception reading data in the replica " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -251,7 +256,7 @@ public class TreeMapServer extends DefaultRecoverable {
     @Override
     public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
         int reqType;
-        conn = "["+msgCtx.getSender()+"->"+thisShard+"] ";
+        String strModule = " ";
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
@@ -278,6 +283,7 @@ public class TreeMapServer extends DefaultRecoverable {
             // The BFTInitiator sends these messages to inform the replicas about the decision of a BFT round
             else if (reqType == RequestType.PREPARED_T_COMMIT || reqType == RequestType.PREPARED_T_ABORT ||
                         reqType == RequestType.ACCEPTED_T_COMMIT || reqType == RequestType.ACCEPTED_T_ABORT) {
+                strModule = "broadcastBFTDecision (MAIN): ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     switch(reqType) {
@@ -296,15 +302,16 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                 }
                 catch (Exception e) {
-                    System.out.println(conn+"Exception reading data in the replica: " + e.getMessage());
+                    logMsg(strLabel,strModule,"Exception reading data in the replica " + e.getMessage());
                 }
                 finally {
                     return null;  // No reply expected by the caller
                 }
             }
             else if (reqType == RequestType.TRANSACTION_SUBMIT) {
+                strModule = "SUBMIT_T (MAIN): ";
                 try {
-                    System.out.println(conn+"TRANSACTION_SUBMIT: Received request");
+                    logMsg(strLabel,strModule,"Received request");
                     Transaction t = (Transaction) ois.readObject();
                     t.print();
 
@@ -312,6 +319,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     // previously aborted it. We do not process transactions that are already being
                     // processed or were previously committed
                     if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                        logMsg(strLabel,strModule,"Early reject");
                         return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
                     }
 
@@ -323,7 +331,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         sequences.get(t.id).PREPARE_T = true;
 
                         // Send PREPARE_T
-                        System.out.println(conn + "TRANSACTION_SUBMIT: Sending PREPARE_T");
+                        logMsg(strLabel,strModule,"Sending PREPARE_T");
 
                         byte[] replyPrepareT = client.prepare_t(t);
 
@@ -334,11 +342,10 @@ public class TreeMapServer extends DefaultRecoverable {
                         String strReplyPrepareT = "";
                         if (replyPrepareT != null) {
                             strReplyPrepareT = new String(replyPrepareT, "UTF-8");
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to PREPARE_T is " + strReplyPrepareT);
+                            logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
                         } else
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to PREPARE_T is null");
-
-                        /*
+                            logMsg(strLabel,strModule,"Reply to PREPARE_T is null");
+                        
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
                         if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
 
@@ -347,7 +354,7 @@ public class TreeMapServer extends DefaultRecoverable {
                             // TODO: Can we skip BFT here and return to client?
                             sequences.get(t.id).ACCEPT_T_ABORT = true;
 
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Sending ACCEPT_T_ABORT");
+                            logMsg(strLabel,strModule, "Sending ACCEPT_T_ABORT");
                             strReplyAcceptT = client.accept_t_abort(t);
 
                             // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
@@ -355,7 +362,7 @@ public class TreeMapServer extends DefaultRecoverable {
                             if (true) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t);
                             }
-                            System.out.println(conn + "TRANSACTION_SUBMIT: ABORTED and reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"ABORTED. Reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
                         }
                         // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                         else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
@@ -364,49 +371,50 @@ public class TreeMapServer extends DefaultRecoverable {
 
                             sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Sending ACCEPT_T_COMMIT");
+                            logMsg(strLabel,strModule, "Sending ACCEPT_T_COMMIT");
                             strReplyAcceptT = client.accept_t_commit(t);
 
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
 
                             if (strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t);
                             } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t);
                             }
-                            System.out.println(conn + "TRANSACTION_SUBMIT: Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
                         } else {
-                            System.out.println("TRANSACTION_SUBMIT: Unknown error in processing PREPARE_T");
+                            logMsg(strLabel,strModule,"Unknown error in processing PREPARE_T");
                             strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
                         }
-                        System.out.println(conn + "TRANSACTION_SUBMIT: Replying to client: " + strReplyAcceptT);
+                        logMsg(strLabel,strModule,"Finally replying to client: " + strReplyAcceptT);
                         // TODO: The final response should contain proof (bundle of signatures)
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
+
+                        //strReplyAcceptT = strReplyPrepareT;
                         return strReplyAcceptT.getBytes("UTF-8");
-                        */
-                        return "NONDUMMY".getBytes("UTF-8");
+
                     }
                     // If it is a non-BFTInitiator Replica
                     // TODO: Optimization: Non-BFTInitiator replicas should relay submitTransaction
                     // TODO: to the BFTInitiator so it hears the msg even if the msg from client
                     // TODO: failed to reach it
                     else {
-                        return ResponseType.DUMMY.getBytes("UTF-8");
+                        return ResponseType.DUMMY.getBytes("UTF-8"); // Dummy responses that will be ignored
                     }
                 }
 
                 catch (Exception  e) {
-                    System.out.println(conn+"Exception: " + e.getMessage());
+                    logMsg(strLabel,strModule,"Exception " + e.getMessage());
                     return ResponseType.SUBMIT_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
             }
             else {
-                System.out.println(conn+"Unknown request type: " + reqType);
+                logMsg(strLabel,strModule,"Unknown request type " + reqType);
                 return ResponseType.SUBMIT_T_UNKNOWN_REQUEST.getBytes("UTF-8");
             }
         } catch (IOException e) {
-            System.out.println(conn+"Exception reading data in the replica: " + e.getMessage());
+            logMsg(strLabel,strModule,"Exception reading data in the replica " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -572,6 +580,10 @@ public class TreeMapServer extends DefaultRecoverable {
         if(thisReplica == 0)
             return true;
         return false;
+    }
+
+    void logMsg(String id, String module, String msg ) {
+        System.out.println(id+module+msg);
     }
 
     @Override
