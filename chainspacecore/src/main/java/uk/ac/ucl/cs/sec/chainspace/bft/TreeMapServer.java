@@ -346,7 +346,7 @@ public class TreeMapServer extends DefaultRecoverable {
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
                         } else
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is null");
-                        
+
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
                         if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
 
@@ -534,7 +534,7 @@ public class TreeMapServer extends DefaultRecoverable {
     // ============
 
     private String checkAcceptT(Transaction t) {
-        if(sequences.containsKey(t.id) && sequences.get(t.id).ACCEPT_T_COMMIT)
+        if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT)
             return ResponseType.ACCEPTED_T_COMMIT;
         // TODO: Optimization: If we hear about an ACCEPT_T from which we don't have
         // TODO: PREPARE_T in sequences, we can initiate one and then respond
