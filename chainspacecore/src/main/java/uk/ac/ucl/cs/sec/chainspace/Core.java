@@ -74,7 +74,7 @@ public class Core {
             //this.databaseConnector.saveObject(atransaction.getID(), atransactionForChecker.getOutputs());
 
             // log transaction
-            //this.databaseConnector.logTransaction(atransaction.getID(), transaction.toJson());
+            this.databaseConnector.logTransaction(atransaction.getID(), transaction.toJson());
 
             // convert the pair's array into a string's array
             outForClient = Utils.concatenate(outForClient, atransactionForChecker.getOutputs());
