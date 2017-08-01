@@ -15,6 +15,7 @@ public class ResponseType {
     public static final String ACCEPT_T_SYSTEM_ERROR = "ACCEPT_T_SYSTEM_ERROR";
     public static final String SUBMIT_T_SYSTEM_ERROR = "SUBMIT_T_SYSTEM_ERROR";
     public static final String SUBMIT_T_UNKNOWN_REQUEST = "SUBMIT_T_UNKNOWN_REQUEST";
+    public static final String SUBMIT_T_REJECTED = "SUBMIT_T_REJECTED";
     public static final String PREPARED_T_ABORT_NOOBJECT = "PREPARED_T_ABORT_NOOBJECT";
     public static final String PREPARED_T_ABORT_LOCKEDOBJECT = "PREPARED_T_ABORT_LOCKEDOBJECT";
     public static final String PREPARED_T_ABORT_INACTIVEOBJECT = "PREPARED_T_ABORT_INACTIVEOBJECT";

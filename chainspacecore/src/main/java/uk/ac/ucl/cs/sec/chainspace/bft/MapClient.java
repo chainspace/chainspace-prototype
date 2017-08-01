@@ -274,12 +274,14 @@ public class MapClient implements Map<String, String> {
         HashMap<Integer,Integer> shardToReq = new HashMap<Integer,Integer>();; // Request IDs indexed by shard IDs
         TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
         boolean earlyTerminate = false;
-        String finalResponse = null;
 
         try {
             System.out.println("CREATE_OBJECT (DRIVER): Sending CREATE_OBJECT to relevant shards");
 
-            // Send a request to each shard relevant to the ouputs
+            HashMap<Integer,ArrayList<String>> shardToObjects = new HashMap<>(); // Objects managed by a shard
+
+
+            // Group objects by the managing shard
             for(String output: outputObjects) {
                 int shardID = mapObjectToShard(output);
                 if(shardID == -1) {
@@ -287,16 +289,25 @@ public class MapClient implements Map<String, String> {
                     earlyTerminate = true;
                     return null;
                 }
+                if(!shardToObjects.containsKey(shardID)) {
+                    shardToObjects.put(shardID, new ArrayList<String>());
+                }
+                shardToObjects.get(shardID).add(output);
+            }
+
+            // Send a request to each shard relevant to the outputs
+            for(int shardID: shardToObjects.keySet()) {
 
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(bs);
                 oos.writeInt(RequestType.CREATE_OBJECT);
-                oos.writeUTF(output);
+                oos.writeObject(shardToObjects.get(shardID));
                 oos.close();
 
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynch(shardID), reqType);
                 System.out.println("CREATE_OBJECT (DRIVER): Sent to shard ID " + shardID + ", req ID " + req + " client ID " + shardToClientAsynch.get(shardID));
                 shardToReq.put(shardID, req);
+
             }
             Thread.sleep(invokeTimeoutAsynch);//how long to wait for replies from all shards before doing cleanup and returning
         }
@@ -342,6 +353,34 @@ public class MapClient implements Map<String, String> {
             return replies;
         }
     }
+
+
+    // The BFT initiator uses this function to inform other replicas about the
+    // decision of a BFT round.
+    // TODO: The message should include proof (e.g., bundle of signatures) that
+    // TODO: other replicas agree on this decision
+    public void broadcastBFTDecision(int msgType, Transaction t) {
+        TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
+        try {
+            ByteArrayOutputStream bs = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bs);
+            oos.writeInt(msgType);
+            oos.writeObject(t);
+            oos.close();
+
+            // BFT initiator will broadcast the final msg to replicas in its own shard only,
+            // even if the BFT itself involved multiple shards (such as in ACCEPT_T)
+            int shardID = defaultShardID;
+            int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
+                @Override
+                public void replyReceived(RequestContext context, TOMMessage reply) { }
+            }, reqType);
+        }
+        catch(Exception e){
+            System.out.println("Experienced Exception: " + e.getMessage());
+        }
+    }
+
 
     public String submitTransaction(Transaction t) {
         return submitTransaction(t, invokeAsynchTimeout);
@@ -684,7 +723,12 @@ public class MapClient implements Map<String, String> {
             return (int) Math.ceil((c.getViewManager().getCurrentViewN()
                     + c.getViewManager().getCurrentViewF()) / 2) + 1;
         } else {
-            return (int) Math.ceil((c.getViewManager().getCurrentViewN()) / 2) + 1;
+            //return (int) Math.ceil((c.getViewManager().getCurrentViewN()) / 2) + 1;
+            // For unordered asynch requests, a single reply is fine.
+            // Where such messages are used, either the reply doesn't matter
+            // (broadcastBFTDecision) or only a single replica is expected to
+            // reply (e.g., BFTInitiator in submitTransaction).
+            return 1;
         }
     }
 }

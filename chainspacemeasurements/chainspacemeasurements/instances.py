@@ -1,4 +1,5 @@
 """EC2 instance management."""
+import os
 import sys
 from multiprocessing.dummy import Pool
 
@@ -76,6 +77,19 @@ class ChainspaceNetwork(object):
         client.close()
         self._log_instance(instance, "Closed SSH connection.")
 
+    def _config_shards_command(self, directory):
+        command = ''
+        command += 'cd {0};'.format(directory)
+        command += 'printf "" > shardConfig.txt;'
+        for i, instances in enumerate(self.shards.values()):
+            command += 'printf "{0} shards/s{0}\n" >> shardConfig.txt;'.format(i)
+            command += 'cp -r shards/config0 shards/s{0};'.format(i)
+            command += 'printf "" > shards/s{0}/hosts.config;'.format(i)
+            for j, instance in enumerate(instances):
+                command += 'printf "{1} {2} 3001\n" >> shards/s{0}/hosts.config;'.format(i, j, instance.public_ip_address)
+
+        return command
+
     def launch(self, count, key_name):
         self._log("Launching {} instances...".format(count))
         self.ec2.create_instances(
@@ -114,7 +128,7 @@ class ChainspaceNetwork(object):
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
         command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
-        command += 'cd ~/chainspace; mkdir contracts'
+        command += 'cd ~/chainspace; mkdir contracts;'
         command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py ~/chainspace/contracts'
         self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
@@ -186,6 +200,9 @@ class ChainspaceNetwork(object):
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
+    def config_local_client(self, directory):
+        os.system(self._config_shards_command(directory))
+
     def config_core(self, shards, nodes_per_shard):
         instances = [instance for instance in self._get_running_instances()]
 
@@ -194,7 +211,15 @@ class ChainspaceNetwork(object):
 
         for shard in range(shards):
             self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
-        # TODO: configure cores.
+
+        for i, instances in enumerate(self.shards.values()):
+            for j, instance in enumerate(instances):
+                command = self._config_shards_command('chainspace/chainspacecore/ChainSpaceConfig')
+                command += 'printf "shardConfigFile shardConfig.txt\nthisShard {0}\nthisReplica {1}\n" > config.txt;'.format(i, j)
+                command += 'cd ../;'
+                command += 'rm -rf config;'
+                command += 'cp -r ChainspaceConfig/shards/s{0} config;'.format(i)
+                self._single_ssh_exec(instance, command)
 
 
 def _multi_args_wrapper(args):
