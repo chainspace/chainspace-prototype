@@ -338,6 +338,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         } else
                             System.out.println(conn + "TRANSACTION_SUBMIT: Reply to PREPARE_T is null");
 
+                        /*
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
                         if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
 
@@ -383,13 +384,15 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
                         return strReplyAcceptT.getBytes("UTF-8");
+                        */
+                        return "NONDUMMY".getBytes("UTF-8");
                     }
                     // If it is a non-BFTInitiator Replica
                     // TODO: Optimization: Non-BFTInitiator replicas should relay submitTransaction
                     // TODO: to the BFTInitiator so it hears the msg even if the msg from client
                     // TODO: failed to reach it
                     else {
-                        return null;
+                        return ResponseType.DUMMY.getBytes("UTF-8");
                     }
                 }
 
@@ -460,7 +463,6 @@ public class TreeMapServer extends DefaultRecoverable {
         if (t.getCsTransaction() != null) {
             System.out.println(t.getCsTransaction().getContractID());
         }
-
         
         // Check if all input objects are active
         // and at least one of the input objects is managed by this shard
@@ -500,6 +502,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 } catch (Exception e) {
                     strErr = e.getMessage();
                     reply = ResponseType.PREPARED_T_ABORT;
+                    e.printStackTrace();
                 }
             }
             else {

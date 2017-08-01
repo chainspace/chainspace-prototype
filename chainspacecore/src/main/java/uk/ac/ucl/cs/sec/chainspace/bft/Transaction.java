@@ -140,7 +140,6 @@ public class Transaction implements Serializable {
     /*
         END BLOCK
      */
-
 }
 
 
