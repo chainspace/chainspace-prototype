@@ -95,7 +95,7 @@ public class Transaction implements Serializable {
     private CSTransaction csTransaction;
     private Store store;
 
-    Transaction(String request) throws AbortTransactionException {
+    public Transaction(String request) throws AbortTransactionException {
         this();
 
         // parse request
@@ -112,7 +112,7 @@ public class Transaction implements Serializable {
     }
 
     // DEBUG CONSTRUCTOR
-    Transaction(CSTransaction csTransaction, Store store) throws NoSuchAlgorithmException {
+    public Transaction(CSTransaction csTransaction, Store store) throws NoSuchAlgorithmException {
         this();
 
         this.addID(csTransaction.getContractID());

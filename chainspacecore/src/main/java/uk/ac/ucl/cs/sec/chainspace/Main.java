@@ -7,8 +7,6 @@ package uk.ac.ucl.cs.sec.chainspace;
  */
 public class Main {
 
-    // CONFIG: port
-    private static final int PORT = 3001;
 
     // CONFIG: database's name
     static String DATABASE_NAME = "database";
@@ -38,7 +36,7 @@ public class Main {
 
      */
     static final boolean DEBUG_ALLOW_REPEAT         = true;
-    static final boolean DEBUG_SKIP_CHECKER         = true;
+    static final boolean DEBUG_SKIP_CHECKER         = false;
     static final boolean DEBUG_IGNORE_DEPENDENCIES  = true;
 
 
@@ -46,25 +44,6 @@ public class Main {
     static final String VERSION = "1.0";
 
 
-    /**
-     * main
-     * @param args not used
-     */
-    public static void main(String[] args) {
 
-        // verbose print
-        if (Main.VERBOSE) { Utils.printHeader("Starting Chainspace..."); }
-
-        // run chainspace service
-        try {new NodeService(PORT);}
-        catch (Exception e) {
-            if (Main.VERBOSE) { Utils.printStacktrace(e); }
-            else { System.err.println("[ERROR] Node service failed to start on port " + PORT); }
-        }
-
-        // verbose print
-        if (Main.VERBOSE) { Utils.printLine(); }
-
-    }
 
 }
