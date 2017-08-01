@@ -320,10 +320,10 @@ public class TreeMapServer extends DefaultRecoverable {
                     // Early Reject: A transaction will only be processed again if the system
                     // previously aborted it. We do not process transactions that are already being
                     // processed or were previously committed
-                    if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
-                        logMsg(strLabel,strModule,"Early reject");
-                        return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
-                    }
+                    //if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                    //    logMsg(strLabel,strModule,"Early reject");
+                    //    return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
+                    //}
 
                     sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
 
