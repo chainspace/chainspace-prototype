@@ -35,7 +35,6 @@ class ClientService {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        this.core.close();
     }
 
 
@@ -71,13 +70,12 @@ class ClientService {
         JSONObject responseJson = new JSONObject();
         try {
 
-            // pass transaction to the core
-            // TODO: submit transaction here
-            String[] out = new String[]{};
+            // submit the transaction
+            String result = Client.submitTransaction(request.body());
 
             // create json response
             responseJson.put("success", "True");
-            responseJson.put("new objects", out);
+            responseJson.put("outcome", result);
             response.status(200);
 
         }

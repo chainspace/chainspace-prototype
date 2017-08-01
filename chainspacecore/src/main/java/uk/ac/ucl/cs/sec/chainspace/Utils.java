@@ -105,8 +105,7 @@ public class Utils {
 
     /**
      * makePostRequest
-     * Make a simple post request
-     *
+     * Make a simple post request.
      * @param url to url where to make the request
      * @param postData the post data representing a json string
      * @return the string response of the server
@@ -136,9 +135,9 @@ public class Utils {
      * @param title the title to print to the console
      */
     static void printHeader(String title) {
-        System.out.println("\n----------------------------------------------------------------------------------");
+        System.out.println("\n-----------------------------------------------------------------------------");
         System.out.println("\t" + title);
-        System.out.println("----------------------------------------------------------------------------------");
+        System.out.println("-----------------------------------------------------------------------------");
     }
 
     /**
@@ -157,7 +156,7 @@ public class Utils {
      * Draw a simple line to the console.
      */
     static void printLine() {
-        System.out.println("\n----------------------------------------------------------------------------------");
+        System.out.println("\n-----------------------------------------------------------------------------");
         System.out.println("\n");
     }
 
