@@ -1,3 +1,5 @@
 INSTALL:
 
+cd ../
+
 pip install --editable chainspacecontract

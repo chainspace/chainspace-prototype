@@ -17,6 +17,11 @@ from chainspacecontract.examples import bank_authenticated
 from chainspacecontract.examples.utils import setup, key_gen, pack
 
 
+## chainspace version & port
+version = '1.0'
+port    = '5000'
+
+
 ####################################################################
 # authenticated bank transfer
 ####################################################################
@@ -42,7 +47,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:5000/api/1.0/transaction/process', json=transaction
+            'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
@@ -56,6 +61,7 @@ class TestBankAuthenticated(unittest.TestCase):
     # --------------------------------------------------------------
     # test create account
     # --------------------------------------------------------------
+    """
     def test_create_account(self):
         ##
         ## run service
@@ -323,6 +329,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         #checker_service_process.terminate()
         #checker_service_process.join()
+    """
 
 
 ####################################################################

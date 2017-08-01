@@ -442,8 +442,8 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private void executeAcceptedTAbort(Transaction t){
         // TODO: Things to do when transaction is ACCEPTED_T_ABORT
-
         // Unlock transaction input objects that were previously locked
+
         setTransactionInputStatus(t, ObjectStatus.ACTIVE, ObjectStatus.LOCKED);
 
         sequences.get(t.id).ACCEPTED_T_ABORT = true;
@@ -498,7 +498,6 @@ public class TreeMapServer extends DefaultRecoverable {
                     reply = ResponseType.PREPARED_T_ABORT;
                 }
             }
-
             else if (t.getCsTransaction() != null) { // debug compatible
                 System.out.println("\n>> RUNNING CORE...");
                 try {
@@ -511,6 +510,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     e.printStackTrace();
                 }
             }
+            // debug option -- should be removed
             else {
                 System.out.println("\n>> DEBUG MODE");
             }
