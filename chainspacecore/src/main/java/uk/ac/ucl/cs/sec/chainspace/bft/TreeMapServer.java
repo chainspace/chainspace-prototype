@@ -302,6 +302,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                 }
                 catch (Exception e) {
+                    e.printStackTrace();
                     logMsg(strLabel,strModule,"Exception reading data in the replica " + e.getMessage());
                 }
                 finally {
@@ -471,36 +472,33 @@ public class TreeMapServer extends DefaultRecoverable {
         if (t.getCsTransaction() != null) {
             System.out.println(t.getCsTransaction().getContractID());
         }
-        
         // Check if all input objects are active
         // and at least one of the input objects is managed by this shard
+        int nManagedObj = 0;
         String reply = ResponseType.PREPARED_T_COMMIT;
         String strErr = "Unknown";
 
         for(String key: t.inputs) {
-            // get object's status
             String readValue = table.get(key);
-
-            //
-            if(ObjectStatus.mapObjectToShard(key) != thisShard) {
-                strErr = Transaction.INVALID_NOMANAGEDOBJECT;
-                reply = ResponseType.PREPARED_T_ABORT;
-            }
-            /*
-            else if(readValue == null) {
+            boolean managedObj = (ObjectStatus.mapObjectToShard(key)==thisShard);
+            if(managedObj)
+                nManagedObj++;
+            if(managedObj && readValue == null) {
                 //TODO: check whether it is an init function
-                //strErr = Transaction.INVALID_NOOBJECT;
-                //reply = ResponseType.PREPARED_T_ABORT;
-            }
-            */
-            else if ((ObjectStatus.LOCKED).equals(readValue)) {
-                strErr = Transaction.REJECTED_LOCKEDOBJECT;
+                strErr = Transaction.INVALID_NOOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
-            else if ((ObjectStatus.INACTIVE).equals(readValue)) {
-                strErr = Transaction.INVALID_INACTIVEOBJECT;
-                reply = ResponseType.PREPARED_T_ABORT;
+            else if(managedObj && readValue != null) {
+                if (readValue.equals(ObjectStatus.LOCKED)) {
+                    strErr = Transaction.REJECTED_LOCKEDOBJECT;
+                    reply = ResponseType.PREPARED_T_ABORT;
+                }
+                else if (managedObj && readValue.equals(ObjectStatus.INACTIVE)) {
+                    strErr = Transaction.INVALID_INACTIVEOBJECT;
+                    reply = ResponseType.PREPARED_T_ABORT;
+                }
             }
+
             else if (t.getCsTransaction() != null) { // debug compatible
                 System.out.println("\n>> RUNNING CORE...");
                 try {
@@ -516,15 +514,20 @@ public class TreeMapServer extends DefaultRecoverable {
             else {
                 System.out.println("\n>> DEBUG MODE");
             }
+
+        }
+        // The case when this shard doesn't manage any of the input objects
+        if(nManagedObj == 0) {
+            strErr = Transaction.INVALID_NOMANAGEDOBJECT;
+            reply = ResponseType.PREPARED_T_ABORT;
         }
 
-        // print out error
         if(reply.equals(ResponseType.PREPARED_T_ABORT))
             System.out.println("PREPARE_T (checkPrepareT): Returning PREPARED_T_ABORT->"+strErr);
 
-        // return
         return reply;
     }
+
     // ============
     // BLOCK ENDS
     // ============

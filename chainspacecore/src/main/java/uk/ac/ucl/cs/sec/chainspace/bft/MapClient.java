@@ -74,13 +74,11 @@ public class MapClient implements Map<String, String> {
     }
 
     public int mapObjectToShard(String object) {
-        /*
-        TODO
-
+        // TODO: objects are not integers
         int iObject = Integer.parseInt(object);
-        return iObject% shardToConfig.size();
-         */
-        return 0;
+        if(iObject%2 == 0)
+            return 0;
+        return 1;
     }
 
     // This function returns a unique client ID every time it is called
@@ -376,7 +374,7 @@ public class MapClient implements Map<String, String> {
     // TODO: other replicas agree on this decision
     public void broadcastBFTDecision(int msgType, Transaction t) {
         TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
-        String strModule = "broadcastBFTDecision: ";
+        String strModule = "broadcastBFTDecision (DRIVER): ";
         try {
             ByteArrayOutputStream bs = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bs);
