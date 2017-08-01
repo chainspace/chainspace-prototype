@@ -735,12 +735,14 @@ public class MapClient implements Map<String, String> {
             strModule = "ReplyListenerAsynchQuorum: ";
         }
 
+
         @Override
         public void replyReceived(RequestContext context, TOMMessage reply) {
             //System.out.println("New reply received by client ID "+client.getProcessId()+" from  "+reply.getSender());
             StringBuilder builder = new StringBuilder();
             builder.append("[RequestContext] id: " + context.getReqId() + " type: " + context.getRequestType());
             builder.append("[TOMMessage reply] sender id: " + reply.getSender() + " Hash content: " + Arrays.toString(reply.getContent()));
+            //System.out.println("ACCEPT_T: New reply received from shard ID"+shardID+": "+builder.toString());
 
             // When to give reply to the application layer
 
@@ -754,19 +756,6 @@ public class MapClient implements Map<String, String> {
                     receivedReplies++;
                 }
                 replies[pos] = reply;
-                String strReply = null;
-                try {
-                    strReply = new String(reply.getContent(), "UTF-8");
-                    if(!strReply.equals(ResponseType.DUMMY)) {
-                        String key = shardToClientAsynch.get(shardID)+";"+context.getReqId()+";"+context.getRequestType();
-                        TOMMessage shardResponse = extractor.extractResponse(replies, sameContent, pos);
-                        asynchReplies.put(key,shardResponse);
-                        client.cleanAsynchRequest(context.getReqId());
-                    }
-                }
-                catch(Exception e) {
-                    logMsg(strLabel,strModule,"Exception in printing final reply of shard ID "+shardID);
-                }
 
                 // Compare the reply just received, to the others
                 for (int i = 0; i < replies.length; i++) {
@@ -775,16 +764,26 @@ public class MapClient implements Map<String, String> {
                             && (comparator.compare(replies[i].getContent(), reply.getContent()) == 0)) {
                         sameContent++;
                         if (sameContent >= replyQuorum) {
-                            String key = shardToClientAsynch.get(shardID)+";"+context.getReqId()+";"+context.getRequestType();
+                            String key = shardToClientAsynch.get(shardID) + ";" + context.getReqId() + ";" + context.getRequestType();
                             TOMMessage shardResponse = extractor.extractResponse(replies, sameContent, pos);
-                            asynchReplies.put(key,shardResponse);
+                            asynchReplies.put(key, shardResponse);
+                            /*
+                            try {
+                                System.out.println("ACCEPT_T [replyReceived]: Final reply from shard ID" + shardID + ": " + new String(reply.getContent(), "UTF-8"));
+                            }
+                            catch(Exception e) {
+                                System.out.println("ACCEPT_T [replyReceived]: Exception in printing final reply of shard ID "+shardID);
+                            }
+                            */
+
+                            //System.out.println("ACCEPT_T: [RequestContext] clean request context id: " + context.getReqId());
                             client.cleanAsynchRequest(context.getReqId());
                         }
                     }
                 }
             }
-        }
 
+        }
     }
 
     private int getReplyQuorum(int shardID) {
