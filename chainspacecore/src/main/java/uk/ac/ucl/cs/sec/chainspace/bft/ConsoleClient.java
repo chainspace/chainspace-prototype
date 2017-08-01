@@ -314,6 +314,7 @@ public class ConsoleClient {
                     result = client.submitTransaction(t11);
                     System.out.println("Transaction status: " + result);
                     break;
+/*
 
                 case 12:
                     System.out.println("\n>> PREPARING TO SEND TRANSACTION...\n");
@@ -376,6 +377,7 @@ public class ConsoleClient {
                     result = client.submitTransaction(t13);
                     System.out.println("Transaction status: " + result);
                     break;
+                    */
 
             }
         }
