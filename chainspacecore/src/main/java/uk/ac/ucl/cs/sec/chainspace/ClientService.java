@@ -12,20 +12,13 @@ import java.sql.SQLException;
  *
  *
  */
-class NodeService {
-
-    // instance variables
-    private Core core;
-
+class ClientService {
 
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    NodeService(int port) throws SQLException, ClassNotFoundException {
-
-        // run one core
-        this.core = new Core();
+    ClientService(int port) throws SQLException, ClassNotFoundException {
 
         // start service on given port
         addRoutes(Service.ignite().port(port));
@@ -79,7 +72,7 @@ class NodeService {
         try {
 
             // pass transaction to the core
-            //String[] out = this.core.processTransaction(request.body());
+            // TODO: submit transaction here
             String[] out = new String[]{};
 
             // create json response
