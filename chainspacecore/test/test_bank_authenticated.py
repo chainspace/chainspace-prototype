@@ -30,45 +30,26 @@ class TestBankAuthenticated(unittest.TestCase):
     # --------------------------------------------------------------
     # test init
     # --------------------------------------------------------------
+    """
     def test_init(self):
-        ##
-        ## run service
-        ##
-        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        #checker_service_process.start()
-        #time.sleep(0.1)
 
-        ##
         ## create transaction
-        ##
         transaction = bank_authenticated.init()
 
-        ##
         ## submit transaction
-        ##
         response = requests.post(
             'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
-
-        ##
-        ## stop service
-        ##
-        #checker_service_process.terminate()
-        #checker_service_process.join()
+    
 
     # --------------------------------------------------------------
     # test create account
     # --------------------------------------------------------------
     """
+
     def test_create_account(self):
-        ##
-        ## run service
-        ##
-        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        #checker_service_process.start()
-        #time.sleep(0.1)
 
         ##
         ## create transaction
@@ -92,20 +73,16 @@ class TestBankAuthenticated(unittest.TestCase):
         ## submit transaction
         ##
         response = requests.post(
-            'http://127.0.0.1:3001/api/1.0/transaction/process', json=transaction
+            'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
 
-        ##
-        ## stop service
-        ##
-        #checker_service_process.terminate()
-        #checker_service_process.join()
   
     # --------------------------------------------------------------
     # test an authenticated bank transfer
     # --------------------------------------------------------------
+    """
     def test_auth_transfer(self):
         ##
         ## run service
