@@ -215,7 +215,8 @@ public class TreeMapServer extends DefaultRecoverable {
                 strModule = "ACCEPT_T_ABORT (MAIN): ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
-                    logMsg(strLabel,strModule,"Received request for transaction "+t.id);
+
+                    logMsg(strLabel,strModule,"Received request for transaction ");
 
                     String reply = checkAcceptT(t);
                     logMsg(strLabel,strModule,"checkAcceptT responding with "+reply);
@@ -479,11 +480,17 @@ public class TreeMapServer extends DefaultRecoverable {
         String strErr = "Unknown";
 
 
+        /*
+            DEBUG -- TODO
+         */
         if (t.inputs.size() == 0) {
             System.out.println("\n>> INIT FUNCTION...");
-            // TODO: save objctes
+            //table.put(t.outputs.get(0), ObjectStatus.ACTIVE); // <-- fix index '0'
             return ResponseType.PREPARED_T_COMMIT;
         }
+        /*
+            END
+         */
 
         for(String key: t.inputs) {
             String readValue = table.get(key);
