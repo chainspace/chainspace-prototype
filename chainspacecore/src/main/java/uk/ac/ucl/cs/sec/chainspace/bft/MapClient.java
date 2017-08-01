@@ -75,7 +75,7 @@ public class MapClient implements Map<String, String> {
 
     public int mapObjectToShard(String object) {
         // TODO: objects are not integers
-        int iObject = Integer.parseInt(object);
+        int iObject = Integer.parseInt(object, 16);
         if(iObject%2 == 0)
             return 0;
         return 1;
