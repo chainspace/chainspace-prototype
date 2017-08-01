@@ -207,7 +207,7 @@ class ChainspaceObject(str):
         obj = transaction['outputs'][output_index]
         transaction_json = json.dumps(transaction, sort_keys=True, separators=(',', ':'))
         transaction_digest = hashlib.sha256(transaction_json).hexdigest()
-        object_digest = hashlib.sha256(json.dumps(transaction['outputs'][output_index])).hexdigest()
+        object_digest = hashlib.sha256(transaction['outputs'][output_index]).hexdigest()
         object_id = '{}|{}|{}'.format(transaction_digest, object_digest, output_index)
         object_id = hashlib.sha256(object_id).hexdigest()
         return ChainspaceObject(object_id, obj)
