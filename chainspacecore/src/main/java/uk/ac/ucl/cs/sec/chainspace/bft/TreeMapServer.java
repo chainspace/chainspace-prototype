@@ -302,6 +302,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                 }
                 catch (Exception e) {
+                    //e.printStackTrace();
                     logMsg(strLabel,strModule,"Exception reading data in the replica " + e.getMessage());
                 }
                 finally {
@@ -441,8 +442,8 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private void executeAcceptedTAbort(Transaction t){
         // TODO: Things to do when transaction is ACCEPTED_T_ABORT
-
         // Unlock transaction input objects that were previously locked
+
         setTransactionInputStatus(t, ObjectStatus.ACTIVE, ObjectStatus.LOCKED);
 
         sequences.get(t.id).ACCEPTED_T_ABORT = true;
@@ -481,26 +482,28 @@ public class TreeMapServer extends DefaultRecoverable {
             // get object's status
             String readValue = table.get(key);
 
-            //
+            // if the object should not be in this shard
             if(ObjectStatus.mapObjectToShard(key) != thisShard) {
                 strErr = Transaction.INVALID_NOMANAGEDOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
-            /*
+            // if input does not exist
             else if(readValue == null) {
                 //TODO: check whether it is an init function
-                //strErr = Transaction.INVALID_NOOBJECT;
-                //reply = ResponseType.PREPARED_T_ABORT;
+                strErr = Transaction.INVALID_NOOBJECT;
+                reply = ResponseType.PREPARED_T_ABORT;
             }
-            */
+            // if the object is locked
             else if ((ObjectStatus.LOCKED).equals(readValue)) {
                 strErr = Transaction.REJECTED_LOCKEDOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
+            // if the object is inactive
             else if ((ObjectStatus.INACTIVE).equals(readValue)) {
                 strErr = Transaction.INVALID_INACTIVEOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
+            // submit to the core
             else if (t.getCsTransaction() != null) { // debug compatible
                 System.out.println("\n>> RUNNING CORE...");
                 try {
@@ -513,6 +516,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     e.printStackTrace();
                 }
             }
+            // debug option -- should be removed
             else {
                 System.out.println("\n>> DEBUG MODE");
             }

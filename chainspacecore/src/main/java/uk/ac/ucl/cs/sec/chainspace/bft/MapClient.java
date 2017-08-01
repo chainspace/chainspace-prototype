@@ -421,7 +421,7 @@ public class MapClient implements Map<String, String> {
             for(String input: inputObjects) {
                 int shardID = mapObjectToShard(input);
 
-                logMsg(strLabel,strModule,"Adding input "+input+" to transaction ID: "+input);
+                logMsg(strLabel,strModule,"Adding input "+input+" to transaction ID: "+t.id);
 
                 if(shardID == -1) {
                     logMsg(strLabel,strModule,"Cannot map input "+input+" in transaction ID "+transactionID+" to a shard.");
@@ -444,6 +444,28 @@ public class MapClient implements Map<String, String> {
                     shardToReq.put(shardID, req);
                 }
             }
+
+
+            /*
+                /!\ DEBUG
+
+                Transactions with no inputs are sent to shard 0 (init functions).
+                // TODO: fix this
+             */
+            if (inputObjects.size() == 0) {
+                ByteArrayOutputStream bs = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bs);
+                oos.writeInt(msgType);
+                oos.writeObject(t);
+                oos.close();
+                int shardID = 0;
+                int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(
+                        bs.toByteArray(), new ReplyListenerAsynchSingle(shardID), reqType
+                );
+                shardToReq.put(shardID, req);
+            }
+
+
 
             Thread.sleep(invokeTimeoutAsynch);//how long to wait for replies from all shards before doing cleanup and returning
         } catch(Exception e){

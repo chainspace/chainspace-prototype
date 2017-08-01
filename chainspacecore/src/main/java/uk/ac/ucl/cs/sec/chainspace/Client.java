@@ -177,6 +177,7 @@ public class Client {
 
     static String submitTransaction(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
+        System.out.println("\n>> SUBMITTING TRANSACTION...");
         Transaction transaction = new Transaction(request);
         return client.submitTransaction(transaction);
 
@@ -184,6 +185,7 @@ public class Client {
 
     static void submitTransactionNoWait(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
+        System.out.println("\n>> SUBMITTING TRANSACTION...");
         Transaction transaction = new Transaction(request);
         client.submitTransaction(transaction, 0);
 
