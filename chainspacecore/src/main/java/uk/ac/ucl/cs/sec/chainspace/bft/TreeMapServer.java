@@ -567,7 +567,7 @@ public class TreeMapServer extends DefaultRecoverable {
         for (String input : inputObjects) {
             int shardID = client.mapObjectToShard(input);
 
-            if (shardID == thisShard && table.get(input).equals(prevStatus)) {
+            if (shardID == thisShard && table.get(input) != null && table.get(input).equals(prevStatus)) {
                 String prev = table.put(input, status);
                 System.out.println("Input object "+input+": "+prev+" -> "+status);
             }
