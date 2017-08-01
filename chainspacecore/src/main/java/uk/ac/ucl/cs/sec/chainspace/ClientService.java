@@ -12,20 +12,13 @@ import java.sql.SQLException;
  *
  *
  */
-class NodeService {
-
-    // instance variables
-    private Core core;
-
+class ClientService {
 
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    NodeService(int port) throws SQLException, ClassNotFoundException {
-
-        // run one core
-        this.core = new Core();
+    ClientService(int port) throws SQLException, ClassNotFoundException {
 
         // start service on given port
         addRoutes(Service.ignite().port(port));
@@ -42,7 +35,6 @@ class NodeService {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        this.core.close();
     }
 
 
@@ -59,6 +51,7 @@ class NodeService {
 
             // process a transaction
             service.post("/transaction/process", this::processTransactionRequest);
+            service.post("/transaction/dump", this::dumpTransactionRequest);
 
         }));
 
@@ -78,13 +71,55 @@ class NodeService {
         JSONObject responseJson = new JSONObject();
         try {
 
-            // pass transaction to the core
-            //String[] out = this.core.processTransaction(request.body());
-            String[] out = new String[]{};
+            // submit the transaction
+            String result = Client.submitTransaction(request.body());
 
             // create json response
             responseJson.put("success", "True");
-            responseJson.put("new objects", out);
+            responseJson.put("outcome", result);
+            response.status(200);
+
+        }
+        catch (Exception e) {
+
+            // create json  error response
+            responseJson.put("success", "False");
+            responseJson.put("message", e.getMessage());
+            response.status(400);
+
+            // verbose print
+            if (Main.VERBOSE) { Utils.printStacktrace(e); }
+
+        }
+
+        // print request
+        printRequestDetails(request, responseJson.toString());
+
+        // send
+        response.type("application/json");
+        return responseJson.toString();
+
+    }
+
+
+    /**
+     * processTransactionRequest
+     * This method receives a json transaction, processes it, and responds with the transaction ID.
+     */
+    private String dumpTransactionRequest(Request request, Response response) {
+
+        // verbose print
+        if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
+
+        // process the transaction & create response
+        JSONObject responseJson = new JSONObject();
+        try {
+
+            // submit the transaction
+            Client.submitTransactionNoWait(request.body());
+
+            // create json response
+            responseJson.put("success", "True");
             response.status(200);
 
         }
