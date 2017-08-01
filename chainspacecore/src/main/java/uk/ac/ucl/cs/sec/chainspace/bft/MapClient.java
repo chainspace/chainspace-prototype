@@ -9,6 +9,7 @@ import bftsmart.tom.ServiceProxy;
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.core.messages.TOMMessageType;
 
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 
 // Classes that need to be declared to implement this
@@ -75,8 +76,8 @@ public class MapClient implements Map<String, String> {
 
     public int mapObjectToShard(String object) {
         // TODO: objects are not integers
-        int iObject = Integer.parseInt(object, 16);
-        if(iObject%2 == 0)
+        BigInteger iObject = new BigInteger(object, 16);
+        if(iObject.mod(new BigInteger("2")).equals(0))
             return 0;
         return 1;
     }
@@ -451,6 +452,8 @@ public class MapClient implements Map<String, String> {
                 TODO
              */
             if (inputObjects.size() == 0) {
+                System.out.println("\n>> SUBMITTING INIT FUNCTION...");
+
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(bs);
                 oos.writeInt(msgType);
