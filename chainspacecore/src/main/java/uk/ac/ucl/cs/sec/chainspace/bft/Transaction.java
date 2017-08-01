@@ -95,7 +95,7 @@ public class Transaction implements Serializable {
     private CSTransaction csTransaction;
     private Store store;
 
-    public Transaction(String request) throws AbortTransactionException {
+    public Transaction(String request) throws AbortTransactionException, NoSuchAlgorithmException {
         this();
 
         // parse request
@@ -109,6 +109,9 @@ public class Transaction implements Serializable {
         try { this.store = Store.fromJson(requestJson.getJSONObject("store")); }
         catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
 
+        // init
+        init();
+
     }
 
     // DEBUG CONSTRUCTOR
@@ -120,6 +123,11 @@ public class Transaction implements Serializable {
         this.csTransaction = csTransaction;
         this.store = store;
 
+        init();
+
+    }
+
+    private void init() throws NoSuchAlgorithmException {
         for (int i = 0; i < csTransaction.getInputIDs().length; i++) {
             this.addInput(csTransaction.getInputIDs()[i]);
         }
@@ -127,10 +135,9 @@ public class Transaction implements Serializable {
             String objectID = Utils.generateObjectID(csTransaction.getID(), csTransaction.getOutputs()[i], i);
             this.addOutput(objectID);
         }
-
     }
 
-    CSTransaction getCsTransaction() {
+    public CSTransaction getCsTransaction() {
         return csTransaction;
     }
     Store getStore() {

@@ -175,11 +175,10 @@ public class Client {
 
     }
 
-    static String submitTransaction(String request) throws AbortTransactionException {
+    static String submitTransaction(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
         Transaction transaction = new Transaction(request);
         return client.submitTransaction(transaction);
-
 
     }
 
