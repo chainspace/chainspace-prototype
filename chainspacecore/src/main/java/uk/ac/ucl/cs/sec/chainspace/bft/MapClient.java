@@ -688,6 +688,89 @@ public class MapClient implements Map<String, String> {
                     receivedReplies++;
                 }
                 replies[pos] = reply;
+                String strReply = null;
+                try {
+                    strReply = new String(reply.getContent(), "UTF-8");
+                    if(!strReply.equals(ResponseType.DUMMY)) {
+                        String key = shardToClientAsynch.get(shardID)+";"+context.getReqId()+";"+context.getRequestType();
+                        TOMMessage shardResponse = extractor.extractResponse(replies, sameContent, pos);
+                        asynchReplies.put(key,shardResponse);
+                        client.cleanAsynchRequest(context.getReqId());
+                    }
+                }
+                catch(Exception e) {
+                    System.out.println("[replyReceived]: Exception in printing final reply of shard ID "+shardID);
+                }
+
+            }
+        }
+
+    }
+
+    private class ReplyListenerAcceptT implements ReplyListener {
+        AsynchServiceProxy client;
+        private int shardID;
+        private int replyQuorum; // size of the reply quorum
+        private TOMMessage replies[];
+        private int receivedReplies; // Number of received replies
+
+
+        private Comparator<byte[]> comparator = new Comparator<byte[]>() {
+            @Override
+            public int compare(byte[] o1, byte[] o2) {
+                return Arrays.equals(o1, o2) ? 0 : -1;
+            }
+        };
+
+        private Extractor extractor = new Extractor() {
+            @Override
+            public TOMMessage extractResponse(TOMMessage[] replies, int sameContent, int lastReceived) {
+                return replies[lastReceived];
+            }
+        };
+
+        private ReplyListenerAcceptT(int shardID) {
+            System.out.println("New reply listener class created: shard ID "+shardID);
+            this.shardID = shardID;
+            replyQuorum = getReplyQuorum(shardID);
+            client = clientProxyAsynch.get(shardID);
+            replies = new TOMMessage[client.getViewManager().getCurrentViewN()];
+            receivedReplies = 0;
+        }
+
+        @Override
+        public void replyReceived(RequestContext context, TOMMessage reply) {
+            //System.out.println("New reply received by client ID "+client.getProcessId()+" from  "+reply.getSender());
+            StringBuilder builder = new StringBuilder();
+            builder.append("[RequestContext] id: " + context.getReqId() + " type: " + context.getRequestType());
+            builder.append("[TOMMessage reply] sender id: " + reply.getSender() + " Hash content: " + Arrays.toString(reply.getContent()));
+            //System.out.println("ACCEPT_T: New reply received from shard ID"+shardID+": "+builder.toString());
+
+            // When to give reply to the application layer
+
+            int pos = client.getViewManager().getCurrentViewPos(reply.getSender());
+
+            if (pos >= 0) { //only consider messages from replicas
+
+                int sameContent = 1;
+
+                if (replies[pos] == null) {
+                    receivedReplies++;
+                }
+                replies[pos] = reply;
+                String strReply = null;
+                try {
+                    strReply = new String(reply.getContent(), "UTF-8");
+                    if(!strReply.equals(ResponseType.DUMMY)) {
+                        String key = shardToClientAsynch.get(shardID)+";"+context.getReqId()+";"+context.getRequestType();
+                        TOMMessage shardResponse = extractor.extractResponse(replies, sameContent, pos);
+                        asynchReplies.put(key,shardResponse);
+                        client.cleanAsynchRequest(context.getReqId());
+                    }
+                }
+                catch(Exception e) {
+                    System.out.println("[replyReceived]: Exception in printing final reply of shard ID "+shardID);
+                }
 
                 // Compare the reply just received, to the others
                 for (int i = 0; i < replies.length; i++) {

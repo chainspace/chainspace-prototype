@@ -23,4 +23,5 @@ public class ResponseType {
     public static final String ACCEPTED_T_ABORT_INTRASHARD = "ACCEPTED_T_ABORT_INTRASHARD";
     public static final String CREATED_OBJECT = "CREATED_OBJECT";
     public static final String CREATE_OBJECT_SYSTEM_ERROR = "CREATE_OBJECT_SYSTEM_ERROR";
+    public static final String DUMMY = "DUMMY";
 }
