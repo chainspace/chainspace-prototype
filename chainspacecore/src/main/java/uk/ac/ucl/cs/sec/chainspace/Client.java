@@ -182,6 +182,13 @@ public class Client {
 
     }
 
+    static void submitTransactionNoWait(String request) throws AbortTransactionException, NoSuchAlgorithmException {
+
+        Transaction transaction = new Transaction(request);
+        client.submitTransaction(transaction, 0);
+
+    }
+
 }
 
 
