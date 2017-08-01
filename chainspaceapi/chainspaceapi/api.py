@@ -1,7 +1,7 @@
 import requests
 
 class ChainspaceClient(object):
-    def __init__(self, host='127.0.0.1', port=3001):
+    def __init__(self, host='127.0.0.1', port=5000):
         self.host = host
         self.port = port
 
