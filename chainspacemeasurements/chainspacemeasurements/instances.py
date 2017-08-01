@@ -59,7 +59,9 @@ class ChainspaceNetwork(object):
         self._log_instance(instance, "Executing command: {}".format(command))
         client = self.ssh_connections[instance]
         stdin, stdout, stderr = client.exec_command(command)
+        output = ''
         for message in iter(stdout.readline, ''):
+            output += message
             try:
                 self._log_instance(instance, message.rstrip())
             except Exception:
@@ -70,6 +72,8 @@ class ChainspaceNetwork(object):
             except Exception:
                 pass
         self._log_instance(instance, "Executed command: {}".format(command))
+
+        return (instance, output)
 
     def _single_ssh_close(self, instance):
         self._log_instance(instance, "Closing SSH connection...")
@@ -146,10 +150,12 @@ class ChainspaceNetwork(object):
         self._log("Executing command on all nodes: {}".format(command))
         args = [(self._single_ssh_exec, instance, command) for instance in self._get_running_instances()]
         pool = Pool(ChainspaceNetwork.threads)
-        pool.map(_multi_args_wrapper, args)
+        result = pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
         self._log("Executed command on all nodes: {}".format(command))
+
+        return result
 
     def ssh_close(self):
         self._log("Closing SSH connection on all nodes...")
