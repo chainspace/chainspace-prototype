@@ -36,7 +36,7 @@ public class Utils {
         digest.update(input.getBytes());
         byte[] hash = digest.digest();
 
-        return javax.xml.bind.DatatypeConverter.printHexBinary(hash);
+        return javax.xml.bind.DatatypeConverter.printHexBinary(hash).toLowerCase();
     }
 
 
