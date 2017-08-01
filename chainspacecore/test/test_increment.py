@@ -14,7 +14,7 @@ from chainspacecontract.examples import increment
 
 ## chainspace version & port
 version = '1.0'
-port    = '3001'
+port    = '5000'
 
 ####################################################################
 # authenticated bank transfer
