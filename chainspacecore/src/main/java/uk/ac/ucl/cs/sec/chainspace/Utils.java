@@ -36,7 +36,7 @@ public class Utils {
         digest.update(input.getBytes());
         byte[] hash = digest.digest();
 
-        return String.format("%064x", new java.math.BigInteger(1, hash));
+        return javax.xml.bind.DatatypeConverter.printHexBinary(hash);
     }
 
 
