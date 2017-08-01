@@ -446,11 +446,11 @@ public class MapClient implements Map<String, String> {
             }
 
 
+
             /*
                 /!\ DEBUG
-
                 Transactions with no inputs are sent to shard 0 (init functions).
-                // TODO: fix this
+                TODO
              */
             if (inputObjects.size() == 0) {
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
@@ -464,6 +464,9 @@ public class MapClient implements Map<String, String> {
                 );
                 shardToReq.put(shardID, req);
             }
+            /*
+                END
+             */
 
 
 
