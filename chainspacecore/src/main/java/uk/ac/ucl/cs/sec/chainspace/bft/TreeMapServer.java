@@ -478,6 +478,13 @@ public class TreeMapServer extends DefaultRecoverable {
         String reply = ResponseType.PREPARED_T_COMMIT;
         String strErr = "Unknown";
 
+
+        if (t.inputs.size() == 0) {
+            System.out.println("\n>> INIT FUNCTION...");
+            // TODO: save objctes
+            return ResponseType.PREPARED_T_COMMIT;
+        }
+
         for(String key: t.inputs) {
             String readValue = table.get(key);
             boolean managedObj = (ObjectStatus.mapObjectToShard(key)==thisShard);
