@@ -190,6 +190,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
                 catch (Exception  e) {
                     logMsg(strLabel,strModule," Exception " + e.getMessage());
+                    e.printStackTrace();
                     return ResponseType.PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
 
@@ -481,7 +482,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
         for(String key: t.inputs) {
             String readValue = table.get(key);
-            boolean managedObj = (ObjectStatus.mapObjectToShard(key)==thisShard);
+            boolean managedObj = (client.mapObjectToShard(key)==thisShard);
             if(managedObj)
                 nManagedObj++;
             if(managedObj && readValue == null) {
