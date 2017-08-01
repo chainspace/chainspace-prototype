@@ -73,7 +73,7 @@ class ChainspaceNetwork(object):
                 pass
         self._log_instance(instance, "Executed command: {}".format(command))
 
-        return output
+        return (instance, output)
 
     def _single_ssh_close(self, instance):
         self._log_instance(instance, "Closing SSH connection...")
