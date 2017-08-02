@@ -53,7 +53,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
         table = new TreeMap<>(); // contains objects and their state
         sequences = new  HashMap<>(); // contains operation sequences for transactions
-        strLabel = "["+thisShard+":"+ thisReplica+"] "; // This string is used in debug messages
+        strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
@@ -146,7 +146,7 @@ public class TreeMapServer extends DefaultRecoverable {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
             reqType = ois.readInt();
-            logMsg(strLabel,strModule,"Received a request of type "+reqType);
+            logMsg(strLabel,strModule,"Received a request of type "+ RequestType.getReqName(reqType));
             if (reqType == RequestType.PUT) {
                 String key = ois.readUTF();
                 String value = ois.readUTF();
@@ -290,6 +290,9 @@ public class TreeMapServer extends DefaultRecoverable {
                 strModule = "broadcastBFTDecision (MAIN): ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
+
+                    logMsg(strLabel,strModule,"Received msg type "+RequestType.getReqName(reqType));
+
                     switch(reqType) {
                         case RequestType.PREPARED_T_COMMIT:
                             executePreparedTCommit(t);
