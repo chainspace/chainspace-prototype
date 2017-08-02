@@ -190,6 +190,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
                 catch (Exception  e) {
                     logMsg(strLabel,strModule," Exception " + e.getMessage());
+                    e.printStackTrace();
                     return ResponseType.PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
 
@@ -320,10 +321,10 @@ public class TreeMapServer extends DefaultRecoverable {
                     // Early Reject: A transaction will only be processed again if the system
                     // previously aborted it. We do not process transactions that are already being
                     // processed or were previously committed
-                    if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
-                        logMsg(strLabel,strModule,"Early reject");
-                        return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
-                    }
+                    //if (sequences.containsKey(t.id) && !(sequences.get(t.id).ACCEPTED_T_ABORT)) {
+                    //    logMsg(strLabel,strModule,"Early reject");
+                    //    return ResponseType.SUBMIT_T_REJECTED.getBytes("UTF-8");
+                    //}
 
                     sequences.put(t.id, new TransactionSequence()); // Create fresh sequence for this transaction
 
@@ -479,26 +480,12 @@ public class TreeMapServer extends DefaultRecoverable {
         String reply = ResponseType.PREPARED_T_COMMIT;
         String strErr = "Unknown";
 
-
-        /*
-            DEBUG -- TODO
-         */
-        if (t.inputs.size() == 0) {
-            System.out.println("\n>> INIT FUNCTION...");
-            //table.put(t.outputs.get(0), ObjectStatus.ACTIVE); // <-- fix index '0'
-            return ResponseType.PREPARED_T_COMMIT;
-        }
-        /*
-            END
-         */
-
         for(String key: t.inputs) {
             String readValue = table.get(key);
-            boolean managedObj = (ObjectStatus.mapObjectToShard(key)==thisShard);
+            boolean managedObj = (client.mapObjectToShard(key)==thisShard);
             if(managedObj)
                 nManagedObj++;
             if(managedObj && readValue == null) {
-                //TODO: check whether it is an init function
                 strErr = Transaction.INVALID_NOOBJECT;
                 reply = ResponseType.PREPARED_T_ABORT;
             }
@@ -512,26 +499,29 @@ public class TreeMapServer extends DefaultRecoverable {
                     reply = ResponseType.PREPARED_T_ABORT;
                 }
             }
-            else if (t.getCsTransaction() != null) { // debug compatible
-                System.out.println("\n>> RUNNING CORE...");
-                try {
-                    String[] out = core.processTransaction(t.getCsTransaction(), t.getStore());
-                    System.out.println("\n>> PRINTING TRANSACTION'S OUTPUT...");
-                    System.out.println(Arrays.toString(out));
-                } catch (Exception e) {
-                    strErr = e.getMessage();
-                    reply = ResponseType.PREPARED_T_ABORT;
-                    e.printStackTrace();
-                }
-            }
             // debug option -- should be removed
             else {
                 System.out.println("\n>> DEBUG MODE");
             }
 
         }
+
+        if (t.getCsTransaction() != null) { // debug compatible
+            System.out.println("\n>> RUNNING CORE...");
+            try {
+                String[] out = core.processTransaction(t.getCsTransaction(), t.getStore());
+                System.out.println("\n>> PRINTING TRANSACTION'S OUTPUT...");
+                System.out.println(Arrays.toString(out));
+            } catch (Exception e) {
+                strErr = e.getMessage();
+                reply = ResponseType.PREPARED_T_ABORT;
+                e.printStackTrace();
+            }
+        }
+
         // The case when this shard doesn't manage any of the input objects
-        if(nManagedObj == 0) {
+        // AND the transaction isn't an init transaction
+        if(nManagedObj == 0 && t.inputs.size() != 0) {
             strErr = Transaction.INVALID_NOMANAGEDOBJECT;
             reply = ResponseType.PREPARED_T_ABORT;
         }
@@ -577,7 +567,7 @@ public class TreeMapServer extends DefaultRecoverable {
         for (String input : inputObjects) {
             int shardID = client.mapObjectToShard(input);
 
-            if (shardID == thisShard && table.get(input).equals(prevStatus)) {
+            if (shardID == thisShard && table.get(input) != null && table.get(input).equals(prevStatus)) {
                 String prev = table.put(input, status);
                 System.out.println("Input object "+input+": "+prev+" -> "+status);
             }

@@ -122,6 +122,7 @@ public class Transaction implements Serializable {
 
         this.csTransaction = csTransaction;
         this.store = store;
+        this.id = csTransaction.getID();
 
         init();
 

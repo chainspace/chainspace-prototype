@@ -16,13 +16,13 @@ public class CSTransaction implements Serializable {
 
     // instance variables
     private String contractID;
-    private String[] inputIDs;
-    private String[] referenceInputIDs;
-    private String[] parameters;
-    private String[] returns;
-    private String[] outputs;
     private CSTransaction[] dependencies;
+    private String[] inputIDs;
     private String methodID;
+    private String[] outputs;
+    private String[] parameters;
+    private String[] referenceInputIDs;
+    private String[] returns;
 
     /**
      * constructor
