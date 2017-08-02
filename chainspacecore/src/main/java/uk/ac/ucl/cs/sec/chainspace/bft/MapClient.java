@@ -75,14 +75,9 @@ public class MapClient implements Map<String, String> {
     }
 
     public int mapObjectToShard(String object) {
-        /*
-        // TODO: objects are not integers
+        // TODO make this work for n shards.
         BigInteger iObject = new BigInteger(object, 16);
-        if(iObject.mod(new BigInteger("2")).equals(0))
-            return 0;
-        return 1;
-        */
-        return 0;
+        return iObject.mod(new BigInteger("2")).intValue();
     }
 
     // This function returns a unique client ID every time it is called
