@@ -42,13 +42,11 @@ class TestBankAuthenticated(unittest.TestCase):
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
-    
+    """
 
     # --------------------------------------------------------------
     # test create account
     # --------------------------------------------------------------
-    """
-
     def test_create_account(self):
         
         ## create transaction
@@ -58,6 +56,19 @@ class TestBankAuthenticated(unittest.TestCase):
         response = requests.post('http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction)
         #print response.json()
         self.assertTrue(response.json()['success'])
+
+
+        ## create transaction
+        transaction = bank_authenticated.init()
+
+        ## submit transaction
+        response = requests.post(
+            'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
+        )
+        #print response.json()
+        self.assertTrue(response.json()['success'])
+
+        
 
         ##
         ## create transaction
@@ -85,7 +96,6 @@ class TestBankAuthenticated(unittest.TestCase):
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
-
   
     # --------------------------------------------------------------
     # test an authenticated bank transfer
