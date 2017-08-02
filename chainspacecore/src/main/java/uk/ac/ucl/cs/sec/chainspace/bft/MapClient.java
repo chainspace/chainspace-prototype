@@ -389,7 +389,7 @@ public class MapClient implements Map<String, String> {
             // BFT initiator will broadcast the final msg to replicas in its own shard only,
             // even if the BFT itself involved multiple shards (such as in ACCEPT_T)
             int shardID = defaultShardID;
-            logMsg(strLabel,strModule,"Sending msg "+msgType+" to shard ID "+shardID);
+            logMsg(strLabel,strModule,"Sending msg "+RequestType.getReqName(msgType)+" to shard ID "+shardID);
             int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                 @Override
                 public void replyReceived(RequestContext context, TOMMessage reply) { }
