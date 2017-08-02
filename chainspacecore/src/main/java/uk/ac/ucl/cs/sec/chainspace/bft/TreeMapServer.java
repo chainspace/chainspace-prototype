@@ -172,6 +172,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     logMsg(strLabel,strModule,"Received request for transaction "+t.id);
 
                     String reply = "";
+                    /*
                     // Check in sequences if it has been already decided
                     if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT) {
                         reply = ResponseType.PREPARED_T_COMMIT;
@@ -183,9 +184,10 @@ public class TreeMapServer extends DefaultRecoverable {
                     }
                     // Run checkPrepareT function only when there is no information present in local sequences
                     else {
-                        reply = checkPrepareT(t);
-                        logMsg(strLabel,strModule,"checkPrepare responding with "+reply);
-                    }
+                    */
+                    reply = checkPrepareT(t);
+                    logMsg(strLabel,strModule,"checkPrepare responding with "+reply);
+                    //}
                     return reply.getBytes("UTF-8");
                 }
                 catch (Exception  e) {
