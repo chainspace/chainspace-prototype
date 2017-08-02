@@ -75,9 +75,14 @@ public class MapClient implements Map<String, String> {
     }
 
     public int mapObjectToShard(String object) {
-        // TODO make this work for n shards.
+        String strModule = "mapObjectToShard";
         BigInteger iObject = new BigInteger(object, 16);
-        return iObject.mod(new BigInteger("2")).intValue();
+        int numShards = shardToConfig.size();
+        if(numShards == 0) {
+            logMsg(strLabel,strModule,"0 shards found. Now exiting");
+            System.exit(-1);
+        }
+        return iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
     }
 
     // This function returns a unique client ID every time it is called
