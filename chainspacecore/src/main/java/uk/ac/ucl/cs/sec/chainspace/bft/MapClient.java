@@ -501,7 +501,14 @@ public class MapClient implements Map<String, String> {
                             logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Abort reply from shard ID "+shard);
                             return ResponseType.ACCEPTED_T_ABORT;
                         }
-                    } else {
+                        else if( strReply.equals(ResponseType.SUBMIT_T_SYSTEM_ERROR) ||
+                                    strReply.equals(ResponseType.PREPARE_T_SYSTEM_ERROR) ||
+                                    strReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) ) {
+                            logMsg(strLabel,strModule,"SYSTEM ERROR->Error reply from shard ID "+shard);
+                            return ResponseType.ACCEPTED_T_ABORT;
+                        }
+                    }
+                    else {
                         logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Null reply from shard ID "+shard);
                         return ResponseType.ACCEPTED_T_ABORT;
                     }
