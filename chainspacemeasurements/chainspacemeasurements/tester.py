@@ -39,3 +39,11 @@ class Tester(object):
             self.network.clean_core()
 
         return tps_sets
+
+
+if __name__ == '__main__':
+    from chainspacemeasurements.instances import ChainspaceNetwork
+    n = ChainspaceNetwork(0)
+    t = Tester('/home/admin/chainspace/chainspacecore', n)
+
+    t.do_measurements(1, 2, 3)
