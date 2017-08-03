@@ -232,7 +232,7 @@ class ChainspaceNetwork(object):
                 self._single_ssh_exec(instance, command)
 
     def config_me(self, directory):
-        return os.sytem(self._config_shards_command(directory))
+        return os.system(self._config_shards_command(directory))
 
     def get_tps_set(self):
         tps_set = []
