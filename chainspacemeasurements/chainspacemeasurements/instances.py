@@ -239,6 +239,7 @@ class ChainspaceNetwork(object):
         for shard in self.shards.itervalues():
             instance = shard[0]
             tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tps.py')[1]
+            print tps
             tps = float(tps.strip())
             tps_set.append(tps)
 
