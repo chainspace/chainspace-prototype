@@ -237,7 +237,8 @@ class ChainspaceNetwork(object):
         tps_set = []
         for shard in self.shards.itervalues():
             instance = shard[0]
-            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tps.py')
+            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tps.py')[0]
+            tps = int(trim(tps))
             tps_set.append(tps)
 
         return tps_set
