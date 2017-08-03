@@ -218,7 +218,7 @@ class ChainspaceNetwork(object):
         if shards * nodes_per_shard > len(instances):
             raise ValueError("Number of total nodes exceeds the number of running instances.")
 
-        shards = {}
+        self.shards = {}
         for shard in range(shards):
             self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
 
