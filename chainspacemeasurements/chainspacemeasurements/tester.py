@@ -22,7 +22,7 @@ class Tester(object):
 
     def do_measurements(self, inputs_per_tx, min_shards, max_shards):
         tps_sets = []
-        for num_shards in range(min_shards, max_shards):
+        for num_shards in range(min_shards, max_shards+1):
             self.network.config_core(num_shards, 4)
             self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
             self.network.start_core()
