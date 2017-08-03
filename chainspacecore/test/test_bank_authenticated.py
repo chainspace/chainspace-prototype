@@ -30,9 +30,7 @@ class TestBankAuthenticated(unittest.TestCase):
     # --------------------------------------------------------------
     # test init
     # --------------------------------------------------------------
-    """
     def test_init(self):
-
         ## create transaction
         transaction = bank_authenticated.init()
 
@@ -42,43 +40,33 @@ class TestBankAuthenticated(unittest.TestCase):
         )
         #print response.json()
         self.assertTrue(response.json()['success'])
-    """
+
 
     # --------------------------------------------------------------
     # test create account
     # --------------------------------------------------------------
     def test_create_account(self):
-        
-        ## create transaction
+        ##
+        ## params
+        ##
+        (_, alice_pub) = key_gen(setup())
+
+
+        ##
+        ## init
+        ##
         transaction = bank_authenticated.init()
-        
-        ## submit transaction
-        response = requests.post('http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction)
-        #print response.json()
-        self.assertTrue(response.json()['success'])
-
-
-        ## create transaction
-        transaction = bank_authenticated.init()
-
-        ## submit transaction
         response = requests.post(
             'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
         )
-        #print response.json()
         self.assertTrue(response.json()['success'])
 
         
-
         ##
-        ## create transaction
+        ## create bank account
         ##
-        # create alice's public key
-        (_, alice_pub) = key_gen(setup())
-
         # init
-        init_transaction = bank_authenticated.init()['transaction']
-        token = init_transaction['outputs'][0]
+        token = transaction['transaction']['outputs'][0]
 
         # create bank account
         transaction = bank_authenticated.create_account(
@@ -87,6 +75,7 @@ class TestBankAuthenticated(unittest.TestCase):
             None,
             pack(alice_pub)
         )
+
 
         ##
         ## submit transaction
@@ -97,29 +86,60 @@ class TestBankAuthenticated(unittest.TestCase):
         #print response.json()
         self.assertTrue(response.json()['success'])
   
+
     # --------------------------------------------------------------
     # test an authenticated bank transfer
     # --------------------------------------------------------------
     """
     def test_auth_transfer(self):
         ##
-        ## run service
+        ## params
         ##
-        #checker_service_process = Process(target=bank_authenticated_contract.run_checker_service)
-        #checker_service_process.start()
-        #time.sleep(0.1)
-
-        ##
-        ## create transaction
-        ##
-        # create alice's and bob public key
         params = setup()
         (alice_priv, alice_pub) = key_gen(params)
         (bob_priv, bob_pub)     = key_gen(params)
 
+
+        ##
+        ## init
+        ##
+        transaction = bank_authenticated.init()
+        response = requests.post(
+            'http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction
+        )
+        token = transaction['transaction']['outputs'][0]
+        self.assertTrue(response.json()['success'])
+
+
+        ##
+        ## create alice's account
+        ##
+        create_alice_account_transaction = bank_authenticated.create_account(
+            (token,),
+            None,
+            None,
+            pack(alice_pub)
+        )
+        alice_account = create_alice_account_transaction['transaction']['outputs'][1]
+
+
+        ##
+        ## create bob's account
+        ##
+        create_bob_account_transaction = bank_authenticated.create_account(
+            (token,),
+            None,
+            None,
+            pack(alice_pub)
+        )
+        bob_account = create_bob_account_transaction['transaction']['outputs'][1]
+
+
+        ##
+        ## make transfer
+        ##        
         # init
-        init_transaction = bank_authenticated.init()['transaction']
-        token = init_transaction['outputs'][0]
+        
 
         # create alice's account
         create_alice_account_transaction = bank_authenticated.create_account(
@@ -129,7 +149,7 @@ class TestBankAuthenticated(unittest.TestCase):
             pack(alice_pub)
         )['transaction']
         token = create_alice_account_transaction['outputs'][0]
-        alice_account = create_alice_account_transaction['outputs'][1]
+        alice_account = create_alice_account_transaction['transaction']['outputs'][1]
 
         # create bob's account
         create_bob_account_transaction = bank_authenticated.create_account(
@@ -148,6 +168,7 @@ class TestBankAuthenticated(unittest.TestCase):
             pack(alice_priv)
         )
 
+
         ##
         ## submit transaction
         ##
@@ -156,16 +177,12 @@ class TestBankAuthenticated(unittest.TestCase):
         )
         #print response.json()
         self.assertTrue(response.json()['success'] == 'True')
-
-        ##
-        ## stop service
-        ##
-        #checker_service_process.terminate()
-        #checker_service_process.join()
+    """
 
     # --------------------------------------------------------------
     # test many authenticated bank transfers
     # --------------------------------------------------------------
+    """
     def test_many_auth_transfer(self):
         ##
         ## run service

@@ -514,7 +514,15 @@ public class TreeMapServer extends DefaultRecoverable {
 
         }
 
-        if (t.getCsTransaction() != null) { // debug compatible
+        // The case when this shard doesn't manage any of the input objects
+        // AND the transaction isn't an init transaction
+        if(nManagedObj == 0 && t.inputs.size() != 0) {
+            strErr = Transaction.INVALID_NOMANAGEDOBJECT;
+            reply = ResponseType.PREPARED_T_ABORT;
+        }
+
+
+        if (t.getCsTransaction() != null && reply.equals(ResponseType.PREPARED_T_COMMIT)) {
             System.out.println("\n>> RUNNING CORE...");
             try {
                 String[] out = core.processTransaction(t.getCsTransaction(), t.getStore());
@@ -527,12 +535,6 @@ public class TreeMapServer extends DefaultRecoverable {
             }
         }
 
-        // The case when this shard doesn't manage any of the input objects
-        // AND the transaction isn't an init transaction
-        if(nManagedObj == 0 && t.inputs.size() != 0) {
-            strErr = Transaction.INVALID_NOMANAGEDOBJECT;
-            reply = ResponseType.PREPARED_T_ABORT;
-        }
 
         if(reply.equals(ResponseType.PREPARED_T_ABORT))
             System.out.println("PREPARE_T (checkPrepareT): Returning PREPARED_T_ABORT->"+strErr);
