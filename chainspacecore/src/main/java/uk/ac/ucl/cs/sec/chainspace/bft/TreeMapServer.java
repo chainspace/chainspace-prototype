@@ -55,12 +55,12 @@ public class TreeMapServer extends DefaultRecoverable {
         sequences = new  HashMap<>(); // contains operation sequences for transactions
         strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
+        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
+
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
         client.thisShard = thisShard;
         client.thisReplica = thisReplica;
-
-        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
     }
 
     private boolean loadConfiguration() {
