@@ -239,7 +239,9 @@ public class TreeMapServer extends DefaultRecoverable {
                     String status = ObjectStatus.ACTIVE; // New objects are active
                     for(String object: objects) {
                         table.put(object, status);
-                        System.out.println("Creating object " + object);
+
+                        logMsg(strLabel,strModule,"Created object "+object);
+                        
                     }
                 }
                 catch(Exception e) {
