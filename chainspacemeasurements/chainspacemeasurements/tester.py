@@ -1,4 +1,5 @@
 import os
+import time
 
 from chainspacemeasurements import dumper
 
@@ -9,6 +10,8 @@ class Tester(object):
         self.network = network
         self.min_shards = min_shards
         self.max_shards = max_shards
+
+        network.ssh_connect()
 
     def start_client(self):
         command = ''
@@ -25,7 +28,10 @@ class Tester(object):
             network.config_me(core_directory + '/ChainSpaceClientConfig')
             network.start_core()
 
+            self.start_client()
+            time.sleep(3)
             dumper.simulation_b2(500, inputs_per_tx)
+            self.stop_client()
 
             tps_sets.append(network.get_tps_set())
 
