@@ -8,8 +8,6 @@ class Tester(object):
     def __init__(self, core_directory, network):
         self.core_directory = core_directory
         self.network = network
-        self.min_shards = min_shards
-        self.max_shards = max_shards
 
         network.ssh_connect()
 
