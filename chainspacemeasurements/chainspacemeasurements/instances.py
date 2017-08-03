@@ -196,7 +196,8 @@ class ChainspaceNetwork(object):
     def uninstall_core(self):
         self._log("Uninstalling Chainspace core on all nodes...")
         command = 'rm -rf chainspace;'
-        command += 'sudo pip uninstall -y chainspacecontract'
+        command += 'sudo pip uninstall -y chainspacecontract;'
+        command += 'rm -rf contracts;'
         self.ssh_exec(command)
         self._log("Uninstalled Chainspace core on all nodes.")
 
@@ -205,7 +206,6 @@ class ChainspaceNetwork(object):
         command = ''
         command += 'rm database.sqlite;'
         command += 'rm -rf config;'
-        command += 'rm -rf contracts;'
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
@@ -218,6 +218,7 @@ class ChainspaceNetwork(object):
         if shards * nodes_per_shard > len(instances):
             raise ValueError("Number of total nodes exceeds the number of running instances.")
 
+        self.shards = {}
         for shard in range(shards):
             self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
 
@@ -229,6 +230,19 @@ class ChainspaceNetwork(object):
                 command += 'rm -rf config;'
                 command += 'cp -r chainspace/chainspacecore/ChainSpaceConfig/shards/s{0} config;'.format(i)
                 self._single_ssh_exec(instance, command)
+
+    def config_me(self, directory):
+        return os.system(self._config_shards_command(directory))
+
+    def get_tps_set(self):
+        tps_set = []
+        for shard in self.shards.itervalues():
+            instance = shard[0]
+            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tps.py')[1]
+            tps = float(tps.strip())
+            tps_set.append(tps)
+
+        return tps_set
 
 
 def _multi_args_wrapper(args):
