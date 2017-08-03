@@ -30,6 +30,7 @@ class Tester(object):
             self.start_client()
             time.sleep(3)
             dumper.simulation_b2(500, inputs_per_tx)
+            time.sleep(10)
             self.stop_client()
 
             tps_sets.append(self.network.get_tps_set())
