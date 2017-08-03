@@ -3,6 +3,7 @@ package uk.ac.ucl.cs.sec.chainspace.bft;
 
 // This is the class which sends requests to replicas
 import bftsmart.communication.client.ReplyListener;
+import bftsmart.reconfiguration.views.View;
 import bftsmart.tom.AsynchServiceProxy;
 import bftsmart.tom.RequestContext;
 import bftsmart.tom.ServiceProxy;
@@ -55,6 +56,8 @@ public class MapClient implements Map<String, String> {
 
     public MapClient(String shardConfigFile) {
         String strModule = "MapClient: ";
+        strLabel = "["+thisShard+":"+ thisReplica+"] "; // This string is used in debug messages
+
         // Shards
         if(!initializeShards(shardConfigFile)) {
             logMsg(strLabel,strModule,"Could not read shard configuration file. Now exiting.");
@@ -71,7 +74,6 @@ public class MapClient implements Map<String, String> {
         asynchReplies = new HashMap<String,TOMMessage>();
 
         defaultShardID = 0;
-        strLabel = "["+thisShard+":"+ thisReplica+"] "; // This string is used in debug messages
     }
 
     public int mapObjectToShard(String object) {
@@ -82,7 +84,9 @@ public class MapClient implements Map<String, String> {
             logMsg(strLabel,strModule,"0 shards found. Now exiting");
             System.exit(-1);
         }
-        return iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
+        int shardID = iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
+        logMsg(strLabel,strModule,"Mapped object "+object+" to shard "+shardID);
+        return shardID;
     }
 
     // This function returns a unique client ID every time it is called
@@ -141,20 +145,28 @@ public class MapClient implements Map<String, String> {
         // Each shard has a synch and asynch client, with different client IDs
         for(int shardID: shardToConfig.keySet()) {
             String config = shardToConfig.get(shardID);
+            logMsg(strLabel,strModule,"Shard " + shardID +"Config "+config);
 
             // Synch client proxy
             int clientID = this.getNextClientID();
             shardToClient.put(shardID, clientID);
-            clientProxy.put(shardID, new ServiceProxy(clientID,config));
+            ServiceProxy sp = new ServiceProxy(clientID,config);
+
+            logMsg(strLabel,strModule,"NEW port of client 0 in shard "+shardID+" is  "+sp.getViewManager().getStaticConf().getPort(0));
+            clientProxy.put(shardID, sp);
+            //View v = new View(0, getStaticConf().getInitialView(), getStaticConf().getF(), getInitAdddresses());
+            //sp.getViewManager().reconfigureTo(sp.getViewManager().getStaticConf().getInitialView());
             logMsg(strLabel,strModule,"Created new client proxy ID "+clientID+" for shard "+shardID+" with config "+config);
-            logMsg(strLabel,strModule,"The view of client "+clientID+" is: "+clientProxy.get(shardID).getViewManager().getCurrentView().toString());
+            logMsg(strLabel,strModule,"The view of client "+clientID+"for shard "+shardID+" is: "+sp.getViewManager().getCurrentView().toString());
 
             // Asynch client proxy
             int clientIDAsynch = this.getNextClientID();
             shardToClientAsynch.put(shardID, clientIDAsynch);
-            clientProxyAsynch.put(shardID, new AsynchServiceProxy(clientIDAsynch,config));
+            AsynchServiceProxy asp = new AsynchServiceProxy(clientIDAsynch,config);
+            clientProxyAsynch.put(shardID, asp);
             logMsg(strLabel,strModule,"Created new ASYNCH client proxy ID "+clientIDAsynch+" for shard "+shardID+" with config "+config);
-            logMsg(strLabel,strModule,"The view of client "+clientID+" is: "+clientProxy.get(shardID).getViewManager().getCurrentView().toString());
+            logMsg(strLabel,strModule,"The view of client "+clientID+"for shard "+shardID+" is: "+asp.getViewManager().getCurrentView().toString());
+
         }
     }
 
@@ -300,6 +312,7 @@ public class MapClient implements Map<String, String> {
             // Group objects by the managing shard
             for(String output: outputObjects) {
                 int shardID = mapObjectToShard(output);
+                logMsg(strLabel,strModule,"Mapped object "+output+" to shard "+shardID);
                 if(shardID == -1) {
                     logMsg(strLabel,strModule,"Cannot map output "+output+" to a shard.");
                     earlyTerminate = true;
@@ -314,6 +327,8 @@ public class MapClient implements Map<String, String> {
             // Send a request to each shard relevant to the outputs
             for(int shardID: shardToObjects.keySet()) {
 
+                logMsg(strLabel,strModule, "Sending to shard "+ shardID + "these outputs "+shardToObjects.get(shardID).toString());
+
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(bs);
                 oos.writeInt(RequestType.CREATE_OBJECT);
@@ -322,6 +337,7 @@ public class MapClient implements Map<String, String> {
 
 
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynchQuorum(shardID), reqType);
+
                 logMsg(strLabel,strModule,"Sent a request to shard ID " + shardID);
                 shardToReq.put(shardID, req);
 
@@ -442,6 +458,8 @@ public class MapClient implements Map<String, String> {
                     oos.close();
                     // SUBMIT_T request sent asynchronously to all relevant shards
                     // Expect single response from BFTInitiator of each shard to which the request was sent
+                    logMsg(strLabel,strModule,"The view of client is: "+clientProxyAsynch.get(shardID).getViewManager().getCurrentView().toString());
+
                     int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynchSingle(shardID), reqType);
                     shardToReq.put(shardID, req);
                 }

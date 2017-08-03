@@ -55,12 +55,13 @@ public class TreeMapServer extends DefaultRecoverable {
         sequences = new  HashMap<>(); // contains operation sequences for transactions
         strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
-        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
 
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
         client.thisShard = thisShard;
         client.thisReplica = thisReplica;
+
+        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
     }
 
     private boolean loadConfiguration() {
@@ -241,7 +242,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         table.put(object, status);
 
                         logMsg(strLabel,strModule,"Created object "+object);
-                        
+
                     }
                 }
                 catch(Exception e) {
@@ -463,11 +464,15 @@ public class TreeMapServer extends DefaultRecoverable {
         // TODO: Things to do when transaction is ACCEPTED_T_COMMIT
         // Inactivate transaction input objects
         setTransactionInputStatus(t, ObjectStatus.INACTIVE);
+        String strModule = "executeAcceptedTCommit";
 
         if(isBFTInitiator()) {
             // Create output objects (local as well as those on other shards)
             int timeout = 0; // How long to wait for replies to be accumulated in replies.
             // Default is no wait; just let object creation happen asynchronously.
+            logMsg(strLabel,strModule,"Creating outputs for the following transaction:");
+            t.print();
+
             HashMap<String, Boolean> replies = client.createObjects(t.outputs, timeout);
         }
 
