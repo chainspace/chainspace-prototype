@@ -202,7 +202,9 @@ class ChainspaceNetwork(object):
 
     def clean_core(self):
         self._log("Resetting Chainspace core configuration and state...")
-        command = 'rm database.sqlite'
+        command = ''
+        command += 'rm database.sqlite;'
+        command += 'rm -rf config;'
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
