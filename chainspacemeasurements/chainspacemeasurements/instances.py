@@ -132,8 +132,8 @@ class ChainspaceNetwork(object):
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
         command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
-        command += 'cd ~/chainspace; mkdir contracts;'
-        command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py ~/chainspace/contracts'
+        command += 'cd ~; mkdir contracts;'
+        command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py contracts'
         self.ssh_exec(command)
         self._log("Installed Chainspace core on all nodes.")
 
@@ -205,6 +205,7 @@ class ChainspaceNetwork(object):
         command = ''
         command += 'rm database.sqlite;'
         command += 'rm -rf config;'
+        command += 'rm -rf contracts;'
         self.ssh_exec(command)
         self._log("Reset Chainspace core configuration and state.")
 
