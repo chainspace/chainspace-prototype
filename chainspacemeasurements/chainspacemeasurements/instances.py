@@ -230,6 +230,18 @@ class ChainspaceNetwork(object):
                 command += 'cp -r chainspace/chainspacecore/ChainSpaceConfig/shards/s{0} config;'.format(i)
                 self._single_ssh_exec(instance, command)
 
+    def config_me(self, directory):
+        return os.command(self._config_shards_command(directory))
+
+    def get_tps_set(self):
+        tps_set = []
+        for shard in self.shards:
+            instance = shard[0]
+            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tps.py')
+            tps_set.append(tps)
+
+        return tps_set
+
 
 def _multi_args_wrapper(args):
     return args[0](*args[1:])
