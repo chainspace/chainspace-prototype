@@ -224,7 +224,7 @@ class ChainspaceNetwork(object):
                 command += 'printf "shardConfigFile chainspace/chainspacecore/ChainSpaceConfig/shardConfig.txt\nthisShard {0}\nthisReplica {1}\n" > config.txt;'.format(i, j)
                 command += 'cd ../;'
                 command += 'rm -rf config;'
-                command += 'cp -r ChainSpaceConfig/shards/s{0} config;'.format(i)
+                command += 'cp -r ChainSpaceConfig/shards/s{0} ~/config;'.format(i)
                 self._single_ssh_exec(instance, command)
 
 
