@@ -29,7 +29,7 @@ class Tester(object):
 
             self.start_client()
             time.sleep(3)
-            dumper.simulation_b2(500, inputs_per_tx)
+            dumper.simulation_b2(10, inputs_per_tx)
             time.sleep(10)
             self.stop_client()
 
