@@ -15,6 +15,7 @@ class Tester(object):
         command = ''
         command += 'cd {0};'.format(self.core_directory)
         command += 'screen -dmS clientservice ./runclientservice.sh;'
+        os.system(command)
 
     def stop_client(self):
         os.system('killall java')
