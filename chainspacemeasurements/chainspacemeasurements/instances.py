@@ -183,7 +183,7 @@ class ChainspaceNetwork(object):
 
     def start_core(self):
         self._log("Starting Chainspace core on all nodes...")
-        command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Main'
+        command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/lib/BFT-SMaRt.jar:chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.bft.TreeMapServer chainspace/chainspacecore/ChainspaceConfig/config.txt'
         self.ssh_exec(command)
         self._log("Started Chainspace core on all nodes.")
 
