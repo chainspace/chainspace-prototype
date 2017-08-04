@@ -355,6 +355,7 @@ public class MapClient implements Map<String, String> {
     // TODO: The message should include proof (e.g., bundle of signatures) that
     // TODO: other replicas agree on this decision
     public void broadcastBFTDecision(int msgType, Transaction t) {
+        //TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
         TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
         String strModule = "broadcastBFTDecision (DRIVER): ";
         try {
@@ -368,10 +369,12 @@ public class MapClient implements Map<String, String> {
             // even if the BFT itself involved multiple shards (such as in ACCEPT_T)
             int shardID = defaultShardID;
             logMsg(strLabel,strModule,"Sending msg "+RequestType.getReqName(msgType)+" to shard ID "+shardID);
+            /*
             int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                 @Override
                 public void replyReceived(RequestContext context, TOMMessage reply) { }
-            }, reqType);
+            }, reqType); */
+            byte[] reply = clientProxy.get(shardID).invokeOrdered(bs.toByteArray());
         }
         catch(Exception e){
             logMsg(strLabel,strModule,"Experienced Exception " + e.getMessage());
