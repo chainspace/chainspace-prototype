@@ -189,7 +189,7 @@ class ChainspaceNetwork(object):
 
     def start_core(self):
         self._log("Starting Chainspace core on all shards...")
-        args = [(self._start_shard, shard) for shard in self.shards]
+        args = [(self._start_shard, shard) for shard in self.shards.values()]
         pool = Pool(ChainspaceNetwork.threads)
         pool.map(_multi_args_wrapper, args)
         pool.close()
