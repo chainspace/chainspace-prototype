@@ -100,7 +100,7 @@ class ChainspaceNetwork(object):
         self._log("Launching {} instances...".format(count))
         self.ec2.create_instances(
             ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
-            InstanceType='t2.micro',
+            InstanceType='t2.medium',
             MinCount=count,
             MaxCount=count,
             KeyName=key_name,
@@ -166,7 +166,7 @@ class ChainspaceNetwork(object):
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
-        self._log("Closed SSH connection on all nodes...")
+        self._log("Closed SSH connection on all nodes.")
 
     def terminate(self):
         self._log("Terminating all nodes...")
