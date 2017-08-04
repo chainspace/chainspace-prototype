@@ -56,12 +56,21 @@ public class TreeMapServer extends DefaultRecoverable {
         strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
 
+        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
+
+        try {
+            Thread.sleep(2000);
+        }
+        catch(Exception e) {
+            System.out.println("Error initializing the server. Now exiting.");
+            System.exit(-1);
+        }
+
         client = new MapClient(shardConfigFile); // Create clients for talking with other shards
         client.defaultShardID = thisShard;
         client.thisShard = thisShard;
         client.thisReplica = thisReplica;
 
-        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
     }
 
     private boolean loadConfiguration() {
