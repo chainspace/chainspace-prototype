@@ -66,33 +66,37 @@ public class TreeMapServer extends DefaultRecoverable {
             System.exit(-1);
         }
 
-        client = new MapClient(shardConfigFile); // Create clients for talking with other shards
-        client.defaultShardID = thisShard;
-        client.thisShard = thisShard;
-        client.thisReplica = thisReplica;
-
+        client = new MapClient(shardConfigFile, thisShard, thisReplica); // Create clients for talking with other shards
     }
 
     private boolean loadConfiguration() {
         String strModule = "loadConfiguration: ";
         boolean done = true;
 
-        if(configData.containsKey(ServerConfig.thisShard))
+        logMsg(strLabel,strModule,"Loading configuration");
+
+        if(configData.containsKey(ServerConfig.thisShard)) {
             thisShard = Integer.parseInt(configData.get(ServerConfig.thisShard));
+            logMsg(strLabel,strModule,"thisShard is "+thisShard);
+        }
         else {
             logMsg(strLabel,strModule,"Could not find configuration for thisShardID.");
             done = false;
         }
 
-        if(configData.containsKey(ServerConfig.shardConfigFile))
+        if(configData.containsKey(ServerConfig.shardConfigFile)) {
             shardConfigFile = configData.get(ServerConfig.shardConfigFile);
+            logMsg(strLabel,strModule,"shardConfigFile is "+shardConfigFile);
+        }
         else {
             logMsg(strLabel,strModule,"Could not find configuration for shardConfigFile.");
             done = false;
         }
 
-        if(configData.containsKey(ServerConfig.thisReplica))
+        if(configData.containsKey(ServerConfig.thisReplica)) {
             thisReplica = Integer.parseInt(configData.get(ServerConfig.thisReplica));
+            logMsg(strLabel,strModule,"thisReplica is "+thisReplica);
+        }
         else {
             logMsg(strLabel,strModule,"Could not find configuration for thisReplica.");
             done = false;
@@ -102,6 +106,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private boolean readConfiguration(String configFile) {
         String strModule = "readConfiguration: ";
+        logMsg(strLabel,strModule,"Reading configuration");
         try {
             BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
             String line;
@@ -116,6 +121,8 @@ public class TreeMapServer extends DefaultRecoverable {
                     String token = tokens[0];
                     String value = tokens[1];
                     configData.put(token, value);
+                    logMsg(strLabel,strModule,"Read this line from configuration file "+line);
+                    logMsg(strLabel,strModule,"Shard ID "+token+" Replica ID "+value);
                 }
                 else
                     logMsg(strLabel,strModule,"Skipping Line # "+countLine+" in config file: Insufficient tokens");

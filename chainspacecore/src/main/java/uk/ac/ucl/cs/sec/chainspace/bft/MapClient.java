@@ -54,9 +54,14 @@ public class MapClient implements Map<String, String> {
                                          // after calling CREATE_OBJECT
 
 
-    public MapClient(String shardConfigFile) {
+    public MapClient(String shardConfigFile, int thisShard, int thisReplica) {
+        this.defaultShardID = thisShard;
+        // These two are set just for logging purposes
+        this.thisShard = thisShard;
+        this.thisReplica = thisReplica;
+
         String strModule = "MapClient: ";
-        strLabel = "["+thisShard+":"+ thisReplica+"] "; // This string is used in debug messages
+        strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
         // Shards
         if(!initializeShards(shardConfigFile)) {

@@ -83,7 +83,7 @@ public class ConsoleClient {
             System.exit(0);
         }
 
-        MapClient client = new MapClient(shardConfigFile); // Create clients for talking with other shards
+        MapClient client = new MapClient(shardConfigFile,0,0); // Create clients for talking with other shards
         client.defaultShardID = 0;
 
         Scanner sc = new Scanner(System.in);
