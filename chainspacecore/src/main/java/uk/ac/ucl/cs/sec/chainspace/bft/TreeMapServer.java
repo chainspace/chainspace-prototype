@@ -571,14 +571,48 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private String checkAcceptT(Transaction t) {
         String strModule = "checkAcceptT";
-        if(sequences.containsKey(t.id) && !sequences.get(t.id).PREPARED_T_COMMIT && !sequences.get(t.id).PREPARED_T_ABORT) {
-            try {
-                Thread.sleep(10);
-            }
-            catch(Exception e) {
-                logMsg(strLabel,strModule,"Exception making thread sleep "+e.toString());
+
+        // FIXME: Choose suitable timeout values
+        int minWait = 1; // First wait will be minWait long
+        int timeoutIncrement = 2; // subsequent wait will proceed in timeoutIncrement until all shards reply
+        int maxWait = 10000; // time out if waitedSoFar exceeds maxWait
+
+        boolean firstAttempt = true;
+        int waitedSoFar = 0;
+
+        if (sequences.containsKey(t.id) && !sequences.get(t.id).PREPARED_T_COMMIT &&
+                !sequences.get(t.id).PREPARED_T_ABORT)
+            logMsg(strLabel,strModule,"Waiting for PREPARED_T_* to be sequenced " +
+                    " upon receiving ACCEPT_T.");
+
+        try {
+            while(waitedSoFar < maxWait) {
+                if (sequences.containsKey(t.id) && (sequences.get(t.id).PREPARED_T_COMMIT ||
+                        sequences.get(t.id).PREPARED_T_ABORT)) {
+                    logMsg(strLabel,strModule,"Sequenced PREPARED_T_* upon receiving ACCEPT_T" +
+                            "after waiting for "+waitedSoFar);
+                    break;
+                }
+
+                if (firstAttempt) {
+                    Thread.sleep(minWait);
+                    waitedSoFar += minWait;
+                    firstAttempt = false;
+                }
+                else {
+                    Thread.sleep(timeoutIncrement);
+                    waitedSoFar += timeoutIncrement;
+                }
+
+                if (waitedSoFar > maxWait) // We are about to exit this loop
+                    logMsg(strLabel, strModule, "Timed out waiting for PREPARED_T_* to be sequenced " +
+                            " upon receiving ACCEPT_T.");
             }
         }
+        catch(Exception e) {
+                logMsg(strLabel,strModule,"Exception making thread sleep "+e.toString());
+        }
+
         if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT)
             return ResponseType.ACCEPTED_T_COMMIT;
         // TODO: Optimization: If we hear about an ACCEPT_T from which we don't have
