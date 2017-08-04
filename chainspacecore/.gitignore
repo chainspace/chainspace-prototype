@@ -1,5 +1,4 @@
 .idea
 out
 *.iml
-target
 contracts

@@ -1,4 +1,5 @@
 """EC2 instance management."""
+import time
 import os
 import sys
 from multiprocessing.dummy import Pool
@@ -131,7 +132,7 @@ class ChainspaceNetwork(object):
         command = 'git clone https://github.com/musalbas/chainspace;'
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
-        command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        #command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
         command += 'cd ~; mkdir contracts;'
         command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py contracts'
         self.ssh_exec(command)
@@ -181,11 +182,26 @@ class ChainspaceNetwork(object):
         self._get_running_instances().stop()
         self._log("Stopped all nodes.")
 
-    def start_core(self):
+    def start_core_all(self):
         self._log("Starting Chainspace core on all nodes...")
         command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/lib/BFT-SMaRt.jar:chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.bft.TreeMapServer chainspace/chainspacecore/ChainSpaceConfig/config.txt'
         self.ssh_exec(command)
         self._log("Started Chainspace core on all nodes.")
+
+    def start_core(self):
+        self._log("Starting Chainspace core on all shards...")
+        args = [(self._start_shard, shard) for shard in self.shards.values()]
+        pool = Pool(ChainspaceNetwork.threads)
+        pool.map(_multi_args_wrapper, args)
+        pool.close()
+        pool.join()
+        self._log("Started Chainspace core on all shards.")
+
+    def _start_shard(self, shard):
+        command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/lib/BFT-SMaRt.jar:chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.bft.TreeMapServer chainspace/chainspacecore/ChainSpaceConfig/config.txt'
+        for instance in shard:
+                self._single_ssh_exec(instance, command)
+                time.sleep(0.5)
 
     def stop_core(self):
         self._log("Stopping Chainspace core on all nodes...")
@@ -231,7 +247,7 @@ class ChainspaceNetwork(object):
                 command += 'cp -r chainspace/chainspacecore/ChainSpaceConfig/shards/s{0} config;'.format(i)
                 self._single_ssh_exec(instance, command)
 
-    def config_me(self, directory):
+    def config_me(self, directory='/home/admin/chainspace/chainspacecore/ChainSpaceConfig'):
         return os.system(self._config_shards_command(directory))
 
     def get_tps_set(self):

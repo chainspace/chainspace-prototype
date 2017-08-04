@@ -83,7 +83,7 @@ public class ConsoleClient {
             System.exit(0);
         }
 
-        MapClient client = new MapClient(shardConfigFile); // Create clients for talking with other shards
+        MapClient client = new MapClient(shardConfigFile,0,0); // Create clients for talking with other shards
         client.defaultShardID = 0;
 
         Scanner sc = new Scanner(System.in);
@@ -202,7 +202,7 @@ public class ConsoleClient {
                     System.out.println("Transaction to be added is:");
                     t3.print();
 
-                    byte[] reply = client.prepare_t(t3);
+                    byte[] reply = client.prepare_t(t3, 0);
                     if(reply != null) {
                         try {
                             System.out.println("Transaction status: " + new String(reply, "UTF-8"));
@@ -275,13 +275,7 @@ public class ConsoleClient {
                     System.out.println("Transaction whose outputs are to be created is:");
                     t5.print();
 
-                    HashMap<String, Boolean> replies = client.createObjects(t5.outputs);
-                    if(replies != null) {
-                        for(String output: replies.keySet())
-                            System.out.println("Output "+output+" has been added result: "+replies.get(output));
-                    }
-                    else
-                        System.out.println("Replies to CREATE_OBJECT is null");
+                    client.createObjects(t5.outputs);
                     break;
 
                 case 11:
