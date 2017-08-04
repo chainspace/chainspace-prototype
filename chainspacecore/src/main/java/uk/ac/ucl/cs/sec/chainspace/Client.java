@@ -117,7 +117,7 @@ public class Client {
         }
 
         // create clients for talking with other shards
-        client = new MapClient(shardConfigFile);
+        client = new MapClient(shardConfigFile, 0, 0);
         client.defaultShardID = 0;
 
         // start webservice
