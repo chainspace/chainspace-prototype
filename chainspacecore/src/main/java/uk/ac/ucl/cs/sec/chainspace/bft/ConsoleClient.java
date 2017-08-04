@@ -275,13 +275,7 @@ public class ConsoleClient {
                     System.out.println("Transaction whose outputs are to be created is:");
                     t5.print();
 
-                    HashMap<String, Boolean> replies = client.createObjects(t5.outputs);
-                    if(replies != null) {
-                        for(String output: replies.keySet())
-                            System.out.println("Output "+output+" has been added result: "+replies.get(output));
-                    }
-                    else
-                        System.out.println("Replies to CREATE_OBJECT is null");
+                    client.createObjects(t5.outputs);
                     break;
 
                 case 11:
