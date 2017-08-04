@@ -187,7 +187,7 @@ class ChainspaceNetwork(object):
         self.ssh_exec(command)
         self._log("Started Chainspace core on all nodes.")
 
-    def start_core(self, command):
+    def start_core(self):
         self._log("Starting Chainspace core on all shards...")
         args = [(self._start_shard, shard) for shard in self.shards]
         pool = Pool(ChainspaceNetwork.threads)
