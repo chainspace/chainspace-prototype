@@ -77,8 +77,6 @@ public class MapClient implements Map<String, String> {
         initializeShardClients();
 
         asynchReplies = new HashMap<String,TOMMessage>();
-
-        defaultShardID = 0;
     }
 
     public int mapObjectToShard(String object) {
@@ -336,6 +334,7 @@ public class MapClient implements Map<String, String> {
                 oos.close();
 
 
+                logMsg(strLabel,strModule,"Sending CREATE_OBJECT to shard "+shardID);
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                     @Override
                     public void replyReceived(RequestContext context, TOMMessage reply) { }
@@ -354,7 +353,8 @@ public class MapClient implements Map<String, String> {
     // decision of a BFT round.
     // TODO: The message should include proof (e.g., bundle of signatures) that
     // TODO: other replicas agree on this decision
-    public void broadcastBFTDecision(int msgType, Transaction t) {
+    public void broadcastBFTDecision(int msgType, Transaction t, int shardID) {
+        //TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
         TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST;
         String strModule = "broadcastBFTDecision (DRIVER): ";
         try {
@@ -364,14 +364,14 @@ public class MapClient implements Map<String, String> {
             oos.writeObject(t);
             oos.close();
 
-            // BFT initiator will broadcast the final msg to replicas in its own shard only,
-            // even if the BFT itself involved multiple shards (such as in ACCEPT_T)
-            int shardID = defaultShardID;
-            logMsg(strLabel,strModule,"Sending msg "+RequestType.getReqName(msgType)+" to shard ID "+shardID);
+            logMsg(strLabel,strModule,"Broadcasting "+ RequestType.getReqName(msgType)+" to shard "+shardID+
+                    " for transaction "+t.id);
+            /*
             int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                 @Override
                 public void replyReceived(RequestContext context, TOMMessage reply) { }
-            }, reqType);
+            }, reqType); */
+            byte[] reply = clientProxy.get(shardID).invokeUnordered(bs.toByteArray());
         }
         catch(Exception e){
             logMsg(strLabel,strModule,"Experienced Exception " + e.getMessage());
@@ -505,7 +505,7 @@ public class MapClient implements Map<String, String> {
         }
     }
 
-    public byte[] prepare_t(Transaction t) {
+    public byte[] prepare_t(Transaction t, int shardID) {
         String strModule = "PREPARE_T (DRIVER): ";
         try {
             ByteArrayOutputStream bs = new ByteArrayOutputStream();
@@ -514,8 +514,9 @@ public class MapClient implements Map<String, String> {
             oos.writeObject(t);
             oos.close();
             // PREPARE_T BFT round done synchronously within the local shard
-            byte[] reply = clientProxy.get(defaultShardID).invokeOrdered(bs.toByteArray());
-            logMsg(strLabel,strModule,"Reply from shard ID "+defaultShardID+"is "+new String(reply,"UTF-8"));
+            logMsg(strLabel,strModule,"Sending PREPARE_T to shard "+shardID+" for transaction "+t.id);
+            byte[] reply = clientProxy.get(shardID).invokeOrdered(bs.toByteArray());
+            logMsg(strLabel,strModule,"Reply from shard ID "+shardID+"is "+new String(reply,"UTF-8"));
             return reply;
         } catch (Exception e) {
             logMsg(strLabel,strModule,"Exception: " + e.getMessage());
@@ -566,8 +567,10 @@ public class MapClient implements Map<String, String> {
                     oos.writeObject(t);
                     oos.close();
                     // ACCEPT_T BFT rounds done asynchronously over all relevant shards
+                    logMsg(strLabel,strModule,"Sending " + RequestType.getReqName(msgType)+
+                            " to shard "+defaultShardID+" for transaction "+t.id);
                     int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynchQuorum(shardID), reqType);
-                    logMsg(strLabel,strModule,"Sent ACCEPT_T type (" + msgType + ") to shard ID " + shardID);
+                    logMsg(strLabel,strModule,"Sent "+ RequestType.getReqName(msgType) + ") to shard ID " + shardID);
                     shardToReq.put(shardID, req);
                 }
             }

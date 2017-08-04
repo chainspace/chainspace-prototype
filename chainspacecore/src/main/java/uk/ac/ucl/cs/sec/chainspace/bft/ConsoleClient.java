@@ -202,7 +202,7 @@ public class ConsoleClient {
                     System.out.println("Transaction to be added is:");
                     t3.print();
 
-                    byte[] reply = client.prepare_t(t3);
+                    byte[] reply = client.prepare_t(t3, 0);
                     if(reply != null) {
                         try {
                             System.out.println("Transaction status: " + new String(reply, "UTF-8"));
