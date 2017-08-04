@@ -59,7 +59,7 @@ public class TreeMapServer extends DefaultRecoverable {
         ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(5000);
         }
         catch(Exception e) {
             System.out.println("Error initializing the server. Now exiting.");
