@@ -97,6 +97,7 @@ class TestVote(unittest.TestCase):
         response = requests.post(
             'http://127.0.0.1:5000/' + vote_contract.contract_name + '/create_vote', json=transaction_to_solution(transaction)
         )
+        print response.json()
         self.assertTrue(response.json()['success'])
 
         ##
@@ -105,7 +106,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-    
+ 
     # --------------------------------------------------------------
     # test add a vote
     # --------------------------------------------------------------
@@ -241,7 +242,7 @@ class TestVote(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-    
+   
     # --------------------------------------------------------------
     # test tally
     # --------------------------------------------------------------
@@ -290,7 +291,7 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                dumps(values[i]),        # votes' valu (0 or 1)
+                dumps(values[i]), # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
@@ -323,7 +324,7 @@ class TestVote(unittest.TestCase):
 
     # --------------------------------------------------------------
     # test read result
-    # --------------------------------------------------------------
+    # -------------------------------------------------------------- 
     def test_read(self):
         ##
         ## run service
@@ -369,7 +370,7 @@ class TestVote(unittest.TestCase):
                 (input_obj,),
                 None,
                 None,
-                dumps(values[i]),        # votes' valu (0 or 1)
+                dumps(values[i]), # votes' valu (0 or 1)
                 pack(keys[i][0]), # voter's priv key
                 pack(keys[i][1])  # voter's pub key
             )
@@ -409,7 +410,6 @@ class TestVote(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
-
 
 
 

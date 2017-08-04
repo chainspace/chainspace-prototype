@@ -51,6 +51,7 @@ class TestBankAuthenticated(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
+
     # --------------------------------------------------------------
     # test create meter
     # --------------------------------------------------------------
@@ -96,6 +97,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
+
 
     # --------------------------------------------------------------
     # test add reading
@@ -306,6 +308,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
+
 
     # --------------------------------------------------------------
     # test read bill
