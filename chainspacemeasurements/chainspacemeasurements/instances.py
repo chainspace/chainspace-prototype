@@ -1,4 +1,5 @@
 """EC2 instance management."""
+import time
 import os
 import sys
 from multiprocessing.dummy import Pool
@@ -200,6 +201,7 @@ class ChainspaceNetwork(object):
         command = 'screen -dmS chainspacecore java -cp chainspace/chainspacecore/lib/BFT-SMaRt.jar:chainspace/chainspacecore/target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.bft.TreeMapServer chainspace/chainspacecore/ChainSpaceConfig/config.txt'
         for instance in shard:
                 self._single_ssh_exec(instance, command)
+                time.sleep(0.5)
 
     def stop_core(self):
         self._log("Stopping Chainspace core on all nodes...")
