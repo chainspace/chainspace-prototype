@@ -570,6 +570,15 @@ public class TreeMapServer extends DefaultRecoverable {
     // ============
 
     private String checkAcceptT(Transaction t) {
+        String strModule = "checkAcceptT";
+        if(sequences.containsKey(t.id) && !sequences.get(t.id).PREPARED_T_COMMIT && !sequences.get(t.id).PREPARED_T_ABORT) {
+            try {
+                Thread.sleep(10);
+            }
+            catch(Exception e) {
+                logMsg(strLabel,strModule,"Exception making thread sleep "+e.toString());
+            }
+        }
         if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT)
             return ResponseType.ACCEPTED_T_COMMIT;
         // TODO: Optimization: If we hear about an ACCEPT_T from which we don't have
