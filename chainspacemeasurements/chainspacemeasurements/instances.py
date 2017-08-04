@@ -3,6 +3,7 @@ import time
 import os
 import sys
 from multiprocessing.dummy import Pool
+import random
 
 import boto3
 import paramiko
@@ -230,13 +231,14 @@ class ChainspaceNetwork(object):
 
     def config_core(self, shards, nodes_per_shard):
         instances = [instance for instance in self._get_running_instances()]
+        shuffled_instances = random.sample(instances, shards * nodes_per_shard)
 
         if shards * nodes_per_shard > len(instances):
             raise ValueError("Number of total nodes exceeds the number of running instances.")
 
         self.shards = {}
         for shard in range(shards):
-            self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
+            self.shards[shard] = shuffled_instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
 
         for i, instances in enumerate(self.shards.values()):
             for j, instance in enumerate(instances):
