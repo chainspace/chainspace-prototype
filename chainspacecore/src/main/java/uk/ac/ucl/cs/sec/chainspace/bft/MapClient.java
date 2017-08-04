@@ -366,12 +366,12 @@ public class MapClient implements Map<String, String> {
 
             logMsg(strLabel,strModule,"Broadcasting "+ RequestType.getReqName(msgType)+" to shard "+shardID+
                     " for transaction "+t.id);
-
+            /*
             int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                 @Override
                 public void replyReceived(RequestContext context, TOMMessage reply) { }
-            }, reqType);
-            //byte[] reply = clientProxy.get(shardID).invokeUnordered(bs.toByteArray());
+            }, reqType); */
+            byte[] reply = clientProxy.get(shardID).invokeUnordered(bs.toByteArray());
         }
         catch(Exception e){
             logMsg(strLabel,strModule,"Experienced Exception " + e.getMessage());
@@ -613,7 +613,7 @@ public class MapClient implements Map<String, String> {
                             byte[] reply = m.getContent();
                             String strReply = new String(reply, Charset.forName("UTF-8"));
 
-                            //logMsg(strLabel,strModule,"Shard ID " + shard + " replied: " + strReply);
+                            logMsg(strLabel,strModule,"Shard ID " + shard + " replied: " + strReply);
 
                             if (strReply.equals(ResponseType.ACCEPTED_T_ABORT))
                                 abortShardReplies = true;
