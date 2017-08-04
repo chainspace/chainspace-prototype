@@ -606,7 +606,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 if (waitedSoFar > maxWait) // We are about to exit this loop
                     logMsg(strLabel, strModule, "Timed out waiting for PREPARED_T_* to be sequenced " +
-                            " upon receiving ACCEPT_T.");
+                            " upon receiving ACCEPT_T after waiting for "+waitedSoFar);
             }
         }
         catch(Exception e) {
