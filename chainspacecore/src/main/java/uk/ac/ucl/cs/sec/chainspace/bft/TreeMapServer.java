@@ -575,7 +575,7 @@ public class TreeMapServer extends DefaultRecoverable {
         // FIXME: Choose suitable timeout values
         int minWait = 1; // First wait will be minWait long
         int timeoutIncrement = 2; // subsequent wait will proceed in timeoutIncrement until all shards reply
-        int maxWait = 10000; // time out if waitedSoFar exceeds maxWait
+        int maxWait = 250; // time out if waitedSoFar exceeds maxWait
 
         boolean firstAttempt = true;
         int waitedSoFar = 0;
