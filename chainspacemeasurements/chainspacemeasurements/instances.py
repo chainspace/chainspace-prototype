@@ -247,7 +247,7 @@ class ChainspaceNetwork(object):
                 command += 'cp -r chainspace/chainspacecore/ChainSpaceConfig/shards/s{0} config;'.format(i)
                 self._single_ssh_exec(instance, command)
 
-    def config_me(self, directory='/home/admin/chainspace/chainspacecore/ChainSpaceConfig'):
+    def config_me(self, directory='/home/admin/chainspace/chainspacecore/ChainSpaceClientConfig'):
         return os.system(self._config_shards_command(directory))
 
     def get_tps_set(self):
