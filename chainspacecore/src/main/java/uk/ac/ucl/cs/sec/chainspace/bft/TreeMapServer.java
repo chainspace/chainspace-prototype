@@ -473,7 +473,8 @@ public class TreeMapServer extends DefaultRecoverable {
             logMsg(strLabel,strModule,"Creating outputs for the following transaction:");
             t.print();
 
-            HashMap<String, Boolean> replies = client.createObjects(t.outputs, timeout);
+
+            client.createObjects(t.outputs);
         }
 
         sequences.get(t.id).ACCEPTED_T_COMMIT = true;
