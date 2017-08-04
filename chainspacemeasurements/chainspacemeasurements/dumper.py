@@ -61,6 +61,25 @@ def simulation_a3(n):
     dump_many(transactions)
 
 
+def simulation_b1(n, inputs_per_tx):
+    init_tx = simulator.init()
+    process(init_tx)
+
+    create_tx = simulator.create((init_tx['transaction']['outputs'][0],), None, (str(n),))
+    process(create_tx)
+
+    outputs = create_tx['transaction']['outputs']
+
+    transactions = []
+    for i in range(0, len(outputs), inputs_per_tx):
+        objects = []
+        for j in range(inputs_per_tx):
+            objects.append(outputs[i+j])
+        transactions.append(simulator.consume(objects))
+
+    process_many(transactions)
+
+
 def simulation_b2(n, inputs_per_tx):
     init_tx = simulator.init()
     process(init_tx)
