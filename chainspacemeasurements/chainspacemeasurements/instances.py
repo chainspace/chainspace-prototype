@@ -92,7 +92,7 @@ class ChainspaceNetwork(object):
             command += 'cp -r shards/config0 shards/s{0};'.format(i)
             command += 'printf "" > shards/s{0}/hosts.config;'.format(i)
             for j, instance in enumerate(instances):
-                command += 'printf "{1} {2} 3001\n" >> shards/s{0}/hosts.config;'.format(i, j, instance.private_ip_address)
+                command += 'printf "{1} {2} 3001\n" >> shards/s{0}/hosts.config;'.format(i, j, instance.public_ip_address)
 
         return command
 
