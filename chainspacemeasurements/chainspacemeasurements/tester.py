@@ -14,6 +14,7 @@ class Tester(object):
         network.ssh_connect()
 
         # freshen state
+        self.stop_client()
         n.stop_core()
         time.sleep(2)
         n.clean_state_core()
