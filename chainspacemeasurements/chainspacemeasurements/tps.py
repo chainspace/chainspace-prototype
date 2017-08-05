@@ -15,4 +15,7 @@ def tps(filename):
 
 
 if __name__ == '__main__':
-    print tps('simplelog')
+    try:
+        print tps('simplelog')
+    except Exception:
+        print '0'
