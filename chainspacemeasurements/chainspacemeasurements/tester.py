@@ -20,9 +20,9 @@ class Tester(object):
 
         # freshen state
         self.stop_client()
-        n.stop_core()
+        network.stop_core()
         time.sleep(2)
-        n.clean_state_core()
+        network.clean_state_core()
 
     def start_client(self):
         command = ''
@@ -69,8 +69,8 @@ class Tester(object):
                         # reset connection
                         for i in range(5):
                             try:
-                                self.n.ssh_close()
-                                self.n.ssh_connect()
+                                self.network.ssh_close()
+                                self.network.ssh_connect()
                                 self.network.stop_core()
                                 time.sleep(2)
                                 self.network.clean_state_core()
