@@ -54,10 +54,11 @@ class Tester(object):
 
 if __name__ == '__main__':
     if sys.argv[1] == 'shardscaling':
-        n = ChainspaceNetwork(0)
-        t = Tester(n)
-
         min_shards = int(sys.argv[2])
         max_shards = int(sys.argv[3])
         runs = int(sys.argv[4])
+
+        n = ChainspaceNetwork(0)
+        t = Tester(n)
+        
         print t.measure_shard_scaling(min_shards, max_shards, runs)
