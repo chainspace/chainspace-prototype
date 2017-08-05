@@ -37,7 +37,7 @@ class Tester(object):
 
                 time.sleep(10)
                 self.start_client()
-                time.sleep(2)
+                time.sleep(10)
                 dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
                 time.sleep(10)
                 self.stop_client()
@@ -60,5 +60,5 @@ if __name__ == '__main__':
 
         n = ChainspaceNetwork(0)
         t = Tester(n)
-        
+
         print t.measure_shard_scaling(min_shards, max_shards, runs)
