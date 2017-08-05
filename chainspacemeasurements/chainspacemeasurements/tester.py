@@ -39,7 +39,7 @@ class Tester(object):
                 self.start_client()
                 time.sleep(10)
                 dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
-                time.sleep(10)
+                time.sleep(20)
                 self.stop_client()
 
                 tps_sets.append(self.network.get_tps_set())
