@@ -24,6 +24,7 @@ import uk.ac.ucl.cs.sec.chainspace.Core;
 
 public class TreeMapServer extends DefaultRecoverable {
 
+    SimpleLogger logger;
     Map<String, String> table;
     HashMap<String, TransactionSequence> sequences; // Indexed by Transaction ID
     int thisShard; // the shard this replica is part of
@@ -37,6 +38,7 @@ public class TreeMapServer extends DefaultRecoverable {
     private Core core;
 
     public TreeMapServer(String configFile) {
+        this.logger = new SimpleLogger();
 
         try { core = new Core(); }
         catch (ClassNotFoundException | SQLException e) {
@@ -223,6 +225,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                     String reply = checkAcceptT(t);
                     logMsg(strLabel,strModule,"checkAcceptT responding with "+reply);
+                    logger.log("accept_t_commit");
 
                     return reply.getBytes("UTF-8");
                 }
