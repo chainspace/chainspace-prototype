@@ -215,16 +215,16 @@ class ChainspaceNetwork(object):
         command = 'rm -rf chainspace;'
         command += 'sudo pip uninstall -y chainspacecontract;'
         command += 'rm -rf contracts;'
+        command += 'rm -rf config;';
         self.ssh_exec(command)
         self._log("Uninstalled Chainspace core on all nodes.")
 
-    def clean_core(self):
-        self._log("Resetting Chainspace core configuration and state...")
+    def clean_state_core(self):
+        self._log("Resetting Chainspace core state...")
         command = ''
-        command += 'rm database.sqlite;'
-        command += 'rm -rf config;'
+        command += 'rm database.sqlite; rm simplelog;'
         self.ssh_exec(command)
-        self._log("Reset Chainspace core configuration and state.")
+        self._log("Reset Chainspace core state.")
 
     def config_local_client(self, directory):
         os.system(self._config_shards_command(directory))
