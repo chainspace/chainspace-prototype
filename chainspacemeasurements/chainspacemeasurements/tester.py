@@ -51,7 +51,7 @@ class Tester(object):
                     time.sleep(10)
                     self.start_client()
                     time.sleep(10)
-                    dumper.simulation_batched(num_transactions+i, 1, batch_size=batch_size, batch_sleep=1)
+                    dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
                     time.sleep(20)
                     self.stop_client()
 

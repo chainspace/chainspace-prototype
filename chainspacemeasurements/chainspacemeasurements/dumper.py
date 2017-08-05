@@ -1,5 +1,6 @@
 """Transaction dumper."""
 import time
+import random
 
 from chainspaceapi import ChainspaceClient
 from chainspacemeasurements.contracts import simulator
@@ -99,11 +100,14 @@ def simulation_b2(n, inputs_per_tx):
     dump_many(transactions)
 
 
-def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2):
+def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=True):
     init_tx = simulator.init()
     process(init_tx)
 
-    create_tx = simulator.create((init_tx['transaction']['outputs'][0],), None, (str(n*inputs_per_tx),))
+    parameters = [str(n*inputs_per_tx),]
+    if nonce:
+        parameters.append()
+    create_tx = simulator.create((init_tx['transaction']['outputs'][0],), None, parameters)
     process(create_tx)
 
     outputs = create_tx['transaction']['outputs']
