@@ -13,6 +13,11 @@ class Tester(object):
 
         network.ssh_connect()
 
+        # freshen state
+        n.stop_core()
+        time.sleep(2)
+        n.clean_state_core()
+
     def start_client(self):
         command = ''
         command += 'cd {0};'.format(self.core_directory)
