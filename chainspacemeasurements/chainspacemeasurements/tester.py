@@ -20,17 +20,20 @@ class Tester(object):
     def stop_client(self):
         os.system('killall java')
 
-    def do_measurements(self, inputs_per_tx, min_shards, max_shards):
+    def measure_shard_scaling(self, min_shards, max_shards):
         tps_sets = []
         for num_shards in range(min_shards, max_shards+1):
             self.network.config_core(num_shards, 4)
             self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
             self.network.start_core()
 
-            time.sleep(3)
+            batch_size = 100*num_shards
+            num_transactions = 300*num_shards
+
+            time.sleep(10)
             self.start_client()
-            time.sleep(3)
-            dumper.simulation_b2(10, inputs_per_tx)
+            time.sleep(2)
+            dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
             time.sleep(10)
             self.stop_client()
 
@@ -47,4 +50,4 @@ if __name__ == '__main__':
     n = ChainspaceNetwork(0)
     t = Tester('/home/admin/chainspace/chainspacecore', n)
 
-    t.do_measurements(1, 2, 3)
+    print t.measure_shard_scaling(1, 2, 3)
