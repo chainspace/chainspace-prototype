@@ -22,6 +22,8 @@ class ChainspaceNetwork(object):
         self.ssh_connections = {}
         self.shards = {}
 
+        self.logging = True
+
     def _get_running_instances(self):
         return self.ec2.instances.filter(Filters=[
             {'Name': 'tag:type', 'Values': ['chainspace']},
@@ -43,7 +45,8 @@ class ChainspaceNetwork(object):
         ])
 
     def _log(self, message):
-        _safe_print(message)
+        if self.logging:
+            _safe_print(message)
 
     def _log_instance(self, instance, message):
         message = '[instance {}] {}'.format(instance.id, message)
