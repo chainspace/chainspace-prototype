@@ -8,7 +8,7 @@ def parse_shard_scaling(results):
             sum_set.append(sum(tps_set))
 
         mean = numpy.mean(sum_set)
-        sd = numpy.sd(sum_set)
+        sd = numpy.std(sum_set)
 
         final_result.append((mean, sd))
 
