@@ -50,4 +50,4 @@ if __name__ == '__main__':
     n = ChainspaceNetwork(0)
     t = Tester('/home/admin/chainspace/chainspacecore', n)
 
-    print t.measure_shard_scaling(1, 2, 3)
+    print t.measure_shard_scaling(2, 3)
