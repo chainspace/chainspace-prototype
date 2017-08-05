@@ -40,7 +40,7 @@ class Tester(object):
             tps_sets.append(self.network.get_tps_set())
 
             self.network.stop_core()
-            self.network.clean_core()
+            self.network.clean_state_core()
 
         return tps_sets
 
