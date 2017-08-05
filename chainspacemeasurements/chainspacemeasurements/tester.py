@@ -5,7 +5,7 @@ from chainspacemeasurements import dumper
 
 
 class Tester(object):
-    def __init__(self, core_directory, network):
+    def __init__(self, core_directory='/home/admin/chainspace/chainspacecore', network):
         self.core_directory = core_directory
         self.network = network
 
