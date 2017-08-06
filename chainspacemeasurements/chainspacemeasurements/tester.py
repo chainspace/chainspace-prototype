@@ -114,7 +114,7 @@ class Tester(object):
                             if line == '':
                                 continue
                             records = line.split()
-                            txes[records[1]] = records[0]
+                            txes[records[1]] = int(records[0])
 
                     sorted_txes = sorted(txes.items(), key=operator.itemgetter(1))
                     tps = (int(sorted_txes[-1][1]) - int(sorted_txes[2][1])) / (len(sorted_txes)*1000)
