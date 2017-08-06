@@ -9,7 +9,7 @@ from chainspacemeasurements.results import parse_shard_scaling
 def plot_shard_scaling(results, outfile):
     parsed_results = parse_shard_scaling(results)
     pyplot.xlabel('Number of shards')
-    pyplot.ylabel('Transactions / sec')
+    pyplot.ylabel('Transactions / second')
     pyplot.grid(True)
 
     pyplot.plot(

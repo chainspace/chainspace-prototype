@@ -10,6 +10,14 @@ def parse_shard_scaling(results):
         mean = numpy.mean(sum_set)
         sd = numpy.std(sum_set)
 
+        trimmed_sum_set = []
+        for s in sum_set:
+            if mean + sd*2 > s and mean - sd*2 < s:
+                trimmed_sum_set.append(s)
+
+        print trimmed_sum_set, sd
+        mean = numpy.mean(trimmed_sum_set)
+
         final_result.append((mean, sd))
 
     return final_result
