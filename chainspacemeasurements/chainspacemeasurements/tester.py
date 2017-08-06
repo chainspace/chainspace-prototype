@@ -83,6 +83,56 @@ class Tester(object):
         self.outfh.write(json.dumps(tps_sets_sets))
         return tps_sets_sets
 
+    def measure_input_scaling(self, num_shards, min_inputs, max_inputs, runs):
+        tps_sets_sets = []
+        for num_inputs in range(min_inputs, max_inputs+1):
+            tps_sets = []
+
+            for i in range(runs):
+                try:
+                    print "Running measurements for {2} inputs across {0} shards (run {1}).".format(num_shards, i, num_inputs)
+                    self.network.config_core(num_shards, 4)
+                    self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
+                    self.network.start_core()
+
+                    batch_size = 100*num_shards
+                    num_transactions = 300*num_shards
+
+                    time.sleep(10)
+                    self.start_client()
+                    time.sleep(10)
+                    dumper.simulation_batched(num_transactions, num_inputs, batch_size=batch_size, batch_sleep=1)
+                    time.sleep(20)
+                    self.stop_client()
+
+                    tps_set = self.network.get_tps_set()
+                    tps_sets.append(tps_set)
+                    print "Result for {3} inputs across {0} shards (run {1}): {2}".format(num_shards, i, tps_set, num_inputs)
+                except Exception:
+                    traceback.print_exc()
+                finally:
+                    try:
+                        self.network.stop_core()
+                        time.sleep(2)
+                        self.network.clean_state_core()
+                    except:
+                        # reset connection
+                        for i in range(5):
+                            try:
+                                self.network.ssh_close()
+                                self.network.ssh_connect()
+                                self.network.stop_core()
+                                time.sleep(2)
+                                self.network.clean_state_core()
+                                break
+                            except:
+                                time.sleep(5)
+
+            tps_sets_sets.append(tps_sets)
+
+        self.outfh.write(json.dumps(tps_sets_sets))
+        return tps_sets_sets
+
 
 if __name__ == '__main__':
     if sys.argv[1] == 'shardscaling':
