@@ -117,7 +117,7 @@ class Tester(object):
                             txes[records[1]] = records[0]
 
                     sorted_txes = sorted(txes.items(), key=operator.itemgetter(1))
-                    tps = (int(sorted_txes[-1][1]) - int(sorted_txes[1][1])) / (len(sorted_txes)*1000)
+                    tps = (int(sorted_txes[-1][1]) - int(sorted_txes[0][1])) / (len(sorted_txes)*1000)
                     tps_set.append(tps)
                 except Exception:
                     traceback.print_exc()
