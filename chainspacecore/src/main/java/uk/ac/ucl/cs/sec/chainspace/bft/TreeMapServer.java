@@ -413,7 +413,7 @@ public class TreeMapServer extends DefaultRecoverable {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
-                                slogger.log("accept_t_commit");
+                                slogger.log(t.id);
                             }
                             logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
                         } else {
