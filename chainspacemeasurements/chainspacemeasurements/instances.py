@@ -265,6 +265,15 @@ class ChainspaceNetwork(object):
 
         return tps_set
 
+    def get_r0_logs(self):
+        logs = []
+        for shard in self.shards.itervalues():
+            instance = shard[0]
+            log = self._single_ssh_exec(instance, 'cat simplelog')[1]
+            logs.append(log)
+
+        return logs
+
 
 def _multi_args_wrapper(args):
     return args[0](*args[1:])

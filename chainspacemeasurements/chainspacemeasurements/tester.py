@@ -1,4 +1,5 @@
 import os
+import operator
 import time
 import sys
 import traceback
@@ -84,9 +85,9 @@ class Tester(object):
         return tps_sets_sets
 
     def measure_input_scaling(self, num_shards, min_inputs, max_inputs, runs):
-        tps_sets_sets = []
+        tps_set_set = []
         for num_inputs in range(min_inputs, max_inputs+1):
-            tps_sets = []
+            tps_set = []
 
             for i in range(runs):
                 try:
@@ -105,9 +106,19 @@ class Tester(object):
                     time.sleep(20)
                     self.stop_client()
 
-                    tps_set = self.network.get_tps_set()
-                    tps_sets.append(tps_set)
-                    print "Result for {3} inputs across {0} shards (run {1}): {2}".format(num_shards, i, tps_set, num_inputs)
+                    txes = {}
+                    logs = self.network.get_r0_logs()
+                    for log in logs:
+                        for line in log.splitlines():
+                            line = line.strip()
+                            if line == '':
+                                continue
+                            records = line.split()
+                            txes[records[1]] = records[0]
+
+                    sorted_txes = sorted(txes.items(), key=operator.itemgetter(1))
+                    tps = (int(sorted_txes[-1][1]) - int(sorted_txes[1][1])) / (len(sorted_txes)*1000)
+                    tps_set.append(tps)
                 except Exception:
                     traceback.print_exc()
                 finally:
@@ -128,10 +139,10 @@ class Tester(object):
                             except:
                                 time.sleep(5)
 
-            tps_sets_sets.append(tps_sets)
+            tps_set_set.append(tps_set)
 
-        self.outfh.write(json.dumps(tps_sets_sets))
-        return tps_sets_sets
+        self.outfh.write(json.dumps(tps_set_set))
+        return tps_set_set
 
 
 if __name__ == '__main__':
