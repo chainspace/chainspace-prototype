@@ -114,7 +114,8 @@ class Tester(object):
                             if line == '':
                                 continue
                             records = line.split()
-                            txes[records[1]] = int(records[0])
+                            if records[1] not in txes:
+                                txes[records[1]] = int(records[0])
 
                     sorted_txes = sorted(txes.items(), key=operator.itemgetter(1))
                     sorted_txes = sorted_txes[(len(sorted_txes)/10):]
