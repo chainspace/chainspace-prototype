@@ -145,3 +145,15 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_shard_scaling(min_shards, max_shards, runs)
+
+    elif sys.argv[1] == 'inputscaling':
+        num_shards = int(sys.argv[2])
+        min_inputs = int(sys.argv[3])
+        max_inputs = int(sys.argv[4])
+        runs = int(sys.argv[5])
+        outfile = sys.argv[6]
+
+        n = ChainspaceNetwork(0)
+        t = Tester(n, outfile=outfile)
+
+        print t.measure_input_scaling(num_shards, min_inputs, max_inputs, runs)
