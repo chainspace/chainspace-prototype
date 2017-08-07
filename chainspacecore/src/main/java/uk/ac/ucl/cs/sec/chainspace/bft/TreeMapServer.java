@@ -413,7 +413,7 @@ public class TreeMapServer extends DefaultRecoverable {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
-                                slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs));
+                                slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs) + " " + countUniqueInputShards(t));
                             }
                             logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
                         } else {
@@ -637,6 +637,21 @@ public class TreeMapServer extends DefaultRecoverable {
             }
         }
         return true;
+    }
+
+    public int countUniqueInputShards(Transaction t) {
+        List<String> inputObjects = t.inputs;
+        ArrayList<Integer> shardIDs = new ArrayList<Integer>();
+        int unique = 0;
+        for (String input : inputObjects) {
+            Integer shardID = new Integer(client.mapObjectToShard(input));
+            if (!shardIDs.contains(shardID)) {
+                shardIDs.add(shardID);
+                unique++;
+            }
+        }
+
+        return unique;
     }
 
     public boolean setTransactionInputStatus(Transaction t, String status, String prevStatus) {
