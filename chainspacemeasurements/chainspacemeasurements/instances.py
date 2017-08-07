@@ -265,6 +265,16 @@ class ChainspaceNetwork(object):
 
         return tps_set
 
+    def get_tpsm_set(self):
+        tps_set = []
+        for shard in self.shards.itervalues():
+            instance = shard[0]
+            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tpsm.py')[1]
+            tps = float(tps.strip())
+            tps_set.append(tps)
+
+        return tps_set
+
     def get_r0_logs(self):
         logs = []
         for shard in self.shards.itervalues():
