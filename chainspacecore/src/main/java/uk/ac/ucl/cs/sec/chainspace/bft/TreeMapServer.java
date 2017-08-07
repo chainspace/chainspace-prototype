@@ -425,7 +425,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
 
-                        //strReplyAcceptT = strReplyPrepareT;
+                        strReplyAcceptT = strReplyAcceptT + ";" + t.id;
                         return strReplyAcceptT.getBytes("UTF-8");
 
                     }

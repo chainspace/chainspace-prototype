@@ -462,8 +462,9 @@ public class MapClient implements Map<String, String> {
         finally {
             if(!earlyTerminate) {
 
-                // Now responses from all shards should be in asynchReplies
+                String tID="unknown";
 
+                // Now responses from all shards should be in asynchReplies
                 for (int shard : targetShards) {
                     int client = shardToClientAsynch.containsKey(shard) ? shardToClientAsynch.get(shard) : -1;
                     int req = shardToReq.containsKey(shard) ? shardToReq.get(shard) : -1;
@@ -473,29 +474,36 @@ public class MapClient implements Map<String, String> {
                     // finalResponse is ABORT if at least one shard replies ABORT or does not reply at all
                     if (m != null) {
                         byte[] reply = m.getContent();
-                        String strReply = new String(reply, Charset.forName("UTF-8"));
+                        String strRawReply = new String(reply, Charset.forName("UTF-8"));
+                        String[] arrReply = strRawReply.split(";");
+                        String strReply = arrReply[0];
+                        tID = arrReply[1];
 
-                        logMsg(strLabel,strModule,"Shard ID "+shard+" replied "+strReply);
+                        logMsg(strLabel,strModule,"Shard ID "+shard+" replied "+strReply+
+                                " for transaction ID "+ tID);
 
                         if (strReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                            logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Abort reply from shard ID "+shard);
+                            logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Abort reply from shard ID "+shard+
+                                    " for transaction ID "+ tID);
                             return ResponseType.ACCEPTED_T_ABORT;
                         }
                         else if( strReply.equals(ResponseType.SUBMIT_T_SYSTEM_ERROR) ||
                                     strReply.equals(ResponseType.PREPARE_T_SYSTEM_ERROR) ||
                                     strReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) ) {
-                            logMsg(strLabel,strModule,"SYSTEM ERROR->Error reply from shard ID "+shard);
+                            logMsg(strLabel,strModule,"SYSTEM ERROR->Error reply from shard ID "+shard+
+                                    " for transaction ID "+ tID);
                             return ResponseType.ACCEPTED_T_ABORT;
                         }
                     }
                     else {
-                        logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Null reply from shard ID "+shard);
+                        logMsg(strLabel,strModule,"ACCEPTED_T_ABORT->Null reply from shard ID "+shard+
+                                " for transaction ID "+ tID);
                         return ResponseType.ACCEPTED_T_ABORT;
                     }
                     asynchReplies.remove(key);
                 }
 
-                logMsg(strLabel,strModule,"COMMIT from all shards");
+                logMsg(strLabel,strModule,"COMMIT from all shards  for transaction ID "+ tID);
                 return ResponseType.ACCEPTED_T_COMMIT;
             }
             else {
