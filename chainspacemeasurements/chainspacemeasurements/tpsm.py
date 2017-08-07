@@ -14,7 +14,7 @@ def tps(filename):
     for line in lines:
         record = line.split()
         num_shards = int(record[2])
-        tx_num = 1/float(num_shards)
+        tx_num += 1/float(num_shards)
 
     tps = tx_num / float(s)
 
