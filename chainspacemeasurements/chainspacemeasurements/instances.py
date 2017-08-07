@@ -3,6 +3,7 @@ import time
 import os
 import sys
 from multiprocessing.dummy import Pool
+import random
 
 import boto3
 import paramiko
@@ -20,6 +21,8 @@ class ChainspaceNetwork(object):
 
         self.ssh_connections = {}
         self.shards = {}
+
+        self.logging = True
 
     def _get_running_instances(self):
         return self.ec2.instances.filter(Filters=[
@@ -42,7 +45,8 @@ class ChainspaceNetwork(object):
         ])
 
     def _log(self, message):
-        _safe_print(message)
+        if self.logging:
+            _safe_print(message)
 
     def _log_instance(self, instance, message):
         message = '[instance {}] {}'.format(instance.id, message)
@@ -99,7 +103,7 @@ class ChainspaceNetwork(object):
         self._log("Launching {} instances...".format(count))
         self.ec2.create_instances(
             ImageId=_jessie_mapping[self.aws_region], # Debian 8.7
-            InstanceType='t2.micro',
+            InstanceType='t2.medium',
             MinCount=count,
             MaxCount=count,
             KeyName=key_name,
@@ -132,7 +136,7 @@ class ChainspaceNetwork(object):
         command = 'git clone https://github.com/musalbas/chainspace;'
         command += 'sudo pip install chainspace/chainspacecontract;'
         command += 'sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java;'
-        #command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
+        command += 'cd ~/chainspace/chainspacecore; export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64; mvn package assembly:single;'
         command += 'cd ~; mkdir contracts;'
         command += 'cp ~/chainspace/chainspacemeasurements/chainspacemeasurements/contracts/simulator.py contracts'
         self.ssh_exec(command)
@@ -165,7 +169,7 @@ class ChainspaceNetwork(object):
         pool.map(_multi_args_wrapper, args)
         pool.close()
         pool.join()
-        self._log("Closed SSH connection on all nodes...")
+        self._log("Closed SSH connection on all nodes.")
 
     def terminate(self):
         self._log("Terminating all nodes...")
@@ -214,29 +218,30 @@ class ChainspaceNetwork(object):
         command = 'rm -rf chainspace;'
         command += 'sudo pip uninstall -y chainspacecontract;'
         command += 'rm -rf contracts;'
+        command += 'rm -rf config;';
         self.ssh_exec(command)
         self._log("Uninstalled Chainspace core on all nodes.")
 
-    def clean_core(self):
-        self._log("Resetting Chainspace core configuration and state...")
+    def clean_state_core(self):
+        self._log("Resetting Chainspace core state...")
         command = ''
-        command += 'rm database.sqlite;'
-        command += 'rm -rf config;'
+        command += 'rm database.sqlite; rm simplelog;'
         self.ssh_exec(command)
-        self._log("Reset Chainspace core configuration and state.")
+        self._log("Reset Chainspace core state.")
 
     def config_local_client(self, directory):
         os.system(self._config_shards_command(directory))
 
     def config_core(self, shards, nodes_per_shard):
         instances = [instance for instance in self._get_running_instances()]
+        shuffled_instances = random.sample(instances, shards * nodes_per_shard)
 
         if shards * nodes_per_shard > len(instances):
             raise ValueError("Number of total nodes exceeds the number of running instances.")
 
         self.shards = {}
         for shard in range(shards):
-            self.shards[shard] = instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
+            self.shards[shard] = shuffled_instances[shard*nodes_per_shard:(shard+1)*nodes_per_shard]
 
         for i, instances in enumerate(self.shards.values()):
             for j, instance in enumerate(instances):
@@ -247,7 +252,7 @@ class ChainspaceNetwork(object):
                 command += 'cp -r chainspace/chainspacecore/ChainSpaceConfig/shards/s{0} config;'.format(i)
                 self._single_ssh_exec(instance, command)
 
-    def config_me(self, directory='/home/admin/chainspace/chainspacecore/ChainSpaceConfig'):
+    def config_me(self, directory='/home/admin/chainspace/chainspacecore/ChainSpaceClientConfig'):
         return os.system(self._config_shards_command(directory))
 
     def get_tps_set(self):
@@ -259,6 +264,25 @@ class ChainspaceNetwork(object):
             tps_set.append(tps)
 
         return tps_set
+
+    def get_tpsm_set(self):
+        tps_set = []
+        for shard in self.shards.itervalues():
+            instance = shard[0]
+            tps = self._single_ssh_exec(instance, 'python chainspace/chainspacemeasurements/chainspacemeasurements/tpsm.py')[1]
+            tps = float(tps.strip())
+            tps_set.append(tps)
+
+        return tps_set
+
+    def get_r0_logs(self):
+        logs = []
+        for shard in self.shards.itervalues():
+            instance = shard[0]
+            log = self._single_ssh_exec(instance, 'cat simplelog')[1]
+            logs.append(log)
+
+        return logs
 
 
 def _multi_args_wrapper(args):

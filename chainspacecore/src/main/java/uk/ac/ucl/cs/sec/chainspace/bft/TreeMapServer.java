@@ -24,6 +24,7 @@ import uk.ac.ucl.cs.sec.chainspace.Core;
 
 public class TreeMapServer extends DefaultRecoverable {
 
+    SimpleLogger slogger;
     Map<String, String> table;
     HashMap<String, TransactionSequence> sequences; // Indexed by Transaction ID
     int thisShard; // the shard this replica is part of
@@ -37,6 +38,7 @@ public class TreeMapServer extends DefaultRecoverable {
     private Core core;
 
     public TreeMapServer(String configFile) {
+        this.slogger = new SimpleLogger();
 
         try { core = new Core(); }
         catch (ClassNotFoundException | SQLException e) {
@@ -59,7 +61,7 @@ public class TreeMapServer extends DefaultRecoverable {
         ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(5000);
         }
         catch(Exception e) {
             System.out.println("Error initializing the server. Now exiting.");
@@ -411,6 +413,7 @@ public class TreeMapServer extends DefaultRecoverable {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
+                                slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs) + " " + countUniqueInputShards(t));
                             }
                             logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
                         } else {
@@ -572,6 +575,49 @@ public class TreeMapServer extends DefaultRecoverable {
     // ============
 
     private String checkAcceptT(Transaction t) {
+        String strModule = "checkAcceptT";
+
+        // FIXME: Choose suitable timeout values
+        int minWait = 1; // First wait will be minWait long
+        int timeoutIncrement = 2; // subsequent wait will proceed in timeoutIncrement until all shards reply
+        int maxWait = 250; // time out if waitedSoFar exceeds maxWait
+
+        boolean firstAttempt = true;
+        int waitedSoFar = 0;
+
+        if (sequences.containsKey(t.id) && !sequences.get(t.id).PREPARED_T_COMMIT &&
+                !sequences.get(t.id).PREPARED_T_ABORT)
+            logMsg(strLabel,strModule,"Waiting for PREPARED_T_* to be sequenced " +
+                    " upon receiving ACCEPT_T.");
+
+        try {
+            while(waitedSoFar < maxWait) {
+                if (sequences.containsKey(t.id) && (sequences.get(t.id).PREPARED_T_COMMIT ||
+                        sequences.get(t.id).PREPARED_T_ABORT)) {
+                    logMsg(strLabel,strModule,"Sequenced PREPARED_T_* upon receiving ACCEPT_T" +
+                            "after waiting for "+waitedSoFar);
+                    break;
+                }
+
+                if (firstAttempt) {
+                    Thread.sleep(minWait);
+                    waitedSoFar += minWait;
+                    firstAttempt = false;
+                }
+                else {
+                    Thread.sleep(timeoutIncrement);
+                    waitedSoFar += timeoutIncrement;
+                }
+
+                if (waitedSoFar > maxWait) // We are about to exit this loop
+                    logMsg(strLabel, strModule, "Timed out waiting for PREPARED_T_* to be sequenced " +
+                            " upon receiving ACCEPT_T.");
+            }
+        }
+        catch(Exception e) {
+                logMsg(strLabel,strModule,"Exception making thread sleep "+e.toString());
+        }
+
         if(sequences.containsKey(t.id) && sequences.get(t.id).PREPARED_T_COMMIT)
             return ResponseType.ACCEPTED_T_COMMIT;
         // TODO: Optimization: If we hear about an ACCEPT_T from which we don't have
@@ -593,6 +639,21 @@ public class TreeMapServer extends DefaultRecoverable {
             }
         }
         return true;
+    }
+
+    public int countUniqueInputShards(Transaction t) {
+        List<String> inputObjects = t.inputs;
+        ArrayList<Integer> shardIDs = new ArrayList<Integer>();
+        int unique = 0;
+        for (String input : inputObjects) {
+            Integer shardID = new Integer(client.mapObjectToShard(input));
+            if (!shardIDs.contains(shardID)) {
+                shardIDs.add(shardID);
+                unique++;
+            }
+        }
+
+        return unique;
     }
 
     public boolean setTransactionInputStatus(Transaction t, String status, String prevStatus) {

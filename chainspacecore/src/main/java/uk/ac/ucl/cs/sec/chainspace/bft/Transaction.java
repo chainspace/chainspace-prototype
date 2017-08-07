@@ -122,7 +122,6 @@ public class Transaction implements Serializable {
 
         this.csTransaction = csTransaction;
         this.store = store;
-        this.id = csTransaction.getID();
 
         init();
 
@@ -136,6 +135,8 @@ public class Transaction implements Serializable {
             String objectID = Utils.generateObjectID(csTransaction.getID(), csTransaction.getOutputs()[i], i);
             this.addOutput(objectID);
         }
+
+        this.addID(csTransaction.getID());
     }
 
     public CSTransaction getCsTransaction() {
