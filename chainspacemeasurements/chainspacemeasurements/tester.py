@@ -84,6 +84,56 @@ class Tester(object):
         self.outfh.write(json.dumps(tps_sets_sets))
         return tps_sets_sets
 
+    def measure_node_scaling(self, num_shards, min_nodes, max_nodes, runs):
+        tps_sets_sets = []
+        for num_nodes in range(min_nodes, max_nodes+1):
+            tps_sets = []
+
+            for i in range(runs):
+                try:
+                    print "Running measurements for {2} nodes in {0} shards (run {1}).".format(num_shards, i, num_nodes)
+                    self.network.config_core(num_shards, num_nodes)
+                    self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
+                    self.network.start_core()
+
+                    batch_size = 100*num_shards
+                    num_transactions = 300*num_shards
+
+                    time.sleep(10)
+                    self.start_client()
+                    time.sleep(10)
+                    dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
+                    time.sleep(20)
+                    self.stop_client()
+
+                    tps_set = self.network.get_tps_set()
+                    tps_sets.append(tps_set)
+                    print "Result for {3} nodes in {0} shards (run {1}): {2}".format(num_shards, i, tps_set, num_nodes)
+                except Exception:
+                    traceback.print_exc()
+                finally:
+                    try:
+                        self.network.stop_core()
+                        time.sleep(2)
+                        self.network.clean_state_core()
+                    except:
+                        # reset connection
+                        for i in range(5):
+                            try:
+                                self.network.ssh_close()
+                                self.network.ssh_connect()
+                                self.network.stop_core()
+                                time.sleep(2)
+                                self.network.clean_state_core()
+                                break
+                            except:
+                                time.sleep(5)
+
+            tps_sets_sets.append(tps_sets)
+
+        self.outfh.write(json.dumps(tps_sets_sets))
+        return tps_sets_sets
+
     def measure_input_scaling(self, num_shards, min_inputs, max_inputs, runs):
         tps_set_set = []
         for num_inputs in range(min_inputs, max_inputs+1):
@@ -243,3 +293,14 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_input_scaling_2(num_shards, min_inputs, max_inputs, runs)
+    elif sys.argv[1] == 'nodescaling':
+        num_shards = int(sys.argv[2])
+        min_nodes = int(sys.argv[3])
+        max_nodes = int(sys.argv[4])
+        runs = int(sys.argv[5])
+        outfile = sys.argv[6]
+
+        n = ChainspaceNetwork(0)
+        t = Tester(n, outfile=outfile)
+
+        print t.measure_node_scaling(num_shards, min_nodes, max_nodes, runs)
