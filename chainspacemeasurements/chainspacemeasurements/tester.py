@@ -34,7 +34,7 @@ class Tester(object):
     def stop_client(self):
         os.system('killall java')
 
-    def measure_shard_scaling(self, min_shards, max_shards, runs):
+    def measure_shard_scaling(self, min_shards, max_shards, runs, inputs_per_tx=1):
         tps_sets_sets = []
         for num_shards in range(min_shards, max_shards+1):
             tps_sets = []
@@ -52,7 +52,7 @@ class Tester(object):
                     time.sleep(10)
                     self.start_client()
                     time.sleep(10)
-                    dumper.simulation_batched(num_transactions, 1, batch_size=batch_size, batch_sleep=1)
+                    dumper.simulation_batched(num_transactions, inputs_per_tx, batch_size=batch_size, batch_sleep=1)
                     time.sleep(20)
                     self.stop_client()
 
@@ -270,7 +270,17 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_shard_scaling(min_shards, max_shards, runs)
+    elif sys.argv[1] == 'shardscalingmi':
+        inputs_per_tx = int(sys.argv[2])
+        min_shards = int(sys.argv[3])
+        max_shards = int(sys.argv[4])
+        runs = int(sys.argv[5])
+        outfile = sys.argv[6]
 
+        n = ChainspaceNetwork(0)
+        t = Tester(n, outfile=outfile)
+
+        print t.measure_shard_scaling(min_shards, max_shards, runs, inputs_per_tx)
     elif sys.argv[1] == 'inputscaling':
         num_shards = int(sys.argv[2])
         min_inputs = int(sys.argv[3])
