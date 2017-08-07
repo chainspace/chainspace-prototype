@@ -9,12 +9,15 @@ from chainspacemeasurements.results import parse_shard_scaling
 def plot_shard_scaling(results, outfile):
     parsed_results = parse_shard_scaling(results)
     pyplot.xlabel('Number of shards')
-    pyplot.ylabel('Transactions / second')
+    pyplot.ylabel('Average transactions / second')
     pyplot.grid(True)
 
-    pyplot.plot(
+    pyplot.errorbar(
         range(2, len(parsed_results)+2),
-        [i[0] for i in parsed_results]
+        [i[0] for i in parsed_results],
+        [i[1] for i in parsed_results],
+        marker='o',
+        #color='black',
     )
 
     pyplot.savefig(outfile)
