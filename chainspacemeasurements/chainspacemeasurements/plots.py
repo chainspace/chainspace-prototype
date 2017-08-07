@@ -31,7 +31,7 @@ def plot_input_scaling_2(results, outfile):
     pyplot.grid(True)
 
     pyplot.errorbar(
-        range(2, len(parsed_results)+2),
+        range(1, len(parsed_results)+1),
         [i[0] for i in parsed_results],
         [i[1] for i in parsed_results],
         marker='o',
