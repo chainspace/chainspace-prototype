@@ -84,9 +84,9 @@ class Tester(object):
         self.outfh.write(json.dumps(tps_sets_sets))
         return tps_sets_sets
 
-    def measure_node_scaling(self, num_shards, min_nodes, max_nodes, runs):
+    def measure_node_scaling(self, num_shards, min_nodes, max_nodes, runs, step=1):
         tps_sets_sets = []
-        for num_nodes in range(min_nodes, max_nodes+1):
+        for num_nodes in range(min_nodes, max_nodes+1, step):
             tps_sets = []
 
             for i in range(runs):
@@ -233,10 +233,11 @@ if __name__ == '__main__':
         num_shards = int(sys.argv[2])
         min_nodes = int(sys.argv[3])
         max_nodes = int(sys.argv[4])
-        runs = int(sys.argv[5])
-        outfile = sys.argv[6]
+        step = int(sys.argv[5])
+        runs = int(sys.argv[6])
+        outfile = sys.argv[7]
 
         n = ChainspaceNetwork(0)
         t = Tester(n, outfile=outfile)
 
-        print t.measure_node_scaling(num_shards, min_nodes, max_nodes, runs)
+        print t.measure_node_scaling(num_shards, min_nodes, max_nodes, runs, step=step)
