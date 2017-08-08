@@ -122,16 +122,19 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
             outputs_map[map_object_to_shard(num_shards, output)] = output
 
     transactions = []
-    for i in range(0, len(outputs), inputs_per_tx):
-        if shards_per_tx is not None:
-            rand = random.randint(0, num_shards)
-        objects = []
-        for j in range(inputs_per_tx):
-            if shards_per_tx is None:
-                objects.append(outputs[i+j])
-            else:
-                objects.append(outputs_map[j+rand%shards_per_tx].pop())
-        transactions.append(simulator.consume(objects))
+    try:
+        for i in range(0, len(outputs), inputs_per_tx):
+            if shards_per_tx is not None:
+                rand = random.randint(0, num_shards)
+            objects = []
+            for j in range(inputs_per_tx):
+                if shards_per_tx is None:
+                    objects.append(outputs[i+j])
+                else:
+                    objects.append(outputs_map[j+rand%shards_per_tx].pop())
+            transactions.append(simulator.consume(objects))
+        except IndexError:
+            continue # ran out of objects to pop
 
     for i in range(0, len(transactions), batch_size):
         dump_many(transactions[i:i+batch_size])
