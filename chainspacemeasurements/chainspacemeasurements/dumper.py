@@ -119,7 +119,7 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
         for shard in range(num_shards):
             outputs_map[shard] = []
         for output in outputs:
-            outputs_map[map_object_to_shard(num_shards, output)] = output
+            outputs_map[map_object_to_shard(num_shards, output)].append(output)
 
     transactions = []
     try:
