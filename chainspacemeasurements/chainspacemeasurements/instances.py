@@ -107,7 +107,7 @@ class ChainspaceNetwork(object):
             command += 'printf "system.servers.num = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, len(instances))
             command += 'printf "system.servers.f = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, faulty_replicas)
             command += 'printf "system.initial.view = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, initial_view)
-            command += 'cp shards/s{0}/system.config.forscript shards/s{0}/system.config'.format(i)
+            command += 'cp shards/s{0}/system.config.forscript shards/s{0}/system.config;'.format(i)
 
         return command
 
