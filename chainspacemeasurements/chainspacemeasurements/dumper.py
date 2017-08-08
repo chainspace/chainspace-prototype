@@ -121,7 +121,7 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
         for output in outputs:
             outputs_map[map_object_to_shard(num_shards, output)].append(output)
 
-    transactions =
+    transactions = []
     for i in range(0, len(outputs), inputs_per_tx):
         if shards_per_tx is not None:
             rand = random.randint(0, num_shards-shards_per_tx)
