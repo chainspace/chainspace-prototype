@@ -134,10 +134,17 @@ class Tester(object):
         self.outfh.write(json.dumps(tps_sets_sets))
         return tps_sets_sets
 
-    def measure_input_scaling(self, num_shards, min_inputs, max_inputs, runs, inputs_per_shard=None):
+    def measure_input_scaling(self, num_shards, min_inputs, max_inputs, runs, case=None):
         tps_sets_sets = []
         for num_inputs in range(min_inputs, max_inputs+1):
             tps_sets = []
+
+            if case is None:
+                shards_per_tx = None
+            elif case == 'best':
+                shards_per_tx = 1
+            elif case == 'worst':
+                shards_per_tx = num_shards
 
             for i in range(runs):
                 try:
@@ -152,7 +159,7 @@ class Tester(object):
                     time.sleep(10)
                     self.start_client()
                     time.sleep(10)
-                    dumper.simulation_batched(num_transactions, num_inputs, batch_size=batch_size, batch_sleep=1, num_shards=num_shards, inputs_per_shard=inputs_per_shard)
+                    dumper.simulation_batched(num_transactions, num_inputs, batch_size=batch_size, batch_sleep=1, num_shards=num_shards, shards_per_tx=shards_per_tx)
                     time.sleep(20)
                     self.stop_client()
 
@@ -233,14 +240,14 @@ if __name__ == '__main__':
         num_shards = int(sys.argv[2])
         min_inputs = int(sys.argv[3])
         max_inputs = int(sys.argv[4])
-        inputs_per_shard = int (sys.argv[5])
+        case = sys.argv[5]
         runs = int(sys.argv[6])
         outfile = sys.argv[7]
 
         n = ChainspaceNetwork(0)
         t = Tester(n, outfile=outfile)
 
-        print t.measure_input_scaling(num_shards, min_inputs, max_inputs, runs, inputs_per_shard=inputs_per_shard)
+        print t.measure_input_scaling(num_shards, min_inputs, max_inputs, runs, case=case)
     elif sys.argv[1] == 'nodescaling':
         num_shards = int(sys.argv[2])
         min_nodes = int(sys.argv[3])
