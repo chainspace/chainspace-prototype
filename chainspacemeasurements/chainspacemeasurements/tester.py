@@ -56,7 +56,7 @@ class Tester(object):
                     time.sleep(20)
                     self.stop_client()
 
-                    tps_set = self.network.get_tps_set()
+                    tps_set = self.network.get_tpsm_set()
                     tps_sets.append(tps_set)
                     print "Result for {0} shards (run {1}): {2}".format(num_shards, i, tps_set)
                 except Exception:
