@@ -131,7 +131,7 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
                 if shards_per_tx is None:
                     objects.append(outputs[i+j])
                 else:
-                    objects.append(outputs_map[j+rand%shards_per_tx].pop())
+                    objects.append(outputs_map[(j+rand)%(shards_per_tx)].pop())
             transactions.append(simulator.consume(objects))
     except IndexError:
         pass # ran out of objects to pop
