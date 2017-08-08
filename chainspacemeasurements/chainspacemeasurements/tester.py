@@ -233,13 +233,14 @@ if __name__ == '__main__':
         num_shards = int(sys.argv[2])
         min_inputs = int(sys.argv[3])
         max_inputs = int(sys.argv[4])
-        runs = int(sys.argv[5])
-        outfile = sys.argv[6]
+        inputs_per_shard = int (sys.argv[5])
+        runs = int(sys.argv[6])
+        outfile = sys.argv[7]
 
         n = ChainspaceNetwork(0)
         t = Tester(n, outfile=outfile)
 
-        print t.measure_input_scaling_2(num_shards, min_inputs, max_inputs, runs)
+        print t.measure_input_scaling_2(num_shards, min_inputs, max_inputs, runs, inputs_per_shard=inputs_per_shard)
     elif sys.argv[1] == 'nodescaling':
         num_shards = int(sys.argv[2])
         min_nodes = int(sys.argv[3])
