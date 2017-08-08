@@ -4,7 +4,7 @@ import random
 
 from chainspaceapi import ChainspaceClient
 from chainspacemeasurements.contracts import simulator
-from chainspacemeasurements.utils import map_object_to_shard
+from chainspacemeasurements.utils import map_object_id_to_shard
 
 client = ChainspaceClient()
 
