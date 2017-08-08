@@ -90,6 +90,7 @@ class TestVote(unittest.TestCase):
             pack(tally_priv),
             pack(tally_pub)
         )
+        print transaction
 
         ##
         ## submit transaction
@@ -157,6 +158,7 @@ class TestVote(unittest.TestCase):
             pack(voter1_priv),
             pack(voter1_pub)
         )
+        print transaction
 
         ##
         ## submit transaction
@@ -305,6 +307,7 @@ class TestVote(unittest.TestCase):
             pack(tally_priv),
             pack(tally_pub)
         )
+        print transaction
 
 
         ##

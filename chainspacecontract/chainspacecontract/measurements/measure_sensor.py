@@ -1,150 +1,96 @@
-"""Performance measurements for authenticated bank contract."""
-import time
-import numpy
-from json import dumps, loads
+"""Performance measurements for sensor contract."""
 
+###############################################################
+# imports
+###############################################################
+from tester import tester
+from json import dumps, loads
 from chainspacecontract import transaction_to_solution
 from chainspacecontract.examples import sensor
 
-RUNS = 10000
+
+###############################################################
+# config
+###############################################################
+RUNS = 10
 
 
+###############################################################
+# main -- run the tests
+###############################################################
 def main():
+    ## get contract and init pint
     sensor.contract._populate_empty_checkers()
     print "operation\t\tmean (s)\t\tsd (s)\t\truns"
 
-    ##
-    ## gen init tx
-    ##
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        sensor.init()
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen init tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
-
-    ##
-    ## check init tx
-    ##
+    # ---------------------------------------------------------
+    # get functions
+    # ---------------------------------------------------------
+    # init
     init_tx = sensor.init()
-    solution = transaction_to_solution(init_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        sensor.contract.checkers['init'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check init tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+    token = init_tx['transaction']['outputs'][0]
 
-
-    ##
-    ## gen create_sensor tx
-    ##
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-
-        # transaction
-        sensor.create_sensor(
-            (init_tx['transaction']['outputs'][0],),
-            None,
-            None,
-        )
-
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen create_sensor tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
-
-
-    ##
-    ## check create_vote tx
-    ##
-    # transaction
+    # create sensor
     create_sensor_tx = sensor.create_sensor(
-        (init_tx['transaction']['outputs'][0],),
+        (token,),
         None,
         None,
     )
+    sensor_obj = create_sensor_tx['transaction']['outputs'][1]
 
-    solution = transaction_to_solution(create_sensor_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        sensor.contract.checkers['create_sensor'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check create_sensor tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
-
-
-    ##
-    ## gen add_data tx
-    ##
-    # transaction
-    sensorObj = create_sensor_tx['transaction']['outputs'][1]
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        sensor.add_data(
-            (sensorObj,),
-            None,
-            [dumps([1, 2, 3])]
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen add_data tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
-
-
-    ##
-    ## check add_data tx
-    ##
+    # add data
     add_data_tx = sensor.add_data(
-        (sensorObj,),
+        (sensor_obj,),
         None,
         [dumps([1, 2, 3])]
     )
-    solution = transaction_to_solution(add_data_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        sensor.contract.checkers['add_data'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check add_data tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
+
+    # ---------------------------------------------------------
+    # test create_sensor
+    # ---------------------------------------------------------
+    # [gen]
+    tester(RUNS, "create_sensor [g]", sensor.create_sensor, 
+        (token,), 
+        None, 
+        None
+    )
+    # [check]
+    solution = transaction_to_solution(create_sensor_tx)
+    tester(RUNS, "create_sensor [c]", sensor.contract.checkers['create_sensor'],
+        solution['inputs'],
+        solution['referenceInputs'],
+        solution['parameters'],
+        solution['outputs'],
+        solution['returns'],
+        solution['dependencies'],
+    )
+
+
+    # ---------------------------------------------------------
+    # test add_data
+    # ---------------------------------------------------------
+    # [gen]
+    tester(RUNS, "add_data [g]\t", sensor.add_data, 
+        (sensor_obj,), 
+        None, 
+        [dumps([1, 2, 3])]
+    )
+    # [gen]
+    solution = transaction_to_solution(add_data_tx)
+    tester(RUNS, "add_data [c]\t", sensor.contract.checkers['add_data'],
+        solution['inputs'],
+        solution['referenceInputs'],
+        solution['parameters'],
+        solution['outputs'],
+        solution['returns'],
+        solution['dependencies'],
+    )
+    
+
+###############################################################
+# starting point
+###############################################################
 if __name__ == '__main__':
     main()
