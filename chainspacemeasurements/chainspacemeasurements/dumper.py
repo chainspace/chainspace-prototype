@@ -133,8 +133,8 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
                 else:
                     objects.append(outputs_map[j+rand%shards_per_tx].pop())
             transactions.append(simulator.consume(objects))
-        except IndexError:
-            continue # ran out of objects to pop
+    except IndexError:
+        continue # ran out of objects to pop
 
     for i in range(0, len(transactions), batch_size):
         dump_many(transactions[i:i+batch_size])
