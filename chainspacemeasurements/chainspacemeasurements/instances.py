@@ -4,6 +4,7 @@ import os
 import sys
 from multiprocessing.dummy import Pool
 import random
+import math
 
 import boto3
 import paramiko
@@ -93,9 +94,20 @@ class ChainspaceNetwork(object):
         for i, instances in enumerate(self.shards.values()):
             command += 'printf "{0} {1}/shards/s{0}\n" >> shardConfig.txt;'.format(i, directory)
             command += 'cp -r shards/config0 shards/s{0};'.format(i)
+
+            # config hosts.config
             command += 'printf "" > shards/s{0}/hosts.config;'.format(i)
             for j, instance in enumerate(instances):
                 command += 'printf "{1} {2} 3001\n" >> shards/s{0}/hosts.config;'.format(i, j, instance.private_ip_address)
+
+            # config system.config
+            initial_view = ','.join((str(x) for x in range(len(instances))))
+            faulty_replicas = (len(instances)-1)/3
+            faulty_replicas = int(math.floor(faulty_replicas))
+            command += 'printf "system.servers.num = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, len(instances))
+            command += 'printf "system.servers.f = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, faulty_replicas)
+            command += 'printf "system.initial.view = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, initial_view)
+            command += 'cp shards/s{0}/system.config.forscript shards/s{0}/system.config'.format(i)
 
         return command
 
