@@ -104,6 +104,7 @@ class ChainspaceNetwork(object):
             initial_view = ','.join((str(x) for x in range(len(instances))))
             faulty_replicas = (len(instances)-1)/3
             faulty_replicas = int(math.floor(faulty_replicas))
+            command += 'cp shards/config0/system.config.forscript shards/s{0}/system.config.forscript;'.format(i)'
             command += 'printf "system.servers.num = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, len(instances))
             command += 'printf "system.servers.f = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, faulty_replicas)
             command += 'printf "system.initial.view = {1}\n" >> shards/s{0}/system.config.forscript;'.format(i, initial_view)
