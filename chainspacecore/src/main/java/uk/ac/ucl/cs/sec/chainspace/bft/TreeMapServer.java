@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 
 import uk.ac.ucl.cs.sec.chainspace.Core;
+import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
 
 
 public class TreeMapServer extends DefaultRecoverable {

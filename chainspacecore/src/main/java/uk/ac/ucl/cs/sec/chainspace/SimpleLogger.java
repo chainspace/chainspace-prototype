@@ -1,4 +1,4 @@
-package uk.ac.ucl.cs.sec.chainspace.bft;
+package uk.ac.ucl.cs.sec.chainspace;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
