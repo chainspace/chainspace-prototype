@@ -17,6 +17,8 @@ def parse_client_simplelog(filename):
         record = line.split()
         txes[record[1]] = record[0]
 
+    return txes
+
 
 class Tester(object):
     def __init__(self, network, core_directory='/home/admin/chainspace/chainspacecore', outfile='out'):
