@@ -40,7 +40,7 @@ class Tester(object):
 
     def start_tcpdump(self):
         os.system('rm tcpdump_log')
-        os.system('sudo tcpdump -i lo -A -tt > tcpdump_log')
+        os.system('screen -dmS tcpdump sudo tcpdump -i lo -A -tt > tcpdump_log')
 
     def stop_tcpdump(self):
         os.system('killall tcpdump')
