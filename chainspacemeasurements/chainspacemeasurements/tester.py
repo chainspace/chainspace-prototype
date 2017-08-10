@@ -13,7 +13,7 @@ from chainspacemeasurements.dumpparser import parse_tcpdump
 def parse_client_simplelog(filename):
     data = open(filename).readlines()
     txes = {}
-    for line in readlines:
+    for line in data:
         record = line.split()
         txes[record[1]] = txes[record[0]]
 
