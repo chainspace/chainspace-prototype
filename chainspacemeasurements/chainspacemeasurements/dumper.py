@@ -4,6 +4,7 @@ import random
 
 from chainspaceapi import ChainspaceClient
 from chainspacemeasurements.contracts import simulator
+from chainspacemeasurements.utils import map_object_id_to_shard
 
 client = ChainspaceClient()
 
@@ -100,7 +101,7 @@ def simulation_b2(n, inputs_per_tx):
     dump_many(transactions)
 
 
-def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=True):
+def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=True, shards_per_tx=None, num_shards=None):
     init_tx = simulator.init()
     process(init_tx)
 
@@ -113,12 +114,29 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
 
     outputs = create_tx['transaction']['outputs']
 
+    if shards_per_tx is not None:
+        outputs_map = {}
+        for shard in range(num_shards):
+            outputs_map[shard] = []
+        for output in outputs:
+            outputs_map[map_object_id_to_shard(num_shards, output.object_id)].append(output)
+
     transactions = []
-    for i in range(0, len(outputs), inputs_per_tx):
-        objects = []
-        for j in range(inputs_per_tx):
-            objects.append(outputs[i+j])
-        transactions.append(simulator.consume(objects))
+    try:
+        for i in range(0, len(outputs), inputs_per_tx):
+            if shards_per_tx is not None:
+                rand = random.randint(0, num_shards-shards_per_tx)
+            objects = []
+            for j in range(inputs_per_tx):
+                if shards_per_tx is None:
+                    objects.append(outputs[i+j])
+                else:
+                    shard_id = j%shards_per_tx
+                    shard_id = shard_id + rand
+                    objects.append(outputs_map[shard_id].pop())
+            transactions.append(simulator.consume(objects))
+    except IndexError:
+        pass
 
     for i in range(0, len(transactions), batch_size):
         dump_many(transactions[i:i+batch_size])

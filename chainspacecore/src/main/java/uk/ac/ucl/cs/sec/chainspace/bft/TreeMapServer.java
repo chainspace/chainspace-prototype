@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 
 import uk.ac.ucl.cs.sec.chainspace.Core;
+import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
 
 
 public class TreeMapServer extends DefaultRecoverable {
@@ -425,7 +426,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
 
-                        //strReplyAcceptT = strReplyPrepareT;
+                        strReplyAcceptT = strReplyAcceptT + ";" + t.inputs.get(0);
                         return strReplyAcceptT.getBytes("UTF-8");
 
                     }

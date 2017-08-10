@@ -22,6 +22,8 @@ public class Client {
     // CONFIG -- port number
     public static final int PORT = 5000;
 
+    private static SimpleLogger slogger;
+
 
     // contains info about shards and corresponding config files
     // this info should be passed on the client class
@@ -160,6 +162,9 @@ public class Client {
 
     private static void startClientService() {
 
+        // simple measurements log
+        slogger = new SimpleLogger("simplelog_client");
+
         // verbose print
         if (Main.VERBOSE) { Utils.printHeader("Starting Chainspace..."); }
 
@@ -188,6 +193,8 @@ public class Client {
         System.out.println("\n>> SUBMITTING TRANSACTION...");
         Transaction transaction = new Transaction(request);
         client.submitTransaction(transaction, 0);
+
+        slogger.log(transaction.inputs.get(0));
 
     }
 

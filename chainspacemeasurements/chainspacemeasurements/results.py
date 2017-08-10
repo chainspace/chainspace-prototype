@@ -1,6 +1,7 @@
 import numpy
 
-def parse_shard_scaling(results):
+
+def parse_shard_results(results):
     final_result = []
     for shard in results:
         sum_set = []
