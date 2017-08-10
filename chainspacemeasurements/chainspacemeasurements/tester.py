@@ -73,8 +73,8 @@ class Tester(object):
                 self.stop_client()
                 self.stop_tcpdump()
 
-                tcpdump_txes = parse_tcpdump(core_directory + '/tcpdump_log')
-                client_txes = parse_client_simplelog(core_directory + 'simplelog_client')
+                tcpdump_txes = parse_tcpdump(self.core_directory + '/tcpdump_log')
+                client_txes = parse_client_simplelog(self.core_directory + 'simplelog_client')
 
                 latency_times = []
                 for tx, t in client_txes.iteritems():
