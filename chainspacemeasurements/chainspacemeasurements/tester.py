@@ -15,7 +15,7 @@ def parse_client_simplelog(filename):
     txes = {}
     for line in data:
         record = line.split()
-        txes[record[1]] = txes[record[0]]
+        txes[record[1]] = record[0]
 
 
 class Tester(object):
