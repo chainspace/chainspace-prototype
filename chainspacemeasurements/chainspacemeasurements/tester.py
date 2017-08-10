@@ -56,12 +56,15 @@ class Tester(object):
         os.system('sudo killall tcpdump')
 
     def measure_client_latency(self, min_batch, max_batch, batch_step, runs):
+        latency_times_set_set = []
+
         self.network.config_core(2, 4)
         self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
         self.network.start_core()
         time.sleep(10)
 
         for batch_size in range(min_batch, max_batch+1, batch_step):
+            latency_times_set = []
             for i in range(runs):
                 print "Running client latency measurements for batch size {0} (run {1}).".format(batch_size, i)
 
@@ -81,15 +84,20 @@ class Tester(object):
                 latency_times = []
                 for tx, t in tcpdump_txes.iteritems():
                     try:
-                        latency_times.append(tcpdump_txes[tx] - client_txes[tx])
+                        latency_times.append((tcpdump_txes[tx] - client_txes[tx])/1000.0)
                     except Exception:
                         pass
 
-                print latency_times
+                latency_times_set.append(latency_times)
+
+            latency_times_set_set.append(latency_times_set)
 
         self.network.stop_core()
         time.sleep(2)
         self.network.clean_state_core()
+
+        self.outfh.write(json.dumps(latency_times_set_set))
+        return latency_times_set_set
 
     def measure_shard_scaling(self, min_shards, max_shards, runs, inputs_per_tx=1):
         tps_sets_sets = []
