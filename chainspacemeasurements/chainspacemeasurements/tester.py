@@ -301,6 +301,17 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_node_scaling(num_shards, min_nodes, max_nodes, runs, step=step)
+    elif sys.argv[1] == 'clientlatency':
+        min_batch = int(sys.argv[2])
+        max_batch = int(sys.argv[3])
+        batch_step = int(sys.argv[4])
+        runs = int(sys.argv[6])
+        outfile = sys.argv[7]
+
+        n = ChainspaceNetwork(0)
+        t = Tester(n, outfile=outfile)
+
+        print t.measure_node_scaling(min_batch, max_batch, batch_step, runs)
 
 
 def parse_client_simplelog(filename):
