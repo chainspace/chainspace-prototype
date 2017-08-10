@@ -51,7 +51,7 @@ class Tester(object):
         os.system('screen -dmS tcpdump sudo tcpdump -i lo -A -tt > tcpdump_log')
 
     def stop_tcpdump(self):
-        os.system('killall tcpdump')
+        os.system('sudo killall tcpdump')
 
     def measure_client_latency(self, min_batch, max_batch, batch_step, runs):
         self.network.config_core(2, 4)
@@ -74,7 +74,7 @@ class Tester(object):
                 self.stop_tcpdump()
 
                 tcpdump_txes = parse_tcpdump('tcpdump_log')
-                client_txes = parse_client_simplelog('client_simplelog')
+                client_txes = parse_client_simplelog('simplelog_client')
 
                 latency_times = []
                 for tx, t in client_txes.iteritems():
