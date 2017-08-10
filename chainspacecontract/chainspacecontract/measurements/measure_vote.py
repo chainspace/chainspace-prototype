@@ -13,7 +13,7 @@ from chainspacecontract.examples.utils import setup, key_gen, pack
 ###############################################################
 # config
 ###############################################################
-RUNS = 10
+RUNS = 10000
 
 
 ###############################################################
@@ -32,10 +32,8 @@ def main():
     params = setup()
     (tally_priv, tally_pub) = key_gen(params)
     (voter1_priv, voter1_pub) = key_gen(params)
-    (_, voter2_pub) = key_gen(params)
-    (_, voter3_pub) = key_gen(params)
     options = ['alice', 'bob']
-    participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
+    participants = [pack(voter1_pub)]
 
     # init
     init_tx = vote.init()
@@ -58,7 +56,7 @@ def main():
         (vote_obj,),
         None,
         None,
-        dumps([1,0]),
+        dumps([1]),
         pack(voter1_priv),
         pack(voter1_pub)
     )
