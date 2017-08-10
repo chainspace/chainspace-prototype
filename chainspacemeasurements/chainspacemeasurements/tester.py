@@ -80,7 +80,10 @@ class Tester(object):
 
                 latency_times = []
                 for tx, t in tcpdump_txes.iteritems():
-                    latency_times.append(tcpdump_txes[tx] - client_txes[tx])
+                    try:
+                        latency_times.append(tcpdump_txes[tx] - client_txes[tx])
+                    except Exception:
+                        pass
 
                 print latency_times
 
