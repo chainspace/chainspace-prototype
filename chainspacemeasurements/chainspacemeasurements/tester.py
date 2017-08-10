@@ -66,8 +66,8 @@ class Tester(object):
                 client_txes = parse_client_simplelog('client_simplelog')
 
                 latency_times = []
-                for tx, time in client_txes.iteritems():
-                    latency_times.append(tcpdump_txes[tx] - time)
+                for tx, t in client_txes.iteritems():
+                    latency_times.append(tcpdump_txes[tx] - t)
 
                 print latency_times
 
