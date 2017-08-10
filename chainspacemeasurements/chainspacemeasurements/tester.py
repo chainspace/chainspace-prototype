@@ -89,6 +89,7 @@ class Tester(object):
                         pass
 
                 latency_times_set.append(latency_times)
+                print latency_times
 
             latency_times_set_set.append(latency_times_set)
 
