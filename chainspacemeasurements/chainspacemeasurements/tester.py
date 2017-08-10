@@ -49,7 +49,7 @@ class Tester(object):
         os.system('killall java')
 
     def start_tcpdump(self):
-        os.system('rm ' + self.core_directory + '/tcpdump_log')
+        os.system('sudo rm ' + self.core_directory + '/tcpdump_log')
         os.system('screen -dmS tcpdump bash -c "sudo tcpdump -i eth0 -A -tt | grep \'\' > ' + self.core_directory + '/tcpdump_log"')
 
     def stop_tcpdump(self):
