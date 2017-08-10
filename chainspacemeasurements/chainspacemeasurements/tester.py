@@ -305,8 +305,8 @@ if __name__ == '__main__':
         min_batch = int(sys.argv[2])
         max_batch = int(sys.argv[3])
         batch_step = int(sys.argv[4])
-        runs = int(sys.argv[6])
-        outfile = sys.argv[7]
+        runs = int(sys.argv[5])
+        outfile = sys.argv[6]
 
         n = ChainspaceNetwork(0)
         t = Tester(n, outfile=outfile)
