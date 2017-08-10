@@ -21,6 +21,7 @@ class Tester(object):
         network.ssh_connect()
 
         # freshen state
+        self.stop_tcpdump()
         self.stop_client()
         network.stop_core()
         time.sleep(2)
@@ -56,11 +57,13 @@ class Tester(object):
 
                 num_transactions = batch_size
 
+                self.start_tcpdump()
                 self.start_client()
                 time.sleep(10)
                 dumper.simulation_batched(num_transactions, inputs_per_tx=1, batch_size=batch_size, batch_sleep=0)
                 time.sleep(20)
                 self.stop_client()
+                self.stop_tcpdump()
 
                 tcpdump_txes = parse_tcpdump('tcpdump_log')
                 client_txes = parse_client_simplelog('client_simplelog')
