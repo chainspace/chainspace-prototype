@@ -7,6 +7,7 @@ import json
 
 from chainspacemeasurements import dumper
 from chainspacemeasurements.instances import ChainspaceNetwork
+from chainspacemeasurements.dumpparser import parse_tcpdump
 
 
 class Tester(object):
@@ -26,6 +27,8 @@ class Tester(object):
         network.clean_state_core()
 
     def start_client(self):
+        os.system('rm simplelog_client')
+
         command = ''
         command += 'cd {0};'.format(self.core_directory)
         command += 'screen -dmS clientservice ./runclientservice.sh;'
@@ -33,6 +36,44 @@ class Tester(object):
 
     def stop_client(self):
         os.system('killall java')
+
+    def start_tcpdump(self):
+        os.system('rm tcpdump_log')
+        os.system('sudo tcpdump -i lo -A -tt > tcpdump_log')
+
+    def stop_tcpdump(self):
+        os.system('killall tcpdump')
+
+    def measure_client_latency(self, min_batch, max_batch, batch_step, runs):
+        self.network.config_core(2, 4)
+        self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
+        self.network.start_core()
+        time.sleep(10)
+
+        for batch_size in range(min_batch, max_batch+1, batch_step):
+            for i in range(runs):
+                print "Running client latency measurements for batch size {0} (run {1}).".format(batch_size, i)
+
+                num_transactions = batch_size
+
+                self.start_client()
+                time.sleep(10)
+                dumper.simulation_batched(num_transactions, inputs_per_tx, batch_size=batch_size, batch_sleep=0)
+                time.sleep(20)
+                self.stop_client()
+
+                tcpdump_txes = parse_tcpdump('tcpdump_log')
+                client_txes = parse_client_simplelog('client_simplelog')
+
+                latency_times = []
+                for tx, time in client_txes.iteritems():
+                    latency_times.append(tcpdump_txes[tx] - time)
+
+                print latency_times
+
+        self.network.stop_core()
+        time.sleep(2)
+        self.network.clean_state_core()
 
     def measure_shard_scaling(self, min_shards, max_shards, runs, inputs_per_tx=1):
         tps_sets_sets = []
@@ -260,3 +301,11 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_node_scaling(num_shards, min_nodes, max_nodes, runs, step=step)
+
+
+def parse_client_simplelog(filename):
+    data = open(filename).readlines()
+    txes = {}
+    for line in readlines:
+        record = line.split()
+        txes[record[1]] = txes[record[0]]
