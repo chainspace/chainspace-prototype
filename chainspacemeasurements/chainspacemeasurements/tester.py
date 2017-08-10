@@ -58,11 +58,6 @@ class Tester(object):
     def measure_client_latency(self, min_batch, max_batch, batch_step, runs):
         latency_times_set_set = []
 
-        self.network.config_core(2, 4)
-        self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
-        self.network.start_core()
-        time.sleep(10)
-
         for batch_size in range(min_batch, max_batch+1, batch_step):
             latency_times_set = []
             for i in range(runs):
@@ -70,6 +65,10 @@ class Tester(object):
 
                 num_transactions = batch_size
 
+                self.network.config_core(2, 4)
+                self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
+                self.network.start_core()
+                time.sleep(10)
                 self.start_tcpdump()
                 self.start_client()
                 time.sleep(10)
@@ -77,6 +76,9 @@ class Tester(object):
                 time.sleep(20)
                 self.stop_client()
                 self.stop_tcpdump()
+                self.network.stop_core()
+                time.sleep(2)
+                self.network.clean_state_core()
 
                 tcpdump_txes = parse_tcpdump(self.core_directory + '/tcpdump_log')
                 client_txes = parse_client_simplelog(self.core_directory + '/simplelog_client')
@@ -92,10 +94,6 @@ class Tester(object):
                 print latency_times
 
             latency_times_set_set.append(latency_times_set)
-
-        self.network.stop_core()
-        time.sleep(2)
-        self.network.clean_state_core()
 
         self.outfh.write(json.dumps(latency_times_set_set))
         return latency_times_set_set
