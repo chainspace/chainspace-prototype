@@ -50,7 +50,7 @@ class Tester(object):
 
     def start_tcpdump(self):
         os.system('rm ' + self.core_directory + '/tcpdump_log')
-        os.system('screen -dmS tcpdump bash -c "tcpdump sudo tcpdump -i eth0 -A -tt | grep \'\' > ' + self.core_directory + '/tcpdump_log"')
+        os.system('screen -dmS tcpdump bash -c "sudo tcpdump tcpdump -i eth0 -A -tt | grep \'\' > ' + self.core_directory + '/tcpdump_log"')
 
     def stop_tcpdump(self):
         os.system('sudo killall tcpdump')
