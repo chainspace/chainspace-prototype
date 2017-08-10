@@ -38,7 +38,7 @@ class Tester(object):
         network.clean_state_core()
 
     def start_client(self):
-        os.system('rm ' + self.core_directory + '/tcpdump_log')
+        os.system('rm ' + self.core_directory + '/simplelog_client')
 
         command = ''
         command += 'cd {0};'.format(self.core_directory)
