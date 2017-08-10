@@ -311,7 +311,7 @@ if __name__ == '__main__':
         n = ChainspaceNetwork(0)
         t = Tester(n, outfile=outfile)
 
-        print t.measure_node_scaling(min_batch, max_batch, batch_step, runs)
+        print t.measure_client_latency(min_batch, max_batch, batch_step, runs)
 
 
 def parse_client_simplelog(filename):
