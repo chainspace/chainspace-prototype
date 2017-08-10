@@ -10,6 +10,14 @@ from chainspacemeasurements.instances import ChainspaceNetwork
 from chainspacemeasurements.dumpparser import parse_tcpdump
 
 
+def parse_client_simplelog(filename):
+    data = open(filename).readlines()
+    txes = {}
+    for line in readlines:
+        record = line.split()
+        txes[record[1]] = txes[record[0]]
+
+
 class Tester(object):
     def __init__(self, network, core_directory='/home/admin/chainspace/chainspacecore', outfile='out'):
         self.outfh = open(outfile, 'a')
@@ -315,11 +323,3 @@ if __name__ == '__main__':
         t = Tester(n, outfile=outfile)
 
         print t.measure_client_latency(min_batch, max_batch, batch_step, runs)
-
-
-def parse_client_simplelog(filename):
-    data = open(filename).readlines()
-    txes = {}
-    for line in readlines:
-        record = line.split()
-        txes[record[1]] = txes[record[0]]
