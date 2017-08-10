@@ -63,7 +63,7 @@ class Tester(object):
             for i in range(runs):
                 print "Running client latency measurements for batch size {0} (run {1}).".format(batch_size, i)
 
-                num_transactions = batch_size
+                num_transactions = max_batch*3
 
                 self.network.config_core(2, 4)
                 self.network.config_me(self.core_directory + '/ChainSpaceClientConfig')
@@ -72,7 +72,7 @@ class Tester(object):
                 self.start_tcpdump()
                 self.start_client()
                 time.sleep(10)
-                dumper.simulation_batched(num_transactions, inputs_per_tx=1, batch_size=batch_size, batch_sleep=0)
+                dumper.simulation_batched(num_transactions, inputs_per_tx=1, batch_size=batch_size, batch_sleep=1)
                 time.sleep(20)
                 self.stop_client()
                 self.stop_tcpdump()
