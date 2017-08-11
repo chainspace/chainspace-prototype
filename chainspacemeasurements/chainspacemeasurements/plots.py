@@ -61,7 +61,7 @@ def plot_node_scaling(results, outfile, step):
 def plot_client_latency(results, outfile, start_tps, step):
     parsed_results = parse_client_latency_results(results)
     pyplot.xlabel('Client-perceived latency (ms)')
-    pyplot.ylabel('Fraction of transactions')
+    pyplot.ylabel('Probability')
     pyplot.grid(True)
 
     for i, tps in enumerate(parsed_results):
