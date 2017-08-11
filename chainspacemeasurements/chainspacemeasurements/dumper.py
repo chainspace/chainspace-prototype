@@ -101,7 +101,7 @@ def simulation_b2(n, inputs_per_tx):
     dump_many(transactions)
 
 
-def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=True, shards_per_tx=None, num_shards=None):
+def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=True, shards_per_tx=None, num_shards=None, co=False):
     init_tx = simulator.init()
     process(init_tx)
 
@@ -134,7 +134,10 @@ def simulation_batched(n, inputs_per_tx, batch_size=100, batch_sleep=2, nonce=Tr
                     shard_id = j%shards_per_tx
                     shard_id = shard_id + rand
                     objects.append(outputs_map[shard_id].pop())
-            transactions.append(simulator.consume(objects))
+            if co:
+                transactions.append(simulator.consume_co(objects))
+            else:
+                transactions.append(simulator.consume(objects))
     except IndexError:
         pass
 
