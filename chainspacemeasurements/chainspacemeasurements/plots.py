@@ -2,6 +2,7 @@ import json
 import sys
 
 from matplotlib import pyplot
+from matplotlib import markers
 
 from chainspacemeasurements.results import parse_shard_results, parse_client_latency_results
 
@@ -70,6 +71,8 @@ def plot_client_latency(results, outfile, start_tps, step):
             tps,
             [j/float(len(tps)) for j in range(len(tps))],
             label=str(start_tps+i*step) + ' t/s',
+            marker=markers.MarkerStyle.filled_markers[i],
+            markevery=500,
         )
 
     pyplot.legend()
