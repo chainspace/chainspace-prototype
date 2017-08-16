@@ -6,7 +6,7 @@ from matplotlib import pyplot
 from chainspacemeasurements.results import parse_shard_results
 
 
-def plot_shard_scaling(results1, results2=None, outfile):
+def plot_shard_scaling(results1, results2, outfile):
     parsed_results1 = parse_shard_results(results1)
     if results2 != None: 
         parsed_results2 = parse_shard_results(results2)
