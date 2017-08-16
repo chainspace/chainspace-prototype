@@ -1,2 +1,6 @@
 .DS_Store
 venv
+chainspacecore/.swo
+chainspacecore/.swp
+chainspacemeasurements/build/
+chainspacemeasurements/dist/
