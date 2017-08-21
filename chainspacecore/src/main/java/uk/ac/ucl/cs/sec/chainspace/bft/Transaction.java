@@ -109,8 +109,11 @@ public class Transaction implements Serializable {
         try { this.store = Store.fromJson(requestJson.getJSONObject("store")); }
         catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
 
+        // extract id
+        this.addID(this.csTransaction.getID());
+
         // init
-        init();
+        init(this.csTransaction, this.store);
 
     }
 
@@ -118,16 +121,16 @@ public class Transaction implements Serializable {
     public Transaction(CSTransaction csTransaction, Store store) throws NoSuchAlgorithmException {
         this();
 
-        this.addID(csTransaction.getContractID());
+        this.addID(csTransaction.getID());
 
         this.csTransaction = csTransaction;
         this.store = store;
 
-        init();
-
+        init(csTransaction, store);
     }
 
-    private void init() throws NoSuchAlgorithmException {
+    private void init(CSTransaction csTransaction, Store store) throws NoSuchAlgorithmException {
+        // add inputs and outputs to lists
         for (int i = 0; i < csTransaction.getInputIDs().length; i++) {
             this.addInput(csTransaction.getInputIDs()[i]);
         }
@@ -136,8 +139,18 @@ public class Transaction implements Serializable {
             this.addOutput(objectID);
         }
 
-        this.addID(csTransaction.getID());
+        // process depdencies:
+        // add inputs and outputs of all dependencies ot the input/output lists for BFT
+        System.out.println("\n\n\n HERE\n" + csTransaction.getDependencies().length);
+        for (int i = 0; i < csTransaction.getDependencies().length; i++) {
+            // recursive calls
+            init(csTransaction.getDependencies()[i], store);
+        }
     }
+
+
+
+
 
     public CSTransaction getCsTransaction() {
         return csTransaction;

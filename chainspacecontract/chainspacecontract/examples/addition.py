@@ -22,5 +22,7 @@ def increment(inputs, reference_inputs, parameters):
 	    'outputs': (str(integer + 1),)
 	}
 
+
+
 if __name__ == '__main__':
     contract.run()
