@@ -20,3 +20,15 @@ def parse_shard_results(results):
         final_result.append((mean, sd))
 
     return final_result
+
+
+def parse_client_latency_results(results):
+    final_result = []
+    for tps in results:
+        latencies = []
+        for latency_set in tps:
+            latencies += latency_set
+        latencies = sorted(latencies)
+        final_result.append(latencies)
+
+    return final_result

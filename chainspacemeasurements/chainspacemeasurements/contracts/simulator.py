@@ -23,5 +23,12 @@ def create(inputs, reference_inputs, parameters):
 def consume(inputs, reference_inputs, parameters):
     return {}
 
+
+@contract.method('consume_co')
+def consume_co(inputs, reference_inputs, parameters):
+    return {
+        'outputs': ('o',)
+    }
+
 if __name__ == '__main__':
     contract.run()
