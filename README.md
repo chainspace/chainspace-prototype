@@ -1,5 +1,7 @@
 # Chainspace
 
+Chainspace is a distributed ledger platform for high-integrity and transparent processing of transactions within a decentralized system.
+
 ## Developer Installation
 
 The bulk of the code is to be found in `chainspacecore`. To run a network of chainspace nodes, you need to first compile and package this module.
