@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/chainspacecore/chainspace.iml" filepath="$PROJECT_DIR$/chainspacecore/chainspace.iml" />
+      <module fileurl="file://$PROJECT_DIR$/chainspaceapi/chainspaceapi.iml" filepath="$PROJECT_DIR$/chainspaceapi/chainspaceapi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/chainspacecontract/chainspacecontract.iml" filepath="$PROJECT_DIR$/chainspacecontract/chainspacecontract.iml" />
+      <module fileurl="file://$PROJECT_DIR$/chainspacemeasurements/chainspacemeasurements.iml" filepath="$PROJECT_DIR$/chainspacemeasurements/chainspacemeasurements.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/contrib.iml" filepath="$PROJECT_DIR$/contrib/contrib.iml" />
+    </modules>
+  </component>
+</project>
