@@ -6,12 +6,19 @@ Chainspace is a distributed ledger platform for high-integrity and transparent p
 
 The bulk of the code is to be found in `chainspacecore`. To run a network of chainspace nodes, you need to first compile and package this module.
 
+
+### Build
 ```
 cd chainspacecore
 mvn -Dversion=1.0-SNAPSHOT package assembly:single
 ```
 
 This should produce an "uber jar" in the folder `chainspacecore/target`
+
+### Run
+```
+./contrib/core-tools/easystart.mac.sh
+```
 
 This will show you all running chainspace processes:
 
