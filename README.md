@@ -16,6 +16,12 @@ mvn -Dversion=1.0-SNAPSHOT package assembly:single
 This should produce an "uber jar" in the folder `chainspacecore/target`
 
 ### Run
+
+There are two parts to chainspace, the client and the network.
+
+The network is a set of nodes that are communicating with each other based on the BFT SMaRt library.
+
+The client is a http server which connects to the network and allows you to submit transactions.
 ```
 ./contrib/core-tools/easystart.mac.sh
 ```
