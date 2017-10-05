@@ -28,13 +28,15 @@ Currently, CS supports Python which is implemented through the `PythonChecker` c
 
 This class automatically instantiates processes (1 for each node) and retains a cache of them so that they can be invoked via http.
 
+Transaction processing is managed through the `Core` class, which in turn calls out to the checkers.
+
 See `Core.processTransaction` which then calls `processTransactionVM` which invokes the checker eventually through the `callChecker` method.
 
 Contracts are loaded from a subdir called `contracts` which is currently hardcoded to look for python files.
 
 The link to the contract is present in the data structure of the `CSTransaction` class which has a field getContractId` which should map to the name of the python contract file.
 
-Transaction processing is managed through the `Core` class, which in turn calls out to the checkers.
+
 
 
 # Observations / TODO
