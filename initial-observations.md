@@ -39,17 +39,34 @@ The link to the contract is present in the data structure of the `CSTransaction`
 
 ## Transaction Deployment And Verification Example (Mac)
 
+You need to have Python (as well as pip) installed to run Chainspace. 
+
+Install Python modules:
+
+```
+pip install ./chainspaceapi
+pip install ./chainspacecontract
+```
+
+(Run with `sudo` if encountering permission issues)
+
 Assemble an application bundle:
 
 ```
-mvn -Dversion=1.0-SNAPSHOT package assembly:single 
-
+cd chainspacecore
+mvn package assembly:single 
 ```
 
 Make sure chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar file got generated:
 
 ```
-ls chainspacecore/target/
+ls target
+```
+
+Run Chainspace local client:
+
+```
+./runclientservice.sh
 ```
 
 Run this script to start eight server replicas (nodes):
@@ -63,63 +80,29 @@ Run this script to start eight server replicas (nodes):
 It's possible to track each server's logs. In a separate console tab, run the following to display for the first server in the first shard:
 
 ```
-tail -f chainspacecore-0-0/screenlog.0
+screen -r s0n0
 ```
 
 Servers are now running. 
 
-Let's submit and verify transaction using the "increment" method in the "addition" contract. It can be found in `contracts/addition.py`. In order to do that, you'll need to post transaction data to the chain. 
+Let's submit and verify transaction using the "increment" method in the "addition" contract. It can be found in `contracts/addition.py`. In order to do that, you'll need to send transaction data to the chain. 
 
-Contract inputs and outputs are part of transaction data. They get checked and should be stored in a shard in a TreeMap. Let's submit transaction that has "0" as an input and "1" as an output after running incrementation.
-
-Data can be easily added to the shard using interactive console:
+Sending transactions:
 
 ```
-cd chainspacecore
-./runconsoleclient.sh
-```
+from chainspaceapi import ChainspaceClient
+from chainspacecontract.examples import increment
 
-Wait until you're prompted to select a shard. Choose shard 0, then option "1" to add a key and a value to the map. Add key 0 and value 0. Select shard 0 again and add key 1 and value 1. Repeat the same for shard 1.
 
-Now let's run the client to interact with replicas. If you're still in the chainspacecore folder, run:
+client = ChainspaceClient()
 
-```
-./runclientservice.sh
-```
 
-You should get a message that "Node service is running on port 5000".
+transaction1 = increment.init()
+client.process_transaction(transaction1)
 
-Make sure the client is running. In your favourite REST client (this example uses [Postman](https://www.getpostman.com/postman)), send any request to http://127.0.0.1:5000/. You should receive html body saying "404 Not found".
-
-In order to submit transaction, POST to the endpoint `http://127.0.0.1:5000/api/1.0/transaction/process` with the following body (you can paste it into "raw" view):
-
-```
-{
-	"transaction": {
-		"contractID": "addition",
-		"inputIDs": ["0"],
-		"methodID": "increment",
-		"outputs": ["1"],
-		"parameters": [],
-		"referenceInputIDs": [],
-		"returns": [],
-		"CSTransaction": [],
-		"dependencies" : []
-	}, 
-	"store" : {
-		"0" : "0",
-		"1" : "1"
-	}
-}
-``` 
-
-Response body should be
-
-```
-{
-    "success": "True",
-    "outcome": "accepted_t_commit"
-}
+our_object = transaction['transaction']['outputs'][0]
+transaction2 = increment.increment(inputs=[our_object])
+client.process_transaction(transaction2)
 ```
 
 ### Troubleshooting
