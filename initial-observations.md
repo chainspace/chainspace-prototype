@@ -1,6 +1,6 @@
 ## Understanding the Code
 
-There are two parts to chainspace:
+There are two parts to Chainspace:
 
 - The Client
 - The verification node
@@ -39,13 +39,13 @@ The link to the contract is present in the data structure of the `CSTransaction`
 
 ## Transaction Deployment And Verification Example (Mac)
 
-You need to have Python (as well as pip) installed to run Chainspace. 
+You need to have Python (as well as pip) installed to run Chainspace.
 
 Install Python modules:
 
 ```
-pip install ./chainspaceapi
-pip install ./chainspacecontract
+pip install -e ./chainspaceapi
+pip install -e ./chainspacecontract
 ```
 
 (Run with `sudo` if encountering permission issues)
@@ -54,7 +54,7 @@ Assemble an application bundle:
 
 ```
 cd chainspacecore
-mvn package assembly:single 
+mvn package assembly:single
 ```
 
 Make sure chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar file got generated:
@@ -72,10 +72,11 @@ Run Chainspace local client:
 Run this script to start eight server replicas (nodes):
 
 ```
+cd chainspace
 ./contrib/core-tools/easystart.mac.sh
 ```
 
-`ls` to check eight folders 'chainspacecore-X-Y' got generated, one for each server.
+`ls` to check eight folders 'chainspacecore-X-Y' were generated, one for each server.
 
 It's possible to track each server's logs. In a separate console tab, run the following to display for the first server in the first shard:
 
@@ -83,12 +84,18 @@ It's possible to track each server's logs. In a separate console tab, run the fo
 screen -r s0n0
 ```
 
-Servers are now running. 
+Servers are now running.
 
-Let's submit and verify transaction using the "increment" method in the "addition" contract. It can be found in `contracts/addition.py`. In order to do that, you'll need to send transaction data to the chain. 
+Let's submit and verify a transaction using the "increment" method in the "addition" contract. It can be found in `contracts/addition.py` in each of the 'chainspacecore-X-Y' directories. In order to do this, you'll need to send transaction data to the chain.
 
-Sending transactions:
+#### Sending transactions:
 
+
+From here, open the python console:
+```
+python
+```
+Continue:
 ```
 from chainspaceapi import ChainspaceClient
 from chainspacecontract.examples import increment
@@ -107,10 +114,10 @@ client.process_transaction(transaction2)
 
 ### Troubleshooting
 
-If response you get contains `"outcome": "accepted_t_abort"`, it might mean that checker didn't validate the transaction.
+If the response you get contains `"outcome": "accepted_t_abort"`, it might mean that the checker didn't validate the transaction.
 
-You can perform checker validation manually. Client process fires up a separate process for the checker rumming on the following endpoint:
-`http://127.0.0.1:5001/<contract name>/<method name>`, which in case of addition contract would be `http://127.0.0.1:5001/addition/increment`.
+You can perform a checker validation manually. Client process fires up a separate process for the checker running on the following endpoint:
+`http://127.0.0.1:5001/<contract name>/<method name>`, which in case of the addition contract would be `http://127.0.0.1:5001/addition/increment`.
 
 Submit a POST request to this endpoint with the following body:
 
@@ -125,13 +132,11 @@ Submit a POST request to this endpoint with the following body:
    "dependencies":[],
    "methodID":"increment"
 }
-``` 
+```
 
-You should get `{ "success": true }`. If not, check you stored inputs and outputs in the shards correctly.
+You should get `{ "success": true }`. If not, check you stored the inputs and outputs in the shards correctly.
 
 
 # Observations / TODO
 
 [1] Core.java:161 - contract path is hardcoded to by `.py` files - this needs to be pushed to the checker
-
-
