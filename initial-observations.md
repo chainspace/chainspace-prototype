@@ -1,13 +1,12 @@
 ## Understanding the Code
 
-There are two parts to Chainspace:
+There are three parts to Chainspace:
 
-- The Client
-- The verification node
+- Python client libraries
+- Client Service (localhost:5000)
+- Chainspace network of nodes (defaults to 2 shards, with 4 nodes in each)
 
-## The Client
-
-## The Verification Node
+## Chainspace network of nodes
 
 The verification node is built on top of the [BFT-SMaRt](https://github.com/bft-smart/library) library which provides the underlying P2P distributed network and BFT fault tolerance.
 
@@ -17,6 +16,9 @@ The entry point for the node is the `TreeMapServer` class. This has a `main` met
 
 It in turn creates
 
+## The Client Service
+
+The client service is used to submit transactions to the nodes. The client service maps data to shards, and sends transaction requests to the corresponding shards.
 
 ## Verifying Transactions (Checking)
 
@@ -38,17 +40,6 @@ The link to the contract is present in the data structure of the `CSTransaction`
 
 
 ## Transaction Deployment And Verification Example (Mac)
-
-You need to have Python (as well as pip) installed to run Chainspace.
-
-Install Python modules:
-
-```
-pip install -e ./chainspaceapi
-pip install -e ./chainspacecontract
-```
-
-(Run with `sudo` if encountering permission issues)
 
 Assemble an application bundle:
 
@@ -90,10 +81,20 @@ Let's submit and verify a transaction using the "increment" method in the "addit
 
 #### Sending transactions:
 
+You need to have Python (as well as pip) installed to run Chainspace.
+
+Install Python modules:
+
+```
+> pip install -e ./chainspaceapi
+> pip install -e ./chainspacecontract
+```
+
+Preferrably install python virtualenv to manage local python environments and their dependencies.
 
 From here, open the python console:
 ```
-python
+> python
 ```
 Continue:
 ```
