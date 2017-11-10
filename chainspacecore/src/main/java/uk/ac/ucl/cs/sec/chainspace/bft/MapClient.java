@@ -460,6 +460,7 @@ public class MapClient implements Map<String, String> {
         }
 
         finally {
+            logMsg(strLabel, strModule, "In the finally block - earlyTerminate = " + earlyTerminate + " targetShards: " + targetShards);
             if(!earlyTerminate) {
 
                 String tID="unknown";
@@ -471,6 +472,7 @@ public class MapClient implements Map<String, String> {
                     String key = getKeyAsynchReplies(client, req, reqType.toString());
                     TOMMessage m = asynchReplies.get(key);
 
+                    logMsg(strLabel, strModule, "Processing shard m " + m +  " from shard " + shard);
                     // finalResponse is ABORT if at least one shard replies ABORT or does not reply at all
                     if (m != null) {
                         byte[] reply = m.getContent();
@@ -524,7 +526,7 @@ public class MapClient implements Map<String, String> {
             // PREPARE_T BFT round done synchronously within the local shard
             logMsg(strLabel,strModule,"Sending PREPARE_T to shard "+shardID+" for transaction "+t.id);
             byte[] reply = clientProxy.get(shardID).invokeOrdered(bs.toByteArray());
-            logMsg(strLabel,strModule,"Reply from shard ID "+shardID+"is "+new String(reply,"UTF-8"));
+            logMsg(strLabel,strModule,"Reply from shard ID "+shardID+" is "+new String(reply,"UTF-8"));
             return reply;
         } catch (Exception e) {
             logMsg(strLabel,strModule,"Exception: " + e.getMessage());
@@ -614,6 +616,7 @@ public class MapClient implements Map<String, String> {
 
                         if (m == null) {
                             missingShardReplies = true;
+                            logMsg(strLabel,strModule,"Shard ID " + shard + "  has not replied, need to wait some more.");
                             break; // A shard hasn't replied yet, we need to wait more
                         }
 
@@ -623,8 +626,9 @@ public class MapClient implements Map<String, String> {
 
                             logMsg(strLabel,strModule,"Shard ID " + shard + " replied: " + strReply);
 
-                            if (strReply.equals(ResponseType.ACCEPTED_T_ABORT))
+                            if (strReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
                                 abortShardReplies = true;
+                            }
                         }
                     }
 

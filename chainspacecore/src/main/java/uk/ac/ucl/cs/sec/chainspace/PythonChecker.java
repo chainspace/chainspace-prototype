@@ -19,7 +19,7 @@ class PythonChecker {
 
     private static final ArrayList<PythonChecker> cache = new ArrayList<>(CACHE_DEPTH);
 
-    private static int latestPort = 5000;
+    private static int latestPort = 13000;
     private int port;
 
 
@@ -34,7 +34,7 @@ class PythonChecker {
 
         // set port
         if (latestPort == 65535) {
-            latestPort = 5000;
+            latestPort = 13000;
         }
         latestPort += 1;
         port = latestPort;

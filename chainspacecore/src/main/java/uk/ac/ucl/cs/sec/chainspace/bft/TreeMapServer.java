@@ -377,11 +377,14 @@ public class TreeMapServer extends DefaultRecoverable {
                         if (replyPrepareT != null) {
                             strReplyPrepareT = new String(replyPrepareT, "UTF-8");
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
-                        } else
-                            logMsg(strLabel,strModule,"Reply to PREPARE_T is null");
+                        } else {
+                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null");
+                        }
 
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
-                        if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
+                        if (replyPrepareT == null
+                                || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT)
+                                || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
 
                             client.broadcastBFTDecision(RequestType.PREPARED_T_ABORT, t, this.thisShard);
 
@@ -397,6 +400,8 @@ public class TreeMapServer extends DefaultRecoverable {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             }
                             logMsg(strLabel,strModule,"ABORTED. Reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"ABORTED. Shards have accepted the abort, returning " + strReplyPrepareT);
+                            strReplyAcceptT = strReplyPrepareT;
                         }
                         // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                         else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
