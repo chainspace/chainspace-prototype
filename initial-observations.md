@@ -45,7 +45,7 @@ Assemble an application bundle:
 
 ```
 cd chainspacecore
-mvn package assembly:single
+mvn -Dversion=1.0-SNAPSHOT package assembly:single
 ```
 
 Make sure chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar file got generated:
@@ -54,11 +54,6 @@ Make sure chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar file got generated:
 ls target
 ```
 
-Run Chainspace local client:
-
-```
-./runclientservice.sh
-```
 
 Run this script to start eight server replicas (nodes):
 
@@ -75,13 +70,63 @@ It's possible to track each server's logs. In a separate console tab, run the fo
 screen -r s0n0
 ```
 
+If you CMD+C in here you'll kill that process
+so safer you can just tail the logs:
+```
+tail -f chainspacecore-0-1/screenlog.0
+```
+
 Servers are now running.
+
+This will show you all running chainspace processes:
+
+```
+ps aux | grep -v grep | grep chainspace | awk '{print $2 $11}'
+ps aux | grep -v grep | grep chainspace | awk '{print $2 " " $11 " " $12 " " $13}'
+```
+
+If you need to kill everything:
+
+```
+ps aux | grep -v grep | grep chainspace | awk '{print $2}' | xargs kill
+cd chainspace
+rm -rf chainspacecore-*
+```
+
+Run Chainspace local client: This is a local web server that can format transactions and submit them to the network
+
+```
+./runclientservice.sh
+```
+
+If you find theres an address already in use you can run
+
+```
+lsof -n -i:$PORT | grep LISTEN
+```
+
+To find out what it is
+
+If that doesnt work try
+
+```
+lsof -n -i4TCP:$PORT | grep LISTEN
+lsof -n -iTCP:$PORT | grep LISTEN
+```
 
 Let's submit and verify a transaction using the "increment" method in the "addition" contract. It can be found in `contracts/addition.py` in each of the 'chainspacecore-X-Y' directories. In order to do this, you'll need to send transaction data to the chain.
 
 #### Sending transactions:
 
-You need to have Python (as well as pip) installed to run Chainspace.
+You need to have Python 2.7 (as well as pip) installed to run Chainspace.
+
+Preferrably install python virtualenv to manage local python environments and their dependencies.
+
+```
+virtualenv .chainspace.env
+source .chainspace.env/bin/activate
+```
+
 
 Install Python modules:
 
@@ -90,7 +135,7 @@ Install Python modules:
 > pip install -e ./chainspacecontract
 ```
 
-Preferrably install python virtualenv to manage local python environments and their dependencies.
+
 
 From here, open the python console:
 ```

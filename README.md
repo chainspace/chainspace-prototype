@@ -28,9 +28,13 @@ The client is a http server which connects to the network and allows you to subm
 
 This will show you all running chainspace processes:
 
-ps aux | grep -v grep | grep chainspace | awk '{print $2}'
+```
+ps aux | grep -v grep | grep chainspace | awk '{print $2 $11}'
+ps aux | grep -v grep | grep chainspace | awk '{print $2 " " $11 " " $12 " " $13}'
+```
 
 If you need to kill everything:
 
-
+```
 ps aux | grep -v grep | grep chainspace | awk '{print $2}' | xargs kill
+```
