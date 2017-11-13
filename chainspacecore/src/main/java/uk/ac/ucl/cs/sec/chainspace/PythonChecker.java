@@ -1,6 +1,6 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -57,11 +57,21 @@ class PythonChecker {
                 "--port",
                 String.valueOf(this.port)
         ));
+
+        if(Main.VERBOSE) {
+            System.out.println("\nstartChecker: python " + this.pythonScriptPath + " checker --port " + this.port);
+        }
         try {
 
             // start thread
             this.checkerProcess = pb.start();
             // sleep
+            if(Main.VERBOSE) {
+                System.out.println("\ncheckerProcess isAlive: " + this.checkerProcess.isAlive());
+                System.out.println("error stream: \n" + readFully(this.checkerProcess.getErrorStream(), "UTF-8"));
+                System.out.println("input stream: " + readFully(this.checkerProcess.getInputStream(), "UTF-8"));
+            }
+
             Thread.sleep(1000);
 
         } catch (IOException | InterruptedException e) {
@@ -69,6 +79,38 @@ class PythonChecker {
         }
 
     }
+
+    public static String readFully(InputStream inputStream, String charsetName) {
+
+        StringBuilder stringBuilder = new StringBuilder();
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream, charsetName));
+            char[] charBuffer = new char[512];
+            int bytesRead = -1;
+            while ((bytesRead = bufferedReader.read(charBuffer)) > 0) {
+                stringBuilder.append(charBuffer, 0, bytesRead);
+            }
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            closeQuietly(bufferedReader);
+        }
+        return stringBuilder.toString();
+    }
+
+    public static void closeQuietly(Reader reader) {
+        if (reader == null) {
+            return;
+        }
+
+        try {
+            reader.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Could not close stream (See Cause)", e);
+        }
+    }
+
 
 
     /**
