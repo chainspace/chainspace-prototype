@@ -394,6 +394,7 @@ public class MapClient implements Map<String, String> {
         int msgType = RequestType.TRANSACTION_SUBMIT;
         String strModule = "SUBMIT_T (DRIVER): ";
 
+        logMsg(strLabel, strModule, "Processing inputs: " + t.inputs);
         try {
             List<String> inputObjects = t.inputs;
 
@@ -401,7 +402,7 @@ public class MapClient implements Map<String, String> {
             for(String input: inputObjects) {
                 int shardID = mapObjectToShard(input);
 
-                logMsg(strLabel,strModule,"Adding input "+input+" to transaction ID: "+t.id);
+                logMsg(strLabel,strModule,"Adding input "+input+" to transaction ID: "+t.id + " for shard " + shardID);
 
                 if(shardID == -1) {
                     logMsg(strLabel,strModule,"Cannot map input "+input+" in transaction ID "+transactionID+" to a shard.");
@@ -443,6 +444,7 @@ public class MapClient implements Map<String, String> {
                 oos.writeObject(t);
                 oos.close();
                 int shardID = 0;
+                targetShards.add(shardID);
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(
                         bs.toByteArray(), new ReplyListenerAsynchSingle(shardID), reqType
                 );
@@ -479,7 +481,8 @@ public class MapClient implements Map<String, String> {
                         String strRawReply = new String(reply, Charset.forName("UTF-8"));
                         String[] arrReply = strRawReply.split(";");
                         String strReply = arrReply[0];
-                        tID = arrReply[1];
+
+                        tID = arrReply.length > 1 ? arrReply[1] : "no-tx-id";
 
                         logMsg(strLabel,strModule,"Shard ID "+shard+" replied "+strReply+
                                 " for transaction ID "+ tID);
@@ -494,7 +497,7 @@ public class MapClient implements Map<String, String> {
                                     strReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) ) {
                             logMsg(strLabel,strModule,"SYSTEM ERROR->Error reply from shard ID "+shard+
                                     " for transaction ID "+ tID);
-                            return ResponseType.ACCEPTED_T_ABORT;
+                            return strReply;
                         }
                     }
                     else {

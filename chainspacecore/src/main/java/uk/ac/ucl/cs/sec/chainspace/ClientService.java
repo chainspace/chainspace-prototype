@@ -7,6 +7,8 @@ import spark.Service;
 
 import java.sql.SQLException;
 
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
+
 
 /**
  *
@@ -68,24 +70,24 @@ class ClientService {
         if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
 
         // process the transaction & create response
-        JSONObject responseJson = new JSONObject();
+        JSONObject responseJson;
         try {
 
             // submit the transaction
             String result = Client.submitTransaction(request.body());
 
-            // create json response
-            responseJson.put("success", "True");
-            responseJson.put("outcome", result);
-            response.status(200);
+            if (ACCEPTED_T_COMMIT.equals(result)) {
+                responseJson = createHttpResponse(response, result, "True", 200, "outcome");
+            } else {
+                responseJson = createHttpResponse(response, result, "False", 502, "outcome"); // bad gateway
+            }
+
+
 
         }
         catch (Exception e) {
 
-            // create json  error response
-            responseJson.put("success", "False");
-            responseJson.put("message", e.getMessage());
-            response.status(400);
+            responseJson = createHttpResponse(response, e.getMessage(), "False", 400, "message");
 
             // verbose print
             if (Main.VERBOSE) { Utils.printStacktrace(e); }
@@ -101,6 +103,16 @@ class ClientService {
 
     }
 
+    private JSONObject createHttpResponse(Response response, String result, String successResponse, int statusCode, String outcome) {
+        JSONObject responseJson = new JSONObject();
+
+        responseJson.put("success", successResponse);
+        responseJson.put(outcome, result);
+
+        response.status(statusCode);
+        return responseJson;
+    }
+
 
     /**
      * processTransactionRequest
@@ -108,27 +120,21 @@ class ClientService {
      */
     private String dumpTransactionRequest(Request request, Response response) {
 
-        // verbose print
         if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
 
         // process the transaction & create response
         JSONObject responseJson = new JSONObject();
         try {
 
-            // submit the transaction
             Client.submitTransactionNoWait(request.body());
 
-            // create json response
-            responseJson.put("success", "True");
-            response.status(200);
+            createHttpResponse(response, "", "True", 200, "");
+
 
         }
         catch (Exception e) {
 
-            // create json  error response
-            responseJson.put("success", "False");
-            responseJson.put("message", e.getMessage());
-            response.status(400);
+            createHttpResponse(response, e.getMessage(), "False", 400, "message");
 
             // verbose print
             if (Main.VERBOSE) { Utils.printStacktrace(e); }
