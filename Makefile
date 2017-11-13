@@ -1,5 +1,5 @@
 ps:
-	ps aux | grep -v grep | grep chainspace
+	ps aux | grep -v grep | grep chainspace | awk '{print $2 " " $11 " " $12 " " $13}'
 
 list-nodes:
 	screen -list
@@ -18,5 +18,7 @@ start-client:
 
 kill-all:
 	ps aux | grep -v grep | grep chainspace | awk '{print $2}' | xargs kill
+
+
 
 
