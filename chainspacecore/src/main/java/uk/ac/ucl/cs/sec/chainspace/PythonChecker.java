@@ -63,24 +63,19 @@ class PythonChecker {
         }
         try {
 
-            // start thread
             this.checkerProcess = pb.start();
 
-            if(Main.VERBOSE) {
-
-            }
-
-            // sleep
             Thread.sleep(1000);
-            System.out.println("\ncheckerProcess isAlive: " + this.checkerProcess.isAlive());
-            System.out.println("Checker stdout: \n==============\n"
-                    + readFully(this.checkerProcess.getInputStream(), "UTF-8")
-                    + "==============");
-            System.out.println("Checker stderr: \n==============\n"
-                    + readFully(this.checkerProcess.getErrorStream(), "UTF-8")
-                    + "\n==============");
-
             if(Main.VERBOSE) {
+                System.out.println("\ncheckerProcess isAlive: " + this.checkerProcess.isAlive());
+                System.out.println("Checker stdout: \n==============\n"
+                        + readFully(this.checkerProcess.getInputStream(), "UTF-8")
+                        + "==============");
+
+                System.out.println("Checker stderr: \n==============\n"
+                        + readFully(this.checkerProcess.getErrorStream(), "UTF-8")
+                        + "\n==============");
+
                 if (!this.checkerProcess.isAlive()) {
                     throw new StartCheckerException("Checker failed to start! (see log for error stream) " + "Exit value " + this.checkerProcess.exitValue());
                 }
