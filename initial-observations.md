@@ -1,4 +1,11 @@
+## TODO
+
+- Fix python checker startup so that it includes the chainspace python libs
+- Get a more simple node setup running with a single shard that can be run inside the IDE
+
+
 ## Understanding the Code
+
 
 There are three parts to Chainspace:
 
