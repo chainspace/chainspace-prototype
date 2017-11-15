@@ -160,7 +160,7 @@ client = ChainspaceClient()
 transaction1 = increment.init()
 client.process_transaction(transaction1)
 
-our_object = transaction['transaction']['outputs'][0]
+our_object = transaction1['transaction']['outputs'][0]
 transaction2 = increment.increment(inputs=[our_object])
 client.process_transaction(transaction2)
 ```

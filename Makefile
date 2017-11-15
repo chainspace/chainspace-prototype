@@ -10,6 +10,10 @@ build-jar:
 start-nodes:
 	./contrib/core-tools/easystart.mac.sh
 
+start-nodes-debug:
+	./contrib/core-tools/easystart.mac.debug.sh
+
+
 tail-node:
 	tail -f chainspacecore-0-0/screenlog.0
 

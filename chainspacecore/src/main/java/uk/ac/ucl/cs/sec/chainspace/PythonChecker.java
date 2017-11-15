@@ -1,6 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -15,7 +16,7 @@ class PythonChecker {
     private Process checkerProcess;
 
     private static final String CHECKER_HOST = "127.0.0.1";
-    private static final int CACHE_DEPTH    = 10000;
+    private static final int CACHE_DEPTH = 10000;
 
     private static final ArrayList<PythonChecker> cache = new ArrayList<>(CACHE_DEPTH);
 
@@ -24,97 +25,128 @@ class PythonChecker {
 
 
     /**
-     *
+     * Provides a process wrapper around a python script
+     * This python script should launch a checker api
+     * There is an implementation of this in the chainspacecontract python library
      */
-    private PythonChecker(String contractID) throws StartCheckerException {
+    PythonChecker(String contractID) throws StartCheckerException {
 
-        // save variables
-        this.pythonScriptPath = "contracts/" +contractID+ ".py";
+        this.pythonScriptPath = "contracts/" + contractID + ".py";
         this.contractID = contractID;
 
-        // set port
         if (latestPort == 65535) {
             latestPort = 13000;
         }
         latestPort += 1;
         port = latestPort;
 
-        // start the checker
         this.startChecker();
 
     }
 
 
-    /**
-     *
-     */
-    private void startChecker() throws StartCheckerException {
-
+    void startChecker() throws StartCheckerException {
+        System.out.println("Working dir: " + new File(".").getAbsolutePath());
+        String pythonExecutable = "../.chainspace.env/bin/python";
         ProcessBuilder pb = new ProcessBuilder(Arrays.asList(
-                "python",
+                pythonExecutable,
                 this.pythonScriptPath,
                 "checker",
                 "--port",
                 String.valueOf(this.port)
         ));
 
-        if(Main.VERBOSE) {
-            System.out.println("\nstartChecker: python " + this.pythonScriptPath + " checker --port " + this.port);
-        }
-        try {
 
-            this.checkerProcess = pb.start();
+        redirectCheckerOutputToFile(pb, this.port);
+
+        if (Main.VERBOSE) {
+            System.out.println("\nstartChecker: " + pythonExecutable + " " + this.pythonScriptPath + " checker --port " + this.port);
+        }
+
+        try {
+            Process checkerProcess = pb.start();
+
+            logPid(checkerProcess, this.port);
+
 
             Thread.sleep(1000);
-            if(Main.VERBOSE) {
-                System.out.println("\ncheckerProcess isAlive: " + this.checkerProcess.isAlive());
-                System.out.println("Checker stdout: \n==============\n"
-                        + readFully(this.checkerProcess.getInputStream(), "UTF-8")
-                        + "==============");
 
-                System.out.println("Checker stderr: \n==============\n"
-                        + readFully(this.checkerProcess.getErrorStream(), "UTF-8")
-                        + "\n==============");
+            System.out.println("\ncheckerProcess isAlive: " + checkerProcess.isAlive());
 
-                if (!this.checkerProcess.isAlive()) {
-                    throw new StartCheckerException("Checker failed to start! (see log for error stream) " + "Exit value " + this.checkerProcess.exitValue());
-                }
+            if (!checkerProcess.isAlive()) {
+                throw new StartCheckerException("Checker failed to start! (see ./checker.XXX.log for log output) " + "Exit value " + checkerProcess.exitValue());
+            } else {
+                this.checkerProcess = checkerProcess;
             }
 
         } catch (IOException | InterruptedException e) {
-            throw new StartCheckerException("Couldn't start checker.");
+            throw new StartCheckerException("Couldn't start checker" , e);
         }
 
     }
 
-    public static String readFully(InputStream inputStream, String charsetName) {
-
-        StringBuilder stringBuilder = new StringBuilder();
-        BufferedReader bufferedReader = null;
+    private static void logPid(Process checkerProcess, int port) {
+        long pid = getPidOfProcess(checkerProcess);
         try {
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream, charsetName));
-            char[] charBuffer = new char[512];
-            int bytesRead = -1;
-            while ((bytesRead = bufferedReader.read(charBuffer)) > 0) {
-                stringBuilder.append(charBuffer, 0, bytesRead);
+            File pidFile = new File("./checker.pids");
+
+            if (!pidFile.exists()) {
+                pidFile.createNewFile();
             }
-        } catch(IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            closeQuietly(bufferedReader);
+
+            FileWriter w = null;
+            try {
+                w = new FileWriter(pidFile, true);
+                w.append("" + pid + "\n");
+                System.out.println("Written pid [" + pid + "] to " + pidFile.getAbsolutePath());
+            } finally {
+                if (w != null) {
+                    w.close();
+                }
+            }
+
+
+        } catch (Throwable t) {
+            System.out.println("Could not write pid file out");
+            t.printStackTrace();
         }
-        return stringBuilder.toString();
     }
 
-    public static void closeQuietly(Reader reader) {
-        if (reader == null) {
-            return;
-        }
+
+    /**
+     * Currently only works on unix
+     */
+    public static long getPidOfProcess(Process p) {
+        long pid = -1;
 
         try {
-            reader.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Could not close stream (See Cause)", e);
+            if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+                Field f = p.getClass().getDeclaredField("pid");
+                f.setAccessible(true);
+                pid = f.getLong(p);
+                f.setAccessible(false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Could not get pid...");
+            pid = -1;
+        }
+        return pid;
+    }
+
+    private static void redirectCheckerOutputToFile(ProcessBuilder pb, int port) {
+        File checkerLog =  new File("./checker." + port + ".log.0");
+
+        try {
+            if (!checkerLog.exists()) {
+                checkerLog.createNewFile();
+            }
+            pb.redirectOutput(checkerLog);
+            pb.redirectError(checkerLog);
+            System.out.println("Redirected process output to " + checkerLog.getAbsolutePath());
+        } catch (Throwable t) {
+            System.out.println("Could not create checker log @ " + checkerLog.getAbsolutePath());
+            t.printStackTrace();
         }
     }
 
@@ -159,7 +191,7 @@ class PythonChecker {
      */
     String check(TransactionForChecker transactionForChecker) throws IOException {
 
-        if(Main.VERBOSE) {
+        if (Main.VERBOSE) {
             System.out.println("\nChecker URL:");
             System.out.println("\t" + getURL(transactionForChecker.getMethodID()));
         }
@@ -171,25 +203,21 @@ class PythonChecker {
      *
      */
     static PythonChecker getFromCache(String contractID)
-            throws StartCheckerException
-    {
+            throws StartCheckerException {
 
-        // verbose print
-        if( Main.VERBOSE ) { System.out.println("\nChecker instance:"); }
-
-        // check if that checker is already in the cache
-        for (PythonChecker aCache : cache) {
-            if ( contractID.equals(aCache.getContractID()) ) {
-
-                if( Main.VERBOSE ) { System.out.println("\tChecker found in cache"); }
-                return aCache;
-
-            }
+        if (Main.VERBOSE) {
+            System.out.println("\nChecker instance:");
         }
+
+        PythonChecker cachedChecker = findInCache(contractID);
+
+        if (cachedChecker != null) return cachedChecker;
 
         // otherwise, update cache
         PythonChecker newChecker = new PythonChecker(contractID);
-        if( Main.VERBOSE ) { System.out.println("\tNew checker created"); }
+        if (Main.VERBOSE) {
+            System.out.println("\tNew checker created");
+        }
         cache.add(newChecker);
         if (cache.size() > CACHE_DEPTH) {
             cache.get(0).stopChecker();
@@ -197,6 +225,20 @@ class PythonChecker {
         }
         return newChecker;
 
+    }
+
+    private static PythonChecker findInCache(String contractID) {
+        for (PythonChecker checker : cache) {
+            if (contractID.equals(checker.getContractID())) {
+
+                if (Main.VERBOSE) {
+                    System.out.println("\tChecker found in cache");
+                }
+                return checker;
+
+            }
+        }
+        return null;
     }
 
 }

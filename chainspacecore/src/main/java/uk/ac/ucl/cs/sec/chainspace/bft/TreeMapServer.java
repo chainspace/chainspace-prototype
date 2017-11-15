@@ -369,17 +369,17 @@ public class TreeMapServer extends DefaultRecoverable {
                         // Ask client to do PREPARE_T
                         byte[] replyPrepareT = client.prepare_t(t,this.thisShard);
 
-                        // Process response to PREPARE_T, and send ACCEPT_T
-                        String strReplyAcceptT;
-
                         // Process reply to PREPARE_T
-                        String strReplyPrepareT = "";
+                        String strReplyPrepareT = null;
                         if (replyPrepareT != null) {
                             strReplyPrepareT = new String(replyPrepareT, "UTF-8");
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
                         } else {
-                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null");
+                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null - this will mean we send an ABORT");
                         }
+
+                        // Process response to PREPARE_T, and send ACCEPT_T
+                        String strReplyAcceptT;
 
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
                         if (replyPrepareT == null
@@ -426,12 +426,15 @@ public class TreeMapServer extends DefaultRecoverable {
                             logMsg(strLabel,strModule,"Unknown error in processing PREPARE_T");
                             strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
                         }
-                        logMsg(strLabel,strModule,"Finally replying to client: " + strReplyAcceptT);
+
                         // TODO: The final response should contain proof (bundle of signatures)
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
 
-                        strReplyAcceptT = strReplyAcceptT + ";" + t.getCsTransaction().getInputIDs()[0];
+                        String inputIds =  (t.getCsTransaction().getInputIDs().length == 0) ? "<no inputs>" : t.getCsTransaction().getInputIDs()[0];
+                        strReplyAcceptT = strReplyAcceptT + ";" + inputIds;
+
+                        logMsg(strLabel,strModule,"Finally replying to client: [" + strReplyAcceptT + "]");
                         return strReplyAcceptT.getBytes("UTF-8");
 
                     }
@@ -446,6 +449,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 catch (Exception  e) {
                     logMsg(strLabel,strModule,"Exception " + e.getMessage());
+                    e.printStackTrace();
                     return ResponseType.SUBMIT_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
             }
