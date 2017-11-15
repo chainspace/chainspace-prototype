@@ -46,6 +46,7 @@ class PythonChecker {
 
 
     void startChecker() throws StartCheckerException {
+        System.out.println("\nStarting Checker @ " + getURL("") + "\n");
         System.out.println("Working dir: " + new File(".").getAbsolutePath());
         String pythonExecutable = "../.chainspace.env/bin/python";
         ProcessBuilder pb = new ProcessBuilder(Arrays.asList(
@@ -60,7 +61,7 @@ class PythonChecker {
         redirectCheckerOutputToFile(pb, this.port);
 
         if (Main.VERBOSE) {
-            System.out.println("\nstartChecker: " + pythonExecutable + " " + this.pythonScriptPath + " checker --port " + this.port);
+            System.out.println("startChecker: " + pythonExecutable + " " + this.pythonScriptPath + " checker --port " + this.port);
         }
 
         try {
@@ -71,12 +72,13 @@ class PythonChecker {
 
             Thread.sleep(1000);
 
-            System.out.println("\ncheckerProcess isAlive: " + checkerProcess.isAlive());
+            System.out.println("checkerProcess isAlive: " + checkerProcess.isAlive());
 
             if (!checkerProcess.isAlive()) {
                 throw new StartCheckerException("Checker failed to start! (see ./checker.XXX.log for log output) " + "Exit value " + checkerProcess.exitValue());
             } else {
                 this.checkerProcess = checkerProcess;
+                System.out.println("Checker started ok.");
             }
 
         } catch (IOException | InterruptedException e) {

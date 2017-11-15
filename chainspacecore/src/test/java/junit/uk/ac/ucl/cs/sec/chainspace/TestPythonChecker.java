@@ -25,7 +25,9 @@ public class TestPythonChecker {
 
     @After
     public void kill_any_checkers() throws Exception {
+        System.out.println("\nKilling off any checkers that are still running...\n");
         File checkerPIds = new File("./checker.pids");
+        System.out.println("Reading pids from " + checkerPIds);
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(checkerPIds));
@@ -36,9 +38,9 @@ public class TestPythonChecker {
 
                 p.waitFor();
                 if (p.exitValue() != 0) {
-                    System.out.println("Could not kill pid " + pid);
+                    System.out.println("pid " + pid + " not killed");
                 } else {
-                    System.out.println("Killed pid " + pid);
+                    System.out.println("pid " + pid + " killed");
                 }
             }
             checkerPIds.delete();
