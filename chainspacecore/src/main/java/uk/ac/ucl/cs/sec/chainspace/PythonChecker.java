@@ -20,7 +20,12 @@ class PythonChecker {
 
     private static final ArrayList<PythonChecker> cache = new ArrayList<>(CACHE_DEPTH);
 
-    private static int latestPort = 13000;
+    private static int latestPort = initialiseStartingPort();
+
+    private static int initialiseStartingPort() {
+        return new Integer(System.getProperty("checker.start.port", "13000"));
+    }
+
     private int port;
 
 
