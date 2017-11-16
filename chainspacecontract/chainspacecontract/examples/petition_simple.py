@@ -62,7 +62,6 @@ def create_petition(inputs, reference_inputs, parameters, UUID, info, options):
 # ------------------------------------------------------------------
 @contract.method('add_score')
 def add_score(inputs, reference_inputs, parameters):
-
     # retrieve old petition & init new petition object
     old_petition = loads(inputs[0])
     new_petition = loads(inputs[0])
@@ -99,7 +98,6 @@ def read(inputs, reference_inputs, parameters):
 @contract.checker('create_petition')
 def create_petition_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
-
         # retrieve petition
         petition = loads(outputs[1])
         options = petition['options']
@@ -137,7 +135,6 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
 @contract.checker('add_score')
 def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
-
 		# retrieve petition
 		old_petition = loads(inputs[0])
 		new_petition = loads(outputs[0])
