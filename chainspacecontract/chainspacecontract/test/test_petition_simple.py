@@ -65,6 +65,7 @@ class Test(unittest.TestCase):
         ## create transaction
         ##
         # set up info and options
+        UUID = "1234"
         info = "Here goes what the petition is about."
         options = ['YES', 'NO']
 
@@ -77,6 +78,7 @@ class Test(unittest.TestCase):
             (token,),
             None,
             None,
+            UUID,
             info,
             dumps(options)
         )
@@ -111,7 +113,8 @@ class Test(unittest.TestCase):
         ## create transaction
         ##
         # set up info and options
-        info = "Petition UUID -- Here goes what the petition is about."
+        UUID = "1234"
+        info = "Here goes what the petition is about."
         options = ['YES', 'NO']
 
         # init
@@ -123,6 +126,7 @@ class Test(unittest.TestCase):
             (token,),
             None,
             None,
+            UUID,
             info,
             dumps(options)
         )
@@ -165,6 +169,7 @@ class Test(unittest.TestCase):
         ## create transaction
         ##
         # set up info and options
+        UUID = "1234"
         info = "Here goes what the petition is about."
         options = ['YES', 'NO']
 
@@ -177,6 +182,7 @@ class Test(unittest.TestCase):
             (token,),
             None,
             None,
+            UUID,
             info,
             dumps(options)
         )

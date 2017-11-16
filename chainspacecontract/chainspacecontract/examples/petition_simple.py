@@ -39,13 +39,14 @@ def init():
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('create_petition')
-def create_petition(inputs, reference_inputs, parameters, info, options):
+def create_petition(inputs, reference_inputs, parameters, UUID, info, options):
 	# inital score
 	scores = [0 for _ in loads(options)]
 
     # new petition object
 	new_petition = {
 		'type'          : 'SPObject',
+		'UUID'			: UUID,
 		'info'			: info,
 		'options'       : loads(options),
 		'scores'        : scores
@@ -116,6 +117,10 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
         if petition['type'] != 'SPObject':
             return False
 
+        # check UUID is not empty
+        if petition['UUID'] == '':
+            return False
+
         # check initalised scores
         if not all(init_score==0 for init_score in scores):
         	return False
@@ -152,6 +157,10 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
 
 		# check that user voted for exactly one option
 		if sum(added_scores) != 1:
+			return False
+
+		# check petition UUID
+		if old_petition['UUID'] != new_petition['UUID']:
 			return False
 
 		# check scores
