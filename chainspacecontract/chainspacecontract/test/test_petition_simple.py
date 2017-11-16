@@ -111,7 +111,7 @@ class Test(unittest.TestCase):
         ## create transaction
         ##
         # set up info and options
-        info = "Here goes what the petition is about."
+        info = "Petition UUID -- Here goes what the petition is about."
         options = ['YES', 'NO']
 
         # init
