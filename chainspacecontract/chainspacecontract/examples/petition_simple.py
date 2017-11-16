@@ -1,4 +1,12 @@
-"""A simple smart contract illustarting an insecure e-petition."""
+""" 
+	A simple smart contract illustarting an insecure e-petition.
+
+	The main problems are:
+		1) People can sign the petition multiple time;
+		2) No ways to determine who is authorised to sign (access control);
+		3) No privacy.
+"""
+
 
 ####################################################################
 # imports
