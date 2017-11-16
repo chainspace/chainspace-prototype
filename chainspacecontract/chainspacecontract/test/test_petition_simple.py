@@ -215,7 +215,9 @@ class Test(unittest.TestCase):
         )
 
         # print result
-        print transaction['transaction']['returns']
+        print("\n\n===================== RESULTS =====================\n")
+        print(transaction['transaction']['returns'])
+        print("\n===================================================\n\n")
 
 
         ##
