@@ -75,7 +75,7 @@ class TestSensor(unittest.TestCase):
             None,
             None,
         )
-        print transaction_dict
+        print(transaction_dict)
 
         ##
         ## submit transaction
@@ -125,7 +125,7 @@ class TestSensor(unittest.TestCase):
             None,
             [dumps([1, 2, 3])],
         )
-        print transaction_dict
+        print(transaction_dict)
 
         ##
         ## submit transaction
@@ -183,7 +183,7 @@ class TestSensor(unittest.TestCase):
             (new_sensor,),
             None
         )
-        print read_transaction['transaction']['returns']
+        print(read_transaction['transaction']['returns'])
 
 
         ##

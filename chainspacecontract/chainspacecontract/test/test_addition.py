@@ -53,7 +53,7 @@ class Test(unittest.TestCase):
         response = requests.post(
             'http://127.0.0.1:5000/' + addition_contract.contract_name + '/increment', json=transaction_to_solution(transaction)
         )
-        print response.json()['success']
+        print(response.json()['success'])
         self.assertTrue(response.json()['success'])
 
         ##
