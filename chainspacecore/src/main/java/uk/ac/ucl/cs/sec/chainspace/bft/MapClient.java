@@ -383,6 +383,9 @@ public class MapClient implements Map<String, String> {
     }
 
 
+    /**
+     * @// TODO: 16/11/2017 - SHould the response from this be in terms of "SUBMIT_T_ACCEPT | ABORT | ERROR" ? rather than "PREPARE_T | ACCEPT_T"?
+     */
     public String submitTransaction(Transaction t, int invokeTimeoutAsynch) {
         Set<Integer> targetShards = new HashSet<Integer>();
         ; // The shards relevant to this transaction
@@ -391,7 +394,7 @@ public class MapClient implements Map<String, String> {
         TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
 
         boolean earlyTerminate = false; //What is this for?
-        String finalResponse = null;
+
         String transactionID = t.id;
         int msgType = RequestType.TRANSACTION_SUBMIT;
         String strModule = "SUBMIT_T (DRIVER): ";
@@ -399,6 +402,8 @@ public class MapClient implements Map<String, String> {
         logMsg(strLabel, strModule, "Transaction: \n" + t);
 
         logMsg(strLabel, strModule, "Processing inputs: " + t.inputs);
+
+        String finalResponse;
         try {
             List<String> inputObjects = t.inputs;
 
@@ -532,10 +537,11 @@ public class MapClient implements Map<String, String> {
             oos.writeObject(t);
             oos.close();
             // PREPARE_T BFT round done synchronously within the local shard
-            logMsg(strLabel, strModule, "Sending PREPARE_T to shard " + shardID + " for transaction " + t.id);
-            byte[] reply = clientProxy.get(shardID).invokeOrdered(bs.toByteArray());
+            logMsg(strLabel, strModule, ">>> Sending PREPARE_T synchronously to shard " + shardID + " for transaction " + t.id + "\n");
+            ServiceProxy serviceProxy = clientProxy.get(shardID);
+            byte[] reply = serviceProxy.invokeOrdered(bs.toByteArray());
             String strReply = (reply == null) ? "<null>" : new String(reply, "UTF-8");
-            logMsg(strLabel, strModule, "Reply from shard ID " + shardID + " is [" + strReply + "]");
+            logMsg(strLabel, strModule, "\n>>> Reply from shard ID " + shardID + " is [" + strReply + "]");
             return reply;
         } catch (Exception e) {
             e.printStackTrace();
@@ -784,11 +790,11 @@ public class MapClient implements Map<String, String> {
 
         @Override
         public void replyReceived(RequestContext context, TOMMessage reply) {
-            //System.out.println("New reply received by client ID "+client.getProcessId()+" from  "+reply.getSender());
+            System.out.println("New reply received by client ID "+client.getProcessId()+" from  "+reply.getSender());
             StringBuilder builder = new StringBuilder();
             builder.append("[RequestContext] id: " + context.getReqId() + " type: " + context.getRequestType());
             builder.append("[TOMMessage reply] sender id: " + reply.getSender() + " Hash content: " + Arrays.toString(reply.getContent()));
-            //System.out.println("ACCEPT_T: New reply received from shard ID"+shardID+": "+builder.toString());
+            System.out.println("ACCEPT_T: New reply received from shard ID"+shardID+": "+builder.toString());
 
             // When to give reply to the application layer
 
@@ -803,6 +809,7 @@ public class MapClient implements Map<String, String> {
                 }
                 replies[pos] = reply;
 
+                logMsg(strLabel, strModule, "Incoming Reply from pos " + pos + ", sender : " + reply.getSender() + " : [" + getStringReply(reply) + "]");
                 // Compare the reply just received, to the others
                 for (int i = 0; i < replies.length; i++) {
 
@@ -830,6 +837,8 @@ public class MapClient implements Map<String, String> {
             }
 
         }
+
+
     }
 
     private int getReplyQuorum(int shardID) {
@@ -845,6 +854,20 @@ public class MapClient implements Map<String, String> {
             // (broadcastBFTDecision) or only a single replica is expected to
             // reply (e.g., BFTInitiator in submitTransaction).
             return 1;
+        }
+    }
+
+    private static String getStringReply(TOMMessage reply) throws RuntimeException {
+        try {
+            if (reply == null) {
+                return "<null>";
+            }
+            if (reply.getContent() == null) {
+                return "<null content>";
+            }
+            return new String(reply.getContent(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Could not read content from reply");
         }
     }
 

@@ -23,6 +23,9 @@ import bftsmart.tom.util.Logger;
 import uk.ac.ucl.cs.sec.chainspace.Core;
 import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
 
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARED_T_ABORT;
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARE_T_SYSTEM_ERROR;
+
 
 public class TreeMapServer extends DefaultRecoverable {
 
@@ -150,8 +153,15 @@ public class TreeMapServer extends DefaultRecoverable {
         new TreeMapServer(args[0]);
     }
 
+    /**
+     * Entry point for BFTSmart to call us
+     * */
     @Override
     public byte[][] appExecuteBatch(byte[][] command, MessageContext[] mcs) {
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "======================================================================================");
+
+        logMsg(strLabel, strModule, "Incoming request - appExecuteBatch");
 
         byte[][] replies = new byte[command.length][];
         for (int i = 0; i < command.length; i++) {
@@ -189,7 +199,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 return resultBytes;
             }
             else if (reqType == RequestType.PREPARE_T) {
-                strModule = "PREPARE_T (MAIN): ";
+                strModule = "PREPARE_T (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     logMsg(strLabel,strModule,"Received request for transaction "+t.id);
@@ -216,12 +226,12 @@ public class TreeMapServer extends DefaultRecoverable {
                 catch (Exception  e) {
                     logMsg(strLabel,strModule," Exception " + e.getMessage());
                     e.printStackTrace();
-                    return ResponseType.PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
+                    return PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
 
             }
             else if (reqType == RequestType.ACCEPT_T_COMMIT) {
-                strModule = "ACCEPT_T_COMMIT (MAIN): ";
+                strModule = "ACCEPT_T_COMMIT (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     logMsg(strLabel,strModule,"Received request for transaction "+t.id);
@@ -238,7 +248,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
             }
             else if (reqType == RequestType.ACCEPT_T_ABORT) {
-                strModule = "ACCEPT_T_ABORT (MAIN): ";
+                strModule = "ACCEPT_T_ABORT (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
 
@@ -287,8 +297,11 @@ public class TreeMapServer extends DefaultRecoverable {
     @Override
     public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
         int reqType;
-        String strModule = "TREEMAP_SERVER";
-        logMsg(strLabel, strModule, "appExecuteUnordered");
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "======================================================================================");
+        logMsg(strLabel, strModule, "Incoming request - appExecuteUnordered");
+
+
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
@@ -367,6 +380,7 @@ public class TreeMapServer extends DefaultRecoverable {
                         sequences.get(t.id).PREPARE_T = true;
 
                         // Send PREPARE_T
+                        logMsg(strLabel,strModule,"--------------------------------------------------------------------");
                         logMsg(strLabel,strModule,"Sending PREPARE_T");
 
                         // Ask client to do PREPARE_T
@@ -378,33 +392,35 @@ public class TreeMapServer extends DefaultRecoverable {
                             strReplyPrepareT = new String(replyPrepareT, "UTF-8");
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
                         } else {
-                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null - this will mean we send an ABORT");
+                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null - this will mean we send an ABORT - setting to PREPARED_T_ABORT");
+                            strReplyPrepareT = PREPARED_T_ABORT;
                         }
 
-                        // Process response to PREPARE_T, and send ACCEPT_T
-                        String strReplyAcceptT;
+                        logMsg(strLabel,strModule,"--------------------------------------------------------------------");
+
+                        String finalResponse;
 
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
-                        if (replyPrepareT == null
-                                || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT)
-                                || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
+                        if (strReplyPrepareT.equals(PREPARED_T_ABORT)
+                                || strReplyPrepareT.equals(PREPARE_T_SYSTEM_ERROR)) {
 
                             client.broadcastBFTDecision(RequestType.PREPARED_T_ABORT, t, this.thisShard);
 
                             // TODO: Can we skip BFT here and return to client?
                             sequences.get(t.id).ACCEPT_T_ABORT = true;
 
-                            logMsg(strLabel,strModule, "Sending ACCEPT_T_ABORT");
-                            strReplyAcceptT = client.accept_t_abort(t);
+                            logMsg(strLabel,strModule, "Broadcasting PREPARES_T_ABORT...");
+                            String abortPrepareReply = client.accept_t_abort(t);
 
                             // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
                             // TODO: it will always abort this transaction.
                             if (true) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             }
-                            logMsg(strLabel,strModule,"ABORTED. Reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"ABORTED. Reply to aborting the PREPARE_T is " + abortPrepareReply);
                             logMsg(strLabel,strModule,"ABORTED. Shards have accepted the abort, returning " + strReplyPrepareT);
-                            strReplyAcceptT = strReplyPrepareT;
+
+                            finalResponse = strReplyPrepareT;
                         }
                         // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                         else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
@@ -414,20 +430,25 @@ public class TreeMapServer extends DefaultRecoverable {
                             sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
                             logMsg(strLabel,strModule, "Sending ACCEPT_T_COMMIT");
-                            strReplyAcceptT = client.accept_t_commit(t);
+                            String strAcceptCommitReply = client.accept_t_commit(t);
 
-                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strAcceptCommitReply);
 
-                            if (strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
+                            if (strAcceptCommitReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR)
+                                    || strAcceptCommitReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
+
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
-                            } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
+
+                            } else if (strAcceptCommitReply.equals(ResponseType.ACCEPTED_T_COMMIT)) {
+
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
                                 slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs) + " " + countUniqueInputShards(t));
                             }
-                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strAcceptCommitReply);
+                            finalResponse = strAcceptCommitReply;
                         } else {
                             logMsg(strLabel,strModule,"Unknown error in processing PREPARE_T");
-                            strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
+                            finalResponse = PREPARE_T_SYSTEM_ERROR;
                         }
 
                         // TODO: The final response should contain proof (bundle of signatures)
@@ -435,10 +456,10 @@ public class TreeMapServer extends DefaultRecoverable {
                         // TODO: shard agree on the final decision
 
                         String inputIds =  (t.getCsTransaction().getInputIDs().length == 0) ? "<no inputs>" : t.getCsTransaction().getInputIDs()[0];
-                        strReplyAcceptT = strReplyAcceptT + ";" + inputIds;
+                        finalResponse = finalResponse+ ";" + t.id + ";" + inputIds;
 
-                        logMsg(strLabel,strModule,"Finally replying to client: [" + strReplyAcceptT + "]");
-                        return strReplyAcceptT.getBytes("UTF-8");
+                        logMsg(strLabel,strModule,"Finally replying to client: [" + finalResponse + "]");
+                        return finalResponse.getBytes("UTF-8");
 
                     }
                     // If it is a non-BFTInitiator Replica
@@ -536,16 +557,16 @@ public class TreeMapServer extends DefaultRecoverable {
                 nManagedObj++;
             if(managedObj && readValue == null) {
                 strErr = Transaction.INVALID_NOOBJECT;
-                reply = ResponseType.PREPARED_T_ABORT;
+                reply = PREPARED_T_ABORT;
             }
             else if(managedObj && readValue != null) {
                 if (readValue.equals(ObjectStatus.LOCKED)) {
                     strErr = Transaction.REJECTED_LOCKEDOBJECT;
-                    reply = ResponseType.PREPARED_T_ABORT;
+                    reply = PREPARED_T_ABORT;
                 }
                 else if (managedObj && readValue.equals(ObjectStatus.INACTIVE)) {
                     strErr = Transaction.INVALID_INACTIVEOBJECT;
-                    reply = ResponseType.PREPARED_T_ABORT;
+                    reply = PREPARED_T_ABORT;
                 }
             }
             // debug option -- should be removed
@@ -563,7 +584,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 System.out.println(Arrays.toString(out));
             } catch (Exception e) {
                 strErr = e.getMessage();
-                reply = ResponseType.PREPARED_T_ABORT;
+                reply = PREPARED_T_ABORT;
                 e.printStackTrace();
             }
         }
@@ -572,10 +593,10 @@ public class TreeMapServer extends DefaultRecoverable {
         // AND the transaction isn't an init transaction
         if(nManagedObj == 0 && t.inputs.size() != 0) {
             strErr = Transaction.INVALID_NOMANAGEDOBJECT;
-            reply = ResponseType.PREPARED_T_ABORT;
+            reply = PREPARED_T_ABORT;
         }
 
-        if(reply.equals(ResponseType.PREPARED_T_ABORT))
+        if(reply.equals(PREPARED_T_ABORT))
             System.out.println("PREPARE_T (checkPrepareT): Returning PREPARED_T_ABORT->"+strErr);
 
         return reply;
