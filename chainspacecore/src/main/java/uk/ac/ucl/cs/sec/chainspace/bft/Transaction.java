@@ -50,14 +50,20 @@ public class Transaction implements Serializable {
     }
 
     public void print() {
-        System.out.println("Inputs:");
+        System.out.println(this.toString());
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Inputs:\n");
         for (String s : inputs) {
-            System.out.println(s);
+            sb.append(s).append("\n");
         }
-        System.out.println("Outputs:");
+        sb.append("Outputs:\n");
         for (String s : outputs) {
-            System.out.println(s);
+            sb.append(s).append("\n");
         }
+        return sb.toString();
     }
 
     public static byte[] toByteArray(Transaction t) {

@@ -1,5 +1,6 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import bftsmart.tom.util.Logger;
 import uk.ac.ucl.cs.sec.chainspace.bft.ClientConfig;
 import uk.ac.ucl.cs.sec.chainspace.bft.MapClient;
 import uk.ac.ucl.cs.sec.chainspace.bft.RequestType;
@@ -118,9 +119,10 @@ public class Client {
             System.exit(0);
         }
 
-        // create clients for talking with other shards
+        // create clients for talking with other shards - connects directly to replica 0
         client = new MapClient(shardConfigFile, 0, 0);
         client.defaultShardID = 0;
+        System.out.println("Initialised MapClient to talk to shard 0, replica 0");
 
         // start webservice
         startClientService();

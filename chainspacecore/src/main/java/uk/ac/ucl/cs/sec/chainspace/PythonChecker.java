@@ -58,7 +58,7 @@ class PythonChecker {
         ));
 
 
-        redirectCheckerOutputToFile(pb, this.port);
+        File checkerLogFile = redirectCheckerOutputToFile(pb, this.port);
 
         if (Main.VERBOSE) {
             System.out.println("startChecker: " + pythonExecutable + " " + this.pythonScriptPath + " checker --port " + this.port);
@@ -75,7 +75,7 @@ class PythonChecker {
             System.out.println("checkerProcess isAlive: " + checkerProcess.isAlive());
 
             if (!checkerProcess.isAlive()) {
-                throw new StartCheckerException("Checker failed to start! (see ./checker.XXX.log for log output) " + "Exit value " + checkerProcess.exitValue());
+                throw new StartCheckerException("Checker failed to start! (see [" + checkerLogFile.getAbsolutePath() + "] for log output) " + "Exit value " + checkerProcess.exitValue());
             } else {
                 this.checkerProcess = checkerProcess;
                 System.out.println("Checker started ok.");
@@ -136,7 +136,7 @@ class PythonChecker {
         return pid;
     }
 
-    private static void redirectCheckerOutputToFile(ProcessBuilder pb, int port) {
+    private static File redirectCheckerOutputToFile(ProcessBuilder pb, int port) {
         File checkerLog =  new File("./checker." + port + ".log.0");
 
         try {
@@ -150,6 +150,7 @@ class PythonChecker {
             System.out.println("Could not create checker log @ " + checkerLog.getAbsolutePath());
             t.printStackTrace();
         }
+        return checkerLog;
     }
 
 

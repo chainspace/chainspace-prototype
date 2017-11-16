@@ -19,6 +19,7 @@ import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
+import bftsmart.tom.util.Logger;
 import uk.ac.ucl.cs.sec.chainspace.Core;
 import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
 
@@ -144,6 +145,7 @@ public class TreeMapServer extends DefaultRecoverable {
             System.out.println("Usage: HashMapServer <configuration file>");
             System.exit(0);
         }
+
 
         new TreeMapServer(args[0]);
     }
@@ -285,7 +287,8 @@ public class TreeMapServer extends DefaultRecoverable {
     @Override
     public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
         int reqType;
-        String strModule = " ";
+        String strModule = "TREEMAP_SERVER";
+        logMsg(strLabel, strModule, "appExecuteUnordered");
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);

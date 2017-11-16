@@ -19,6 +19,7 @@ public class TestPythonChecker {
             checker.startChecker();
             fail("Should throw an exception because checker already running");
         } catch (StartCheckerException e) {
+            System.out.println("\n" + e.getMessage() + "\n");
         }
 
     }

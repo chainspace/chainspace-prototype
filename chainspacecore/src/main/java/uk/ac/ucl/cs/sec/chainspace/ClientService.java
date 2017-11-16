@@ -75,6 +75,7 @@ class ClientService {
 
             // submit the transaction
             String result = Client.submitTransaction(request.body());
+            System.out.println("Result from Client.submitTransaction is " + result);
 
             if (ACCEPTED_T_COMMIT.equals(result)) {
                 responseJson = createHttpResponse(response, result, "True", 200, "outcome");

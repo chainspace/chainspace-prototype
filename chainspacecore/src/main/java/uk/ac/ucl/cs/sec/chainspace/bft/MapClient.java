@@ -15,6 +15,8 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.*;
 
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.*;
+
 // Classes that need to be declared to implement this
 // replicated Map
 
@@ -387,11 +389,14 @@ public class MapClient implements Map<String, String> {
         HashMap<Integer, Integer> shardToReq = new HashMap<Integer, Integer>();
         ; // Request IDs indexed by shard IDs
         TOMMessageType reqType = TOMMessageType.UNORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
-        boolean earlyTerminate = false;
+
+        boolean earlyTerminate = false; //What is this for?
         String finalResponse = null;
         String transactionID = t.id;
         int msgType = RequestType.TRANSACTION_SUBMIT;
         String strModule = "SUBMIT_T (DRIVER): ";
+
+        logMsg(strLabel, strModule, "Transaction: \n" + t);
 
         logMsg(strLabel, strModule, "Processing inputs: " + t.inputs);
         try {
@@ -422,7 +427,7 @@ public class MapClient implements Map<String, String> {
                     // Expect single response from BFTInitiator of each shard to which the request was sent
                     logMsg(strLabel, strModule, "The view of client is: " + clientProxyAsynch.get(shardID).getViewManager().getCurrentView().toString());
 
-                    int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynchSingle(shardID), reqType);
+                    int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListenerAsynchSingle(shardID, strLabel), reqType);
                     shardToReq.put(shardID, req);
                 }
             }
@@ -435,18 +440,24 @@ public class MapClient implements Map<String, String> {
                 TODO
              */
             if (inputObjects.size() == 0) {
-                System.out.println("\n>> SUBMITTING INIT FUNCTION...");
+                int shardID = 0;
+                System.out.println("\n>> SUBMITTING INIT FUNCTION TO SHARD " + shardID);
 
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(bs);
                 oos.writeInt(msgType);
                 oos.writeObject(t);
                 oos.close();
-                int shardID = 0;
-                targetShards.add(shardID);
-                int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(
-                        bs.toByteArray(), new ReplyListenerAsynchSingle(shardID), reqType
-                );
+
+
+                targetShards.add(shardID); // Add this shard to the list to be checked later
+
+                AsynchServiceProxy asynchServiceProxy = clientProxyAsynch.get(shardID);
+
+                int req = asynchServiceProxy.invokeAsynchRequest(
+                                bs.toByteArray(),
+                                new ReplyListenerAsynchSingle(shardID, strLabel),
+                                reqType);
                 shardToReq.put(shardID, req);
             }
             /*
@@ -470,34 +481,35 @@ public class MapClient implements Map<String, String> {
                     String key = getKeyAsynchReplies(client, req, reqType.toString());
                     TOMMessage m = asynchReplies.get(key);
 
-                    logMsg(strLabel, strModule, "Processing shard m " + m + " from shard " + shard);
+                    logMsg(strLabel, strModule, "Processing message [" + m + "] from shard " + shard);
                     // finalResponse is ABORT if at least one shard replies ABORT or does not reply at all
                     if (m != null) {
                         byte[] reply = m.getContent();
                         String strRawReply = new String(reply, Charset.forName("UTF-8"));
+                        logMsg(strLabel, strModule, "Raw Reply: " + strRawReply);
                         String[] arrReply = strRawReply.split(";");
                         String strReply = arrReply[0];
 
                         tID = arrReply.length > 1 ? arrReply[1] : "no-tx-id";
 
-                        logMsg(strLabel, strModule, "Shard ID " + shard + " replied " + strReply +
-                                " for transaction ID " + tID);
+                        logMsg(strLabel, strModule, "Shard ID " + shard + " replied " + strReply + " for transaction ID " + tID);
 
-                        if (strReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
-                            logMsg(strLabel, strModule, "ACCEPTED_T_ABORT->Abort reply from shard ID " + shard +
-                                    " for transaction ID " + tID);
-                            return ResponseType.ACCEPTED_T_ABORT;
-                        } else if (strReply.equals(ResponseType.SUBMIT_T_SYSTEM_ERROR) ||
-                                strReply.equals(ResponseType.PREPARE_T_SYSTEM_ERROR) ||
-                                strReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR)) {
-                            logMsg(strLabel, strModule, "SYSTEM ERROR->Error reply from shard ID " + shard +
-                                    " for transaction ID " + tID);
+                        if (PREPARED_T_ABORT.equals(strReply)
+                                || ACCEPTED_T_ABORT.equals(strReply)) {
+
+                            logMsg(strLabel, strModule, "T_ABORT->Abort reply from shard ID " + shard + " for transaction ID " + tID);
+                            return strReply;
+
+                        } else if (strReply.equals(SUBMIT_T_SYSTEM_ERROR)
+                                || strReply.equals(PREPARE_T_SYSTEM_ERROR)
+                                || strReply.equals(ACCEPT_T_SYSTEM_ERROR)) {
+
+                            logMsg(strLabel, strModule, "SYSTEM_ERROR->Error reply from shard ID " + shard + " for transaction ID " + tID);
                             return strReply;
                         }
                     } else {
-                        logMsg(strLabel, strModule, "ACCEPTED_T_ABORT->Null reply from shard ID " + shard +
-                                " for transaction ID " + tID);
-                        return ResponseType.ACCEPTED_T_ABORT;
+                        logMsg(strLabel, strModule, "ACCEPTED_T_ABORT->Null reply from shard ID " + shard + " for transaction ID " + tID);
+                        return SUBMIT_T_SYSTEM_ERROR;
                     }
                     asynchReplies.remove(key);
                 }
@@ -506,7 +518,7 @@ public class MapClient implements Map<String, String> {
                 return ResponseType.ACCEPTED_T_COMMIT;
             } else {
                 logMsg(strLabel, strModule, "ACCEPT_T_SYSTEM_ERROR->Transaction ID " + transactionID + " could not be submitted!");
-                return ResponseType.ACCEPT_T_SYSTEM_ERROR;
+                return ACCEPT_T_SYSTEM_ERROR;
             }
         }
     }
@@ -552,7 +564,7 @@ public class MapClient implements Map<String, String> {
         TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
         boolean earlyTerminate = false;
 
-        String finalResponse = ResponseType.ACCEPT_T_SYSTEM_ERROR;
+        String finalResponse = ACCEPT_T_SYSTEM_ERROR;
 
         String transactionID = t.id;
         String strModule = "ACCEPT_T (DRIVER)";
@@ -568,7 +580,7 @@ public class MapClient implements Map<String, String> {
 
                 if (shardID == -1) {
                     logMsg(strLabel, strModule, "Cannot map input " + input + " in transaction ID " + transactionID + " to a shard.");
-                    finalResponse = ResponseType.ACCEPT_T_SYSTEM_ERROR;
+                    finalResponse = ACCEPT_T_SYSTEM_ERROR;
                     earlyTerminate = true;
                     break;
                 }
@@ -628,7 +640,7 @@ public class MapClient implements Map<String, String> {
 
                             logMsg(strLabel, strModule, "Shard ID " + shard + " replied: " + strReply);
 
-                            if (strReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
+                            if (strReply.equals(ACCEPTED_T_ABORT)) {
                                 abortShardReplies = true;
                             }
                         }
@@ -638,7 +650,7 @@ public class MapClient implements Map<String, String> {
                         if (!abortShardReplies) {// Commit if all shards have replied and their reply is to commit
                             finalResponse = ResponseType.ACCEPTED_T_COMMIT;
                         } else {
-                            finalResponse = ResponseType.ACCEPTED_T_ABORT;
+                            finalResponse = ACCEPTED_T_ABORT;
                         }
                         logMsg(strLabel, strModule, "All shards replied; final response is " + finalResponse);
                         break;
@@ -655,14 +667,14 @@ public class MapClient implements Map<String, String> {
 
                     if (waitedSoFar > maxWait) { // We are about to exit this loop and haven't yet heard from all shards
                         logMsg(strLabel, strModule, "Timed out waiting for all shard replies. ABORT.");
-                        finalResponse = ResponseType.ACCEPTED_T_ABORT;
+                        finalResponse = ACCEPTED_T_ABORT;
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             logMsg(strLabel, strModule, "Transaction ID " + transactionID + " experienced Exception " + e.getMessage());
-            finalResponse = ResponseType.ACCEPT_T_SYSTEM_ERROR;
+            finalResponse = ACCEPT_T_SYSTEM_ERROR;
         } finally {
             // Clean up
             for (int shard : targetShards) {
@@ -678,8 +690,9 @@ public class MapClient implements Map<String, String> {
 
 
     private class ReplyListenerAsynchSingle implements ReplyListener {
+        private final String strLabel;
         AsynchServiceProxy client;
-        private int shardID;
+        private final int shardID;
         private TOMMessage replies[];
         private String strModule;
 
@@ -697,8 +710,9 @@ public class MapClient implements Map<String, String> {
             }
         };
 
-        private ReplyListenerAsynchSingle(int shardID) {
+        private ReplyListenerAsynchSingle(int shardID, String strLabel) {
             this.shardID = shardID;
+            this.strLabel = strLabel;
             client = clientProxyAsynch.get(shardID);
             replies = new TOMMessage[client.getViewManager().getCurrentViewN()];
             strModule = "AsynchReplyListenerSingle: ";
@@ -716,6 +730,8 @@ public class MapClient implements Map<String, String> {
                 String strReply = null;
                 try {
                     strReply = new String(reply.getContent(), "UTF-8");
+
+                    logMsg(strLabel, strModule, "Incoming Reply from pos " + pos + ", sender : " + reply.getSender() + " : [" + strReply + "]");
                     // Ignore dummy responses, only capture response from the BFTInitiator (which is non-dummy)
                     if (!strReply.equals(ResponseType.DUMMY)) {
                         String key = shardToClientAsynch.get(shardID) + ";" + context.getReqId() + ";" + context.getRequestType();
