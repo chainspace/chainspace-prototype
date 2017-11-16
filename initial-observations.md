@@ -140,8 +140,15 @@ Install Python modules:
 ```
 > pip install -e ./chainspaceapi
 > pip install -e ./chainspacecontract
+> pip install petlib
 ```
 
+If you ever need to debug the chainspace contract code in your python REPL, you can force
+a load of the files there by doing this:
+
+```
+execfile("<path-to-chainspace>/chainspacecontract/chainspacecontract/contract.py")
+```
 
 
 From here, open the python console:

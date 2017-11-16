@@ -96,7 +96,7 @@ class ChainspaceContract(object):
                         _checker_mode.on = True
                     del kwargs['__checker_mode']
                 checker_mode = _checker_mode.on
-
+                
                 if inputs is None:
                     inputs = ()
                 if reference_inputs is None:
@@ -118,6 +118,8 @@ class ChainspaceContract(object):
                     if key not in result or result[key] is None:
                         result[key] = tuple()
 
+                print "result: " + str(result)
+                
                 result['parameters'] = parameters
                 result['parameters'] += result['extra_parameters']
                 del result['extra_parameters']
@@ -126,6 +128,8 @@ class ChainspaceContract(object):
                     result['inputs'] = inputs
                     result['referenceInputs'] = reference_inputs
                 else:
+                    print "inputs: " + str(inputs)
+                    print "reference_inputs: " + str(reference_inputs)
                     store = {}
                     for obj in inputs + reference_inputs:
                         store[obj.object_id] = obj

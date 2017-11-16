@@ -66,9 +66,7 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     # return
     return {
         'outputs': (inputs[0], dumps(new_vote)),
-        'extra_parameters' : {
-            'proof_init' : pack(proof_init)
-        }
+        'extra_parameters' : ('proof_init', pack(proof_init))        
     }
 
 # ------------------------------------------------------------------

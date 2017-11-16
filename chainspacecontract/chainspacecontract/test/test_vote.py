@@ -82,7 +82,7 @@ class TestVote(unittest.TestCase):
 
         # initialise vote (all votes are zero)
         transaction = vote.create_vote(
-            (token,),
+            token,
             None,
             None,
             dumps(options),
