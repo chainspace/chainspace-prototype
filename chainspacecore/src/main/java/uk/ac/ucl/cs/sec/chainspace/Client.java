@@ -5,12 +5,15 @@ import uk.ac.ucl.cs.sec.chainspace.bft.MapClient;
 import uk.ac.ucl.cs.sec.chainspace.bft.RequestType;
 import uk.ac.ucl.cs.sec.chainspace.bft.Transaction;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Scanner;
+
+import static java.lang.String.format;
+import static java.lang.System.err;
+import static java.lang.System.out;
 
 /**
  * Created by alberto on 01/08/2017.
@@ -44,7 +47,7 @@ public class Client {
             thisClient = Integer.parseInt(configData.get(ClientConfig.thisClient));
         }
         else {
-            System.out.println("Could not find configuration for thisClient.");
+            out.println("Could not find configuration for thisClient.");
             done = false;
         }
 
@@ -52,7 +55,7 @@ public class Client {
             shardConfigFile = configData.get(ClientConfig.shardConfigFile);
         }
         else {
-            System.out.println("Could not find configuration for shardConfigFile.");
+            out.println("Could not find configuration for shardConfigFile.");
             done = false;
         }
 
@@ -64,9 +67,16 @@ public class Client {
      * readConfiguration
      * Read the configuration file.
      */
-    private static boolean readConfiguration(String configFile) {
+    private static boolean readConfiguration(String configFilePath) {
+
+
 
         try {
+            File configFile = new File(configFilePath);
+            out.println(format("Reading config from [%s]", configFile.getAbsoluteFile()));
+            if (!configFile.exists()) {
+              throw new FileNotFoundException(configFile.getAbsolutePath());
+            }
             BufferedReader lineReader = new BufferedReader(new FileReader(configFile));
             String line;
             int countLine = 0;
@@ -82,12 +92,14 @@ public class Client {
                     configData.put(token, value);
                 }
                 else
-                    System.out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
+                    out.println("Skipping Line # "+countLine+" in config file: Insufficient tokens");
             }
             lineReader.close();
             return true;
         } catch (Exception e) {
-            System.out.println("There was an exception reading configuration file: "+ e.toString());
+            out.flush();
+            e.printStackTrace();
+            err.flush();
             return false;
         }
 
@@ -103,7 +115,7 @@ public class Client {
 
         // check arguments
         if (args.length < 1) {
-            System.out.println("Usage: ConsoleClient <config file path>");
+            out.println("Usage: ConsoleClient <config file path>");
             System.exit(0);
         }
 
@@ -114,7 +126,7 @@ public class Client {
         configData = new HashMap<>();
         readConfiguration(configFile);
         if (!loadConfiguration()) {
-            System.out.println("Could not load configuration. Now exiting.");
+            out.println("Could not load configuration. Now exiting.");
             System.exit(0);
         }
 
@@ -172,7 +184,7 @@ public class Client {
         try {new ClientService(PORT);}
         catch (Exception e) {
             if (Main.VERBOSE) { Utils.printStacktrace(e); }
-            else { System.err.println("[ERROR] Node service failed to start on port " + PORT); }
+            else { err.println("[ERROR] Node service failed to start on port " + PORT); }
         }
 
         // verbose print
@@ -182,7 +194,7 @@ public class Client {
 
     static String submitTransaction(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
-        System.out.println("\n>> SUBMITTING TRANSACTION...");
+        out.println("\n>> SUBMITTING TRANSACTION...");
         Transaction transaction = new Transaction(request);
         return client.submitTransaction(transaction);
 
@@ -190,7 +202,7 @@ public class Client {
 
     static void submitTransactionNoWait(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
-        System.out.println("\n>> SUBMITTING TRANSACTION...");
+        out.println("\n>> SUBMITTING TRANSACTION...");
         Transaction transaction = new Transaction(request);
         client.submitTransaction(transaction, 0);
 
