@@ -51,6 +51,7 @@ class TestBankAuthenticated(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
+
     # --------------------------------------------------------------
     # test create meter
     # --------------------------------------------------------------
@@ -82,6 +83,7 @@ class TestBankAuthenticated(unittest.TestCase):
             dumps([5, 3, 5, 3, 5]),         # the tariffs 
             dumps(764)                      # the billing period
         )
+        print transaction
 
         ##
         ## submit transaction
@@ -96,6 +98,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
+
 
     # --------------------------------------------------------------
     # test add reading
@@ -140,6 +143,7 @@ class TestBankAuthenticated(unittest.TestCase):
             dumps(10),                 # the new reading 
             pack(G.order().random())   # the opening value
         )
+        print transaction
 
 
         ##
@@ -291,6 +295,7 @@ class TestBankAuthenticated(unittest.TestCase):
             pack(openings), 
             dumps(tariffs)             
         )
+        print transaction
 
 
         ##
@@ -306,6 +311,7 @@ class TestBankAuthenticated(unittest.TestCase):
         ##
         checker_service_process.terminate()
         checker_service_process.join()
+
 
     # --------------------------------------------------------------
     # test read bill

@@ -85,10 +85,10 @@ def add_reading(inputs, reference_inputs, parameters, meter_priv, reading, openi
     # return
     return {
         'outputs': (dumps(new_meter),),
-        'extra_parameters' : {
-            'reading'        : pack(commitment),
-            'signature'      : pack(sig)
-        }
+        'extra_parameters' : (
+            pack(commitment),
+            pack(sig)
+        )
     }
 
 # ------------------------------------------------------------------
@@ -120,10 +120,10 @@ def compute_bill(inputs, reference_inputs, parameters, readings, openings, tarif
     # return
     return {
         'outputs': (dumps(bill),),
-        'extra_parameters' : {
-            'total_bill'   : dumps(total_bill),
-            'sum_openings' : pack(sum_openings),
-        }
+        'extra_parameters' : (
+            dumps(total_bill),
+            pack(sum_openings),
+        )
     }
 
 # ------------------------------------------------------------------
@@ -195,18 +195,18 @@ def add_reading_checker(inputs, reference_inputs, parameters, outputs, returns, 
             return False
 
         # check readings' consistency
-        if new_meter['readings'] != old_meter['readings'] + [parameters['reading']]:
+        if new_meter['readings'] != old_meter['readings'] + [parameters[0]]:
             return False
 
         # hash message to sign
         hasher = sha256()
         hasher.update(dumps(old_meter).encode('utf8'))
-        hasher.update(dumps(parameters['reading']).encode('utf8'))
+        hasher.update(dumps(parameters[0]).encode('utf8'))
 
         # verify signature
         G = setup()[0]
         pub = unpack(old_meter['pub'])
-        sig = unpack(parameters['signature'])
+        sig = unpack(parameters[1])
         if not do_ecdsa_verify(G, pub, sig, hasher.digest()):
             return False
 
@@ -234,7 +234,7 @@ def compute_bill_checker(inputs, reference_inputs, parameters, outputs, returns,
             return False
         if meter['tariffs'] != bill['tariffs']:
             return False
-        if bill['total_bill'] != loads(parameters['total_bill']):
+        if bill['total_bill'] != loads(parameters[0]):
             return False
 
         # check tokens
@@ -244,8 +244,8 @@ def compute_bill_checker(inputs, reference_inputs, parameters, outputs, returns,
         # get objects
         tariffs      = bill['tariffs']
         commitements = meter['readings']
-        sum_openings = unpack(parameters['sum_openings'])
-        total_bill   = loads(parameters['total_bill'])
+        total_bill   = loads(parameters[0])
+        sum_openings = unpack(parameters[1])
 
         # verify bill
         (G, g, (h0, _, _, _), _) = setup()
