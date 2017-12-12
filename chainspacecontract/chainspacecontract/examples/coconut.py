@@ -12,7 +12,7 @@ from json    import dumps, loads
 from chainspacecontract import ChainspaceContract
 # coconut
 from chainspacecontract.examples.coconut_util import bn_pack, bn_unpack, pack, unpackG1, unpackG2
-from chainspacecontract.examples.coconut_lib import setup, prepare_mix_sign, verify_mix_sign
+from chainspacecontract.examples.coconut_lib import setup, prepare_mix_sign, verify_mix_sign, mix_sign
 
 ## contract name
 contract = ChainspaceContract('coconut')
@@ -26,9 +26,14 @@ contract = ChainspaceContract('coconut')
 # ------------------------------------------------------------------
 @contract.method('init')
 def init():
-    return {
-        'outputs': (dumps({'type' : 'CoCoToken'}),),
-    }
+	# ID lists
+	ID_list = {
+		'type' : 'CoCoList',
+		'list' : []
+	}
+	return {
+	    'outputs': (dumps({'type' : 'CoCoToken'}), dumps(ID_list)),
+	}
 
 # ------------------------------------------------------------------
 # request_issue
@@ -37,13 +42,9 @@ def init():
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('request_issue')
-def request_issue(inputs, reference_inputs, parameters, pub):
+def request_issue(inputs, reference_inputs, parameters, pub, ID):
     (q, t, n, epoch) = parameters
     params = setup(q)
-
-    # generate ID
-    G = params[0]
-    ID = G.order().random()
 
     # execute PrepareMixSign
     clear_m = [epoch]
@@ -52,7 +53,7 @@ def request_issue(inputs, reference_inputs, parameters, pub):
     enc_ID = c[0]
 
     # new petition object
-    request_issue = {
+    issue_request = {
         'type' : 'CoCoRequest',
         'cm' : pack(cm),
         'c' : (pack(enc_ID[0]), pack(enc_ID[1]))
@@ -60,16 +61,98 @@ def request_issue(inputs, reference_inputs, parameters, pub):
 
     # return
     return {
-		'outputs': (inputs[0], dumps(request_issue)),
+		'outputs': (inputs[0], dumps(issue_request)),
         'extra_parameters' : (bn_pack(proof), pack(pub))
 	}
+
+# ------------------------------------------------------------------
+# issue
+# NOTE: 
+#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
+#   - if there are more than 3 param, the checker has to be implemented by hand
+# ------------------------------------------------------------------
+@contract.method('issue')
+def issue(inputs, reference_inputs, parameters, sk):
+    (q, t, n, epoch) = parameters
+    params = setup(q)
+
+    # extract request
+    issue_request = loads(inputs[0])
+    cm = unpackG1(params, issue_request['cm'])
+    c = [(unpackG1(params, issue_request['c'][0]), unpackG1(params, issue_request['c'][1]))]
+
+    (h, enc_epsilon) = mix_sign(params, sk, cm, c, [epoch]) 
+    packet = (pack(h), (pack(enc_epsilon[0]), pack(enc_epsilon[1])))
+
+    # new petition object
+    credential = {
+        'type' : 'CoCoCredential',
+        'sigs' : [packet]
+    }
+
+    # return
+    return {
+        'outputs': (dumps(credential),),
+        'extra_parameters' : (issue_request['cm'], issue_request['c']),
+    }
+
+# ------------------------------------------------------------------
+# add
+# NOTE: 
+#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
+#   - if there are more than 3 param, the checker has to be implemented by hand
+# ------------------------------------------------------------------
+@contract.method('add')
+def add(inputs, reference_inputs, parameters, sk, cm, c):
+    (q, t, n, epoch) = parameters
+    params = setup(q)
+
+    # extract request
+    old_credentials = loads(inputs[0])
+    new_credentials = loads(inputs[0])
+    cm_unpack = unpackG1(params, cm)
+    c_unpack = [(unpackG1(params, c[0]), unpackG1(params, c[1]))]
+
+    # sign
+    (h, enc_epsilon) = mix_sign(params, sk, cm_unpack, c_unpack, [epoch]) 
+    
+    # new petition object
+    packet = (pack(h), (pack(enc_epsilon[0]), pack(enc_epsilon[1])))
+    new_credentials['sigs'].append(packet)
+
+    # return
+    return {
+        'outputs': (dumps(new_credentials),),
+        'extra_parameters' : (packet, cm, c)
+    }
+
+# ------------------------------------------------------------------
+# spend
+# NOTE: 
+#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
+#   - if there are more than 3 param, the checker has to be implemented by hand
+# ------------------------------------------------------------------
+@contract.method('spend')
+def spend(inputs, reference_inputs, parameters, sig, ID):
+    (q, t, n, epoch) = parameters
+    params = setup(q)
+
+    # add ID to the list of spent ID
+    new_ID_list = loads(inputs[0])
+    new_ID_list['list'].append(bn_pack(ID))
+    
+    # return
+    return {
+        'outputs': (dumps(new_ID_list),),
+        'extra_parameters' : (bn_pack(ID), sig)
+    }
 
 
 ####################################################################
 # checker
 ####################################################################
 # ------------------------------------------------------------------
-# check petition's creation
+# check request issue
 # ------------------------------------------------------------------
 @contract.checker('request_issue')
 def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
@@ -79,9 +162,9 @@ def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns
         params = setup(q)
 
         # get objects
-        request_issue = loads(outputs[1])
-        cm = unpackG1(params, request_issue['cm'])
-        c = [(unpackG1(params, request_issue['c'][0]), unpackG1(params, request_issue['c'][1]))]
+        issue_request = loads(outputs[1])
+        cm = unpackG1(params, issue_request['cm'])
+        c = [(unpackG1(params, issue_request['c'][0]), unpackG1(params, issue_request['c'][1]))]
         proof = tuple(bn_unpack(parameters[4]))
         pub = unpackG1(params, parameters[5])
 
@@ -91,15 +174,107 @@ def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns
         if len(parameters) != 6:
             return False
 
-        # check tokens
+        # check types
         if loads(inputs[0])['type'] != 'CoCoToken' or loads(outputs[0])['type'] != 'CoCoToken':
             return False
-        if request_issue['type'] != 'CoCoRequest':
+        if issue_request['type'] != 'CoCoRequest':
             return False
 
         # verify proof
         if not verify_mix_sign(params, pub, c, cm, proof):
             return False
+
+        ## TODO
+        # verify depend transaction -- payment
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check issue
+# ------------------------------------------------------------------
+@contract.checker('issue')
+def issue_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+        # check format
+        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
+            return False 
+        if len(parameters) != 6:
+            return False
+
+        # check types
+        if loads(inputs[0])['type'] != 'CoCoRequest' or loads(outputs[0])['type'] != 'CoCoCredential':
+            return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check add
+# ------------------------------------------------------------------
+@contract.checker('add')
+def add_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+        # check format
+        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
+            return False 
+        if len(parameters) != 7:
+            return False
+
+        # check types
+        if loads(inputs[0])['type'] != 'CoCoCredential' or loads(outputs[0])['type'] != 'CoCoCredential':
+            return False
+
+        # check list
+        new_credentials = loads(outputs[0])
+        old_credentials = loads(inputs[0])
+        added_sig = parameters[4]
+        if new_credentials['sigs'] != old_credentials['sigs'] + [added_sig]:
+        	return False
+
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check spend
+# ------------------------------------------------------------------
+@contract.checker('spend')
+def spend_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+    	
+        # check format
+        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
+            return False 
+        if len(parameters) != 6:
+            return False
+
+        # check types
+        if loads(inputs[0])['type'] != 'CoCoList' or loads(outputs[0])['type'] != 'CoCoList':
+            return False
+   
+    	# get parameters
+    	old_ID_list = loads(inputs[0])['list']
+    	new_ID_list = loads(outputs[0])['list']
+    	ID = parameters[4]
+    	
+        ## GET SIGN, ID AND VERIFY ID
+        #sig = (unpackG1(params,parameters[5][0]), unpackG1(params,parameters[5][1]))
+
+        # check ID has not been spent
+        if ID in old_ID_list:
+        	return False
+
+    	if new_ID_list != old_ID_list + [ID]:
+    		return False
 
         # otherwise
         return True

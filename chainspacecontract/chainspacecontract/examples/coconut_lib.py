@@ -226,14 +226,12 @@ def prepare_mix_sign(params, clear_m, hidden_m, pub):
 	proof = prove_mix_sign(params, pub, c, cm, k, r, clear_m, hidden_m)
 	return (cm, c, proof)
 
-def mix_sign(params, sk, cm, c, pub, proof, m):
+def mix_sign(params, sk, cm, c, m):
 	""" blindly sign messages in c, and sign messages in m """
 	(G, o, g1, hs, g2, e) = params
 	(x, y) = sk
 	(a, b) = zip(*c) 
 	assert (len(c)+len(m)) <= len(hs)
-	# verify proof of correctness
-	assert verify_mix_sign(params, pub, c, cm, proof)
 	# issue signature
 	h = G.hashG1(cm.export())
 	t1 = [mi*h for mi in m]
