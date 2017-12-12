@@ -628,7 +628,7 @@ public class MapClient implements Map<String, String> {
                         }
                     }
 
-                    if(!missingShardReplies) {
+                    if(!missingShardReplies || abortShardReplies) {
                         if(!abortShardReplies) // Commit if all shards have replied and their reply is to commit
                             finalResponse = ResponseType.ACCEPTED_T_COMMIT;
                         else
