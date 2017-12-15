@@ -2,10 +2,10 @@ from bplib.bp import G2Elem, G1Elem
 from petlib.pack import encode, decode
 from binascii import hexlify, unhexlify
 
-def bn_pack(x):
+def pet_pack(x):
     return hexlify(encode(x))
 
-def bn_unpack(x):
+def pet_unpack(x):
     return decode(unhexlify(x))
 
 def pack(elem):

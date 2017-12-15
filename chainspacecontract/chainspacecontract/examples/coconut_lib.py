@@ -265,6 +265,27 @@ def mix_verify(params, vk, kappa, sig, proof, m):
 	return not h.isinf() and e(h, kappa+aggr) == e(epsilon, g2)
 
 
+"""
+other
+"""
+def show_coconut_petition(params, vk, m, UUID):
+	""" build elements for coconut petition showing """
+	(G, o, g1, hs, g2, e) = params
+	(g2, X, Y) = vk
+	kappa = X + m*Y
+	nu = (UUID*m)*g1
+	proof = prove_show_coconut_petition(params, vk, m, UUID)
+	return (kappa, nu, proof)
+
+def coconut_petition_verify(params, vk, kappa, sig, proof, UUID, nu):
+	""" verify a signature on a hidden message and coconut petition """
+	(G, o, g1, hs, g2, e) = params
+	(g2, X, Y) = vk
+	sig1 , sig2 = sig
+	return not sig1.isinf() \
+		and verify_show_coconut_petition(params, vk, kappa, proof, UUID, nu) \
+		and e(sig1, kappa) == e(sig2, g2)
+
 
 # ==================================================
 # utils and zero-knowledge proofs
@@ -439,3 +460,31 @@ def verify_mix_show(params, vk, kappa, proof):
 	return c == to_challenge([g1, g2, X, Aw]+hs+Y)
 
 
+"""
+other
+"""
+def prove_show_coconut_petition(params, vk, m, UUID):
+	""" prove correct of kappa=(X + m*Y) & v=g^{m*UUID}"""
+	(G, o, g1, hs, g2, e) = params
+	(g2, X, Y) = vk
+	# create the witnesses
+	wm = o.random()
+	# compute the witnesses commitments
+	Aw = X + wm*Y
+	Bw = (UUID*wm)*g1
+	# create the challenge
+	c = to_challenge([g1, g2, X, Y, Aw, Bw] + hs)
+	# create responses 
+	rm = (wm - c * m) % o
+	return (c, rm)
+
+def verify_show_coconut_petition(params, vk, kappa, proof, UUID, nu):
+	""" verify correct of kappa=(X + m*Y) & v=g^{m*UUID} """
+	(G, o, g1, hs, g2, e) = params
+	(g2, X, Y) = vk
+	(c, rm) = proof
+	# re-compute witnesses commitments
+	Aw = c*kappa + rm*Y + (1-c)*X
+	Bw = (UUID*rm)*g1 + nu*c
+	# compute the challenge prime
+	return c == to_challenge([g1, g2, X, Y, Aw, Bw] + hs)

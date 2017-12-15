@@ -11,7 +11,7 @@ from json    import dumps, loads
 # chainspace
 from chainspacecontract import ChainspaceContract
 # coconut
-from chainspacecontract.examples.coconut_util import bn_pack, bn_unpack, pack, unpackG1, unpackG2
+from chainspacecontract.examples.coconut_util import pet_pack, pet_unpack, pack, unpackG1, unpackG2
 from chainspacecontract.examples.coconut_lib import setup, prepare_mix_sign, verify_mix_sign, mix_sign
 from bplib.bp import BpGroup, G2Elem
 
@@ -63,7 +63,7 @@ def request_issue(inputs, reference_inputs, parameters, pub, ID):
     # return
     return {
 		'outputs': (inputs[0], dumps(issue_request)),
-        'extra_parameters' : (bn_pack(proof), pack(pub))
+        'extra_parameters' : (pet_pack(proof), pack(pub))
 	}
 
 # ------------------------------------------------------------------
@@ -142,8 +142,7 @@ def spend(inputs, reference_inputs, parameters, sig, ID, packed_vvk):
 
     # add ID to the list of spent ID
     new_ID_list = loads(inputs[0])
-    new_ID_list['list'].append(bn_pack(ID))
-    print(new_ID_list)
+    new_ID_list['list'].append(pet_pack(ID))
 
     # pakc sig
     packed_sig = (pack(sig[0]), pack(sig[1]))
@@ -151,7 +150,7 @@ def spend(inputs, reference_inputs, parameters, sig, ID, packed_vvk):
     # return
     return {
         'outputs': (dumps(new_ID_list),),
-        'extra_parameters' : (bn_pack(ID), packed_sig, packed_vvk)
+        'extra_parameters' : (pet_pack(ID), packed_sig, packed_vvk)
     }
 
 
@@ -172,7 +171,7 @@ def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns
         issue_request = loads(outputs[1])
         cm = unpackG1(params, issue_request['cm'])
         c = [(unpackG1(params, issue_request['c'][0]), unpackG1(params, issue_request['c'][1]))]
-        proof = tuple(bn_unpack(parameters[4]))
+        proof = tuple(pet_unpack(parameters[4]))
         pub = unpackG1(params, parameters[5])
 
         # check format
@@ -273,7 +272,7 @@ def spend_checker(inputs, reference_inputs, parameters, outputs, returns, depend
     	old_ID_list = loads(inputs[0])['list']
     	new_ID_list = loads(outputs[0])['list']
         packed_ID = parameters[4]
-        ID = bn_unpack(packed_ID)
+        ID = pet_unpack(packed_ID)
         packed_vvk = parameters[6]
     	
         ## verify sign
