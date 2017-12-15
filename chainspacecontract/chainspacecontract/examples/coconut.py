@@ -13,6 +13,7 @@ from chainspacecontract import ChainspaceContract
 # coconut
 from chainspacecontract.examples.coconut_util import bn_pack, bn_unpack, pack, unpackG1, unpackG2
 from chainspacecontract.examples.coconut_lib import setup, prepare_mix_sign, verify_mix_sign, mix_sign
+from bplib.bp import BpGroup, G2Elem
 
 ## contract name
 contract = ChainspaceContract('coconut')
@@ -68,11 +69,11 @@ def request_issue(inputs, reference_inputs, parameters, pub, ID):
 # ------------------------------------------------------------------
 # issue
 # NOTE: 
-#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
-#   - if there are more than 3 param, the checker has to be implemented by hand
+#   - To be executed only by the first authority, the others have to
+#     call 'add'.
 # ------------------------------------------------------------------
 @contract.method('issue')
-def issue(inputs, reference_inputs, parameters, sk):
+def issue(inputs, reference_inputs, parameters, sk, vvk):
     (q, t, n, epoch) = parameters
     params = setup(q)
 
@@ -90,31 +91,34 @@ def issue(inputs, reference_inputs, parameters, sk):
         'sigs' : [packet]
     }
 
+    # add vkk in parameters
+    (g2, X, Y) = vvk
+    packed_vvk = (pack(g2),pack(X),[pack(y) for y in Y])
+
     # return
     return {
         'outputs': (dumps(credential),),
-        'extra_parameters' : (issue_request['cm'], issue_request['c']),
+        'extra_parameters' : (issue_request['cm'], issue_request['c'], packed_vvk),
     }
 
 # ------------------------------------------------------------------
 # add
 # NOTE: 
-#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
-#   - if there are more than 3 param, the checker has to be implemented by hand
+#   - Updates the previous object to limit the numer of active obj.
 # ------------------------------------------------------------------
 @contract.method('add')
-def add(inputs, reference_inputs, parameters, sk, cm, c):
+def add(inputs, reference_inputs, parameters, sk, packed_cm, packed_c, packed_vvk):
     (q, t, n, epoch) = parameters
     params = setup(q)
 
     # extract request
     old_credentials = loads(inputs[0])
     new_credentials = loads(inputs[0])
-    cm_unpack = unpackG1(params, cm)
-    c_unpack = [(unpackG1(params, c[0]), unpackG1(params, c[1]))]
+    cm = unpackG1(params, packed_cm)
+    c = [(unpackG1(params, packed_c[0]), unpackG1(params, packed_c[1]))]
 
     # sign
-    (h, enc_epsilon) = mix_sign(params, sk, cm_unpack, c_unpack, [epoch]) 
+    (h, enc_epsilon) = mix_sign(params, sk, cm, c, [epoch]) 
     
     # new petition object
     packet = (pack(h), (pack(enc_epsilon[0]), pack(enc_epsilon[1])))
@@ -123,28 +127,31 @@ def add(inputs, reference_inputs, parameters, sk, cm, c):
     # return
     return {
         'outputs': (dumps(new_credentials),),
-        'extra_parameters' : (packet, cm, c)
+        'extra_parameters' : (packet, packed_cm, packed_c, packed_vvk)
     }
 
 # ------------------------------------------------------------------
 # spend
 # NOTE: 
-#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
-#   - if there are more than 3 param, the checker has to be implemented by hand
+#   - this transaction should be used as callback for CSCoin.
 # ------------------------------------------------------------------
 @contract.method('spend')
-def spend(inputs, reference_inputs, parameters, sig, ID):
+def spend(inputs, reference_inputs, parameters, sig, ID, packed_vvk):
     (q, t, n, epoch) = parameters
     params = setup(q)
 
     # add ID to the list of spent ID
     new_ID_list = loads(inputs[0])
     new_ID_list['list'].append(bn_pack(ID))
+    print(new_ID_list)
+
+    # pakc sig
+    packed_sig = (pack(sig[0]), pack(sig[1]))
     
     # return
     return {
         'outputs': (dumps(new_ID_list),),
-        'extra_parameters' : (bn_pack(ID), sig)
+        'extra_parameters' : (bn_pack(ID), packed_sig, packed_vvk)
     }
 
 
@@ -202,7 +209,7 @@ def issue_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
-        if len(parameters) != 6:
+        if len(parameters) != 7:
             return False
 
         # check types
@@ -224,7 +231,7 @@ def add_checker(inputs, reference_inputs, parameters, outputs, returns, dependen
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
-        if len(parameters) != 7:
+        if len(parameters) != 8:
             return False
 
         # check types
@@ -254,7 +261,7 @@ def spend_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
-        if len(parameters) != 6:
+        if len(parameters) != 7:
             return False
 
         # check types
@@ -262,18 +269,27 @@ def spend_checker(inputs, reference_inputs, parameters, outputs, returns, depend
             return False
    
     	# get parameters
+        (q, t, n, epoch) = parameters[0], parameters[1], parameters[2], parameters[3] 
     	old_ID_list = loads(inputs[0])['list']
     	new_ID_list = loads(outputs[0])['list']
-    	ID = parameters[4]
+        packed_ID = parameters[4]
+        ID = bn_unpack(packed_ID)
+        packed_vvk = parameters[6]
     	
-        ## GET SIGN, ID AND VERIFY ID
-        #sig = (unpackG1(params,parameters[5][0]), unpackG1(params,parameters[5][1]))
+        ## verify sign
+        params = setup(q)
+        (G, o, g1, hs, g2, e) = params
+        sig = (unpackG1(params,parameters[5][0]), unpackG1(params,parameters[5][1]))
+        vvk = (unpackG2(params,packed_vvk[0]), unpackG2(params,packed_vvk[1]), [unpackG2(params,y) for y in packed_vvk[2]])
+        (g2, X, Y) = vvk
+        (h, epsilon) = sig
+        assert not h.isinf() and e(h, X + ID*Y[0] + epoch*Y[1]) == e(epsilon, g2) 
 
         # check ID has not been spent
         if ID in old_ID_list:
         	return False
 
-    	if new_ID_list != old_ID_list + [ID]:
+    	if new_ID_list != old_ID_list + [packed_ID]:
     		return False
 
         # otherwise

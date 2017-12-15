@@ -18,7 +18,7 @@ from chainspacecontract.examples.coconut_util import pack, unpackG1, unpackG2
 from chainspacecontract.examples.coconut_lib import setup, elgamal_keygen, mix_ttp_th_keygen
 from chainspacecontract.examples.coconut_lib import elgamal_dec, aggregate_th_sign, randomize
 
-
+# debug
 from chainspacecontract.examples.coconut_lib import verify, show_mix_sign, mix_verify, prepare_mix_sign, mix_sign
 from bplib.bp import BpGroup, G2Elem
 
@@ -123,7 +123,8 @@ class Test(unittest.TestCase):
 		    (issue_request,),
 		    None,
 		    parameters,
-		    sk[0]
+		    sk[0],
+		    vvk
 		)
 
 		## submit transaction
@@ -169,11 +170,13 @@ class Test(unittest.TestCase):
 		    (issue_request,),
 		    None,
 		    parameters,
-		    sk[0]
+		    sk[0],
+		    vvk
 		)
 		old_credentials = issue_transaction['transaction']['outputs'][0]
-		cm = issue_transaction['transaction']['parameters'][4]
-		c = issue_transaction['transaction']['parameters'][5]
+		packed_cm = issue_transaction['transaction']['parameters'][4]
+		packed_c = issue_transaction['transaction']['parameters'][5]
+		packed_vvk = issue_transaction['transaction']['parameters'][6]
 
 		# add credentials
 		transaction = coconut.add(
@@ -181,8 +184,9 @@ class Test(unittest.TestCase):
 		    None,
 		    parameters,
 		    sk[0],
-		    cm,
-		    c
+		    packed_cm,
+		    packed_c,
+		    packed_vvk
 		)
 
 		## submit transaction
@@ -229,27 +233,34 @@ class Test(unittest.TestCase):
 		    (issue_request,),
 		    None,
 		    parameters,
-		    sk[0]
+		    sk[0],
+		    vvk
 		)
 		old_credentials = issue_transaction['transaction']['outputs'][0]
-		cm = issue_transaction['transaction']['parameters'][4]
-		c = issue_transaction['transaction']['parameters'][5]
+		packed_cm = issue_transaction['transaction']['parameters'][4]
+		packed_c = issue_transaction['transaction']['parameters'][5]
+		packed_vvk = issue_transaction['transaction']['parameters'][6]
 
 		# add credentials
 		add_transaction = coconut.add(
 		    (old_credentials,),
 		    None,
 		    parameters,
-		    sk[0],
-		    cm,
-		    c
+		    sk[1],
+		    packed_cm,
+		    packed_c,
+		    packed_vvk
 		)
 		credentials = add_transaction['transaction']['outputs'][0]
 		enc_sigs = loads(credentials)['sigs']
 
 
 		# decrypt credentials
-		"""
+		cm = unpackG1(params, packed_cm)
+		c = [(unpackG1(params, packed_c[0]), unpackG1(params, packed_c[1]))]
+		(h, enc_epsilon1) = mix_sign(params, sk[0], cm, c, [epoch]) 
+		(h, enc_epsilon2) = mix_sign(params, sk[1], cm, c, [epoch])
+
 		sigs = []
 		for enc_sig in enc_sigs:
 			(h, enc_epsilon) = (
@@ -258,28 +269,17 @@ class Test(unittest.TestCase):
 			)
 			sigs.append((h, elgamal_dec(params, priv, enc_epsilon)))
 
-		# randomize credentials
 		sig = aggregate_th_sign(params, sigs)
-		#sig = randomize(params, sig)
-		#kappa, proof_v) = show_mix_sign(params, vvk, [ID])
-
-		(G, o, g1, hs, g2, e) = params
-		(g2, X, Y) = vvk
-		(h, epsilon) = sig
-		print( 
-			not h.isinf() and e(h, X + ID*Y[0] + epoch*Y[1]) == e(epsilon, g2) 
-		)
-
-		#print(mix_verify(params, vvk, kappa, sig, proof_v, [ID, epoch]))
-		"""
+		sig = randomize(params, sig)
 
 		# spend credentials
 		transaction = coconut.spend(
 		    (ID_list,),
 		    None,
 		    parameters,
-		    'EMPTY', # sig go here
-		    ID
+		    sig,
+		    ID,
+		    packed_vvk
 		)
 
 		## submit transaction
