@@ -7,15 +7,13 @@
 # imports
 ####################################################################
 # general
-from json import dumps, loads
-from hashlib import sha256
-# cypto
-from petlib.bn import Bn
+from json    import dumps, loads
 # chainspace
 from chainspacecontract import ChainspaceContract
 # coconut
 from chainspacecontract.examples.coconut_util import pet_pack, pet_unpack, pack, unpackG1, unpackG2
-from chainspacecontract.examples.coconut_lib import setup, mix_verify, prepare_mix_sign, verify_mix_sign
+from chainspacecontract.examples.coconut_lib import setup, prepare_mix_sign, verify_mix_sign, mix_sign
+from bplib.bp import BpGroup, G2Elem
 
 ## contract name
 contract = ChainspaceContract('coconut')
@@ -29,51 +27,37 @@ contract = ChainspaceContract('coconut')
 # ------------------------------------------------------------------
 @contract.method('init')
 def init():
+	# ID lists
+	ID_list = {
+		'type' : 'CoCoList',
+		'list' : []
+	}
 	return {
-	    'outputs': (dumps({'type' : 'CoCoToken'}),),
+	    'outputs': (dumps({'type' : 'CoCoToken'}), dumps(ID_list)),
 	}
 
 # ------------------------------------------------------------------
-# create
-# NOTE:
-#   - sig is an aggregated sign on the hash of the instance object
-# ------------------------------------------------------------------
-@contract.method('create')
-def create(inputs, reference_inputs, parameters, q, t, n, callback, vvk, sig):
-    # pack sig and vvk
-    packed_sig = (pack(sig[0]),pack(sig[1]))
-    packed_vvk = (pack(vvk[0]),pack(vvk[1]),[pack(vvk[2][i]) for i in range(q)])
-
-    # new petition object
-    instance = {
-        'type' : 'CoCoInstance',
-        'q' : q,
-        't' : t,
-        'n' : n,
-        'callback' : callback,
-        'verifier' : packed_vvk
-    }
-
-    # return
-    return {
-        'outputs': (inputs[0], dumps(instance)),
-        'extra_parameters' : (packed_sig,)
-    }
-
-# ------------------------------------------------------------------
 # request_issue
+# NOTE: 
+#   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
+#   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('request_issue')
-def request_issue(inputs, reference_inputs, parameters, q, clear_m, hidden_m, pub):
-    # execute PrepareMixSign
+def request_issue(inputs, reference_inputs, parameters, pub, ID):
+    (q, t, n, epoch) = parameters
     params = setup(q)
+
+    # execute PrepareMixSign
+    clear_m = [epoch]
+    hidden_m = [ID]
     (cm, c, proof) = prepare_mix_sign(params, clear_m, hidden_m, pub)
+    enc_ID = c[0]
 
     # new petition object
     issue_request = {
         'type' : 'CoCoRequest',
         'cm' : pack(cm),
-        'c' : [(pack(ci[0]), pack(ci[1])) for ci in c]
+        'c' : (pack(enc_ID[0]), pack(enc_ID[1]))
     }
 
     # return
@@ -82,7 +66,6 @@ def request_issue(inputs, reference_inputs, parameters, q, clear_m, hidden_m, pu
         'extra_parameters' : (pet_pack(proof), pack(pub))
 	}
 
-"""
 # ------------------------------------------------------------------
 # issue
 # NOTE: 
@@ -170,98 +153,13 @@ def spend(inputs, reference_inputs, parameters, sig, ID, packed_vvk):
         'extra_parameters' : (pet_pack(ID), packed_sig, packed_vvk)
     }
 
-"""
 
 ####################################################################
 # checker
 ####################################################################
 # ------------------------------------------------------------------
-# check create
-# ------------------------------------------------------------------
-@contract.checker('create')
-def create_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-    try:
-        # retrieve instance
-        instance = loads(outputs[1])
-        # retrieve parameters
-        packed_sig = parameters[0]
-
-        # check format
-        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
-            return False 
-
-        # check types
-        if inputs[0] != outputs[0]: return False
-        if instance['type'] != 'CoCoInstance': return False
-
-        # check fields
-        q = instance['q'] 
-        t = instance['t'] 
-        n = instance['n']
-        instance['callback']
-        packed_vvk = instance['verifier']
-        if q < 1 or n < 1 or t > n: return False
-
-        # verify signature
-        params = setup(q)
-        sig = (unpackG1(params, packed_sig[0]), unpackG1(params, packed_sig[1]))
-        vvk = (unpackG2(params,packed_vvk[0]), unpackG2(params,packed_vvk[1]), [unpackG2(params,y) for y in packed_vvk[2]])
-        hasher = sha256()
-        hasher.update(outputs[1].encode('utf8'))
-        m = Bn.from_binary(hasher.digest())
-        if not mix_verify(params, vvk, None, sig, None, [m]): return False
-   
-        # otherwise
-        return True
-
-    except (KeyError, Exception):
-        return False
-
-# ------------------------------------------------------------------
 # check request issue
 # ------------------------------------------------------------------
-@contract.checker('request_issue')
-def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-    try:
-        # retrieve instance
-        instance = loads(outputs[0])
-        request = loads(outputs[1])
-        # retrieve parameters
-        packed_proof = parameters[0]
-        packed_pub = parameters[1]
-
-        # check format
-        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
-            return False 
-
-        # check types
-        if request['type'] != 'CoCoRequest': return False
-
-        # check fields
-        params = setup(instance['q'])
-        cm = unpackG1(params, request['cm'])
-        packed_c = request['c']
-        c = [(unpackG1(params, ci[0]), unpackG1(params, ci[1])) for ci in packed_c]
-        if inputs[0] != outputs[0]: return False
-
-        # verify proof
-        proof = pet_unpack(packed_proof)
-        pub = unpackG1(params, packed_pub)
-        if not verify_mix_sign(params, pub, c, cm, proof): return False
-
-        ## TODO
-        # verify depend transaction -- specified by 'callback'
-
-        # otherwise
-        return True
-
-    except (KeyError, Exception):
-        return False
-
-# ------------------------------------------------------------------
-# check request issue
-# ------------------------------------------------------------------
-"""
 @contract.checker('request_issue')
 def request_issue_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
@@ -398,7 +296,7 @@ def spend_checker(inputs, reference_inputs, parameters, outputs, returns, depend
 
     except (KeyError, Exception):
         return False
-"""
+
 
 ####################################################################
 # main

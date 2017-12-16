@@ -5,14 +5,10 @@
 ###################################################################
 # general
 from multiprocessing import Process
-from hashlib import sha256
-from binascii import hexlify, unhexlify
-from json import dumps, loads
+from json            import dumps, loads
 import time
 import unittest
 import requests
-# cypto
-from petlib.bn import Bn
 # chainspace
 from chainspacecontract import transaction_to_solution
 from chainspacecontract.examples.coconut import contract as coconut_contract
@@ -20,7 +16,7 @@ from chainspacecontract.examples import coconut
 # coconut
 from chainspacecontract.examples.coconut_util import pack, unpackG1, unpackG2
 from chainspacecontract.examples.coconut_lib import setup, elgamal_keygen, mix_ttp_th_keygen
-from chainspacecontract.examples.coconut_lib import elgamal_dec, aggregate_th_sign, randomize, sign, verify
+from chainspacecontract.examples.coconut_lib import elgamal_dec, aggregate_th_sign, randomize
 
 # debug
 from chainspacecontract.examples.coconut_lib import verify, show_mix_sign, mix_verify, prepare_mix_sign, mix_sign
@@ -30,31 +26,9 @@ from bplib.bp import BpGroup, G2Elem
 q = 10 # max number of messages
 t, n = 2, 3 # threshold and total numbero of authorities
 epoch = 1 # coconut's epoch
-callback = 'addition' # id of the call back contract
 params = setup(q) # system's parameters
-clear_m = [1, 2] # messages for plaintext signature
-hidden_m = [3, 4, 5] # messages for blind signature
 (priv, pub) = elgamal_keygen(params) # user's key pair 
 (sk, vk, vvk) = mix_ttp_th_keygen(params, t, n, q) # signers keys
-
-# some crypto
-# ------------------------------------
-packed_vvk = (pack(vvk[0]),pack(vvk[1]),[pack(vvk[2][i]) for i in range(q)])
-instance = {
-	'type' : 'CoCoInstance',
-	'q' : q,
-	't' : t,
-	'n' : n,
-	'callback' : callback,
-	'verifier' : packed_vvk
-}
-hasher = sha256()
-hasher.update(dumps(instance).encode('utf8'))
-m = Bn.from_binary(hasher.digest())
-sigs = [mix_sign(params, ski, None, [], [m]) for ski in sk]
-sig = aggregate_th_sign(params, sigs)
-#print(mix_verify(params, vvk, None, sig, None, [m]))
-# ------------------------------------
 
 
 class Test(unittest.TestCase):
@@ -83,43 +57,6 @@ class Test(unittest.TestCase):
     # --------------------------------------------------------------
     # test request issue
     # --------------------------------------------------------------
-    def test_create(self):
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
-
-		## create transaction
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
-
-		## submit transaction
-		response = requests.post(
-			'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-			+ '/create', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
-
-
-    # --------------------------------------------------------------
-    # test request issue
-    # --------------------------------------------------------------
     def test_request_issue(self):
 		## run service
 		checker_service_process = Process(target=coconut_contract.run_checker_service)
@@ -130,28 +67,17 @@ class Test(unittest.TestCase):
 		# init
 		init_transaction = coconut.init()
 		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		create_transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
-		instance = create_transaction['transaction']['outputs'][1]
-		# create
+
+		# request issue transaction
+		parameters = (q, t, n, epoch)
+		G = params[0]
+		ID = G.order().random()
 		transaction = coconut.request_issue(
-		    (instance,),
+		    (token,),
 		    None,
-		    None,
-		    q,
-		    clear_m, 
-		    hidden_m, 
-		    pub
+		    parameters,
+		    pub, 
+		    ID
 		)
 
 		## submit transaction
@@ -168,7 +94,6 @@ class Test(unittest.TestCase):
     # --------------------------------------------------------------
     # test issue
     # --------------------------------------------------------------
-    """
     def test_issue(self):
 		## run service
 		checker_service_process = Process(target=coconut_contract.run_checker_service)
@@ -367,7 +292,6 @@ class Test(unittest.TestCase):
 		## stop service
 		checker_service_process.terminate()
 		checker_service_process.join()
-	"""
 
 ####################################################################
 # main

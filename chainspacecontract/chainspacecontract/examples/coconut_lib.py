@@ -230,13 +230,18 @@ def mix_sign(params, sk, cm, c, m):
 	""" blindly sign messages in c, and sign messages in m """
 	(G, o, g1, hs, g2, e) = params
 	(x, y) = sk
-	(a, b) = zip(*c) 
 	assert (len(c)+len(m)) <= len(hs)
 	# issue signature
-	h = G.hashG1(cm.export())
-	t1 = [mi*h for mi in m]
-	t2 = ec_sum([yi*ai for yi,ai in zip(y,a)])
-	t3 = x*h + ec_sum([yi*bi for yi,bi in zip(y,list(b)+t1)])
+	if not c:
+		h = ec_sum([G.hashG1((mi*g1).export()) for mi in m])
+		epsilon = x*h + ec_sum([(y[i]*m[i])*h for i in range(len(m))])
+		return (h, epsilon)
+	else:
+		h = G.hashG1(cm.export())
+		t1 = [mi*h for mi in m]
+		(a, b) = zip(*c) 
+		t2 = ec_sum([yi*ai for yi,ai in zip(y,a)])
+		t3 = x*h + ec_sum([yi*bi for yi,bi in zip(y,list(b)+t1)])
 	return (h, (t2, t3))
 
 def show_mix_sign(params, vk, m):
@@ -253,16 +258,20 @@ def mix_verify(params, vk, kappa, sig, proof, m):
 	(G, o, g1, h1, g2, e) = params
 	(g2, X, Y) = vk
 	(h, epsilon) = sig
-	hidden_m_len = len(proof[1])
-	assert len(m)+hidden_m_len <= len(Y)
-	# verify proof of correctness
-	assert verify_mix_show(params, vk, kappa, proof)
-	# add clear text messages
-	aggr = G2Elem.inf(G) 
-	if len(m) != 0:
-		aggr = ec_sum([m[i]*Y[i+hidden_m_len] for i in range(len(m))])
-	# verify
-	return not h.isinf() and e(h, kappa+aggr) == e(epsilon, g2)
+	if kappa is None:
+		aggr = X + ec_sum([m[i]*Y[i] for i in range(len(m))])
+		return not h.isinf() and e(h, aggr) == e(epsilon, g2)
+	else:
+		hidden_m_len = len(proof[1])
+		assert len(m)+hidden_m_len <= len(Y)
+		# verify proof of correctness
+		assert verify_mix_show(params, vk, kappa, proof)
+		# add clear text messages
+		aggr = G2Elem.inf(G) 
+		if len(m) != 0:
+			aggr = ec_sum([m[i]*Y[i+hidden_m_len] for i in range(len(m))])
+		# verify
+		return not h.isinf() and e(h, kappa+aggr) == e(epsilon, g2)
 
 
 """
