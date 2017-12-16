@@ -258,8 +258,8 @@ class Test(unittest.TestCase):
 		# decrypt credentials
 		cm = unpackG1(params, packed_cm)
 		c = [(unpackG1(params, packed_c[0]), unpackG1(params, packed_c[1]))]
-		(h, enc_epsilon1) = mix_sign(params, sk[0], cm, c, [epoch]) 
-		(h, enc_epsilon2) = mix_sign(params, sk[1], cm, c, [epoch])
+		#(h, enc_epsilon1) = mix_sign(params, sk[0], cm, c, [epoch]) 
+		#(h, enc_epsilon2) = mix_sign(params, sk[1], cm, c, [epoch])
 
 		sigs = []
 		for enc_sig in enc_sigs:

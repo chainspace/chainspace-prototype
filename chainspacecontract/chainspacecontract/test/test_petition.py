@@ -86,10 +86,11 @@ class Test(unittest.TestCase):
             (token,),
             None,
             None,
-            pet_pack(UUID),
-            dumps(options),
-            pet_pack(priv_owner),
-            pet_pack(pub_owner)
+            UUID,
+            options,
+            priv_owner,
+            pub_owner,
+            vvk
         )
 
         ## submit transaction
@@ -122,10 +123,11 @@ class Test(unittest.TestCase):
             (token,),
             None,
             None,
-            pet_pack(UUID),
-            dumps(options),
-            pet_pack(priv_owner),
-            pet_pack(pub_owner)
+            UUID,
+            options,
+            priv_owner,
+            pub_owner,
+            vvk
         )
         old_petition = create_petition_transaction['transaction']['outputs'][1]
         old_list = create_petition_transaction['transaction']['outputs'][2]
@@ -165,7 +167,7 @@ class Test(unittest.TestCase):
         checker_service_process.terminate()
         checker_service_process.join()
 
-
+   
 ####################################################################
 # main
 ###################################################################

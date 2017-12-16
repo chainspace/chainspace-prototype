@@ -44,17 +44,21 @@ def init():
 # create petition
 # ------------------------------------------------------------------
 @contract.method('create_petition')
-def create_petition(inputs, reference_inputs, parameters, UUID, options, priv_owner, pub_owner):
+def create_petition(inputs, reference_inputs, parameters, UUID, options, priv_owner, pub_owner, vvk):
     # inital score
-    scores = [0 for _ in loads(options)]
+    scores = [0 for _ in options]
+
+    # pack vvk
+    packed_vvk = (pack(vvk[0]),pack(vvk[1]),pack(vvk[2]))
 
     # new petition object
     new_petition = {
         'type' : 'PObject',
-        'UUID' : UUID,
-        'owner' : pub_owner,
-        'options' : loads(options),
-        'scores' : scores
+        'UUID' : pet_pack(UUID), # unique ID of the petition
+        'owner' : pet_pack(pub_owner), # entity creating the petition
+        'verifier' : packed_vvk, # entity delivering credentials to participate to the petition
+        'options' : options, # the options to sign
+        'scores' : scores # the signatures per option
     }
 
     # ID lists
@@ -67,7 +71,7 @@ def create_petition(inputs, reference_inputs, parameters, UUID, options, priv_ow
     pet_params = pet_setup()
     hasher = sha256()
     hasher.update(dumps(new_petition).encode('utf8'))
-    sig = do_ecdsa_sign(pet_params[0], pet_unpack(priv_owner), hasher.digest())
+    sig = do_ecdsa_sign(pet_params[0], priv_owner, hasher.digest())
 
     # return
     return {
@@ -100,14 +104,13 @@ def sign(inputs, reference_inputs, parameters, priv_signer, sig, vvk):
     # update spent list
     new_list['list'].append(pack(nu))
 
-    # pack sig and vvk
+    # pack sig
     packed_sig = (pack(sig[0]),pack(sig[1]))
-    packed_vvk = (pack(vvk[0]),pack(vvk[1]),pack(vvk[2]))
 
     # return
     return {
         'outputs': (dumps(new_petition),dumps(new_list)),
-        'extra_parameters' : (packed_sig, pack(kappa), pack(nu), pet_pack(proof_v), packed_vvk)
+        'extra_parameters' : (packed_sig, pack(kappa), pack(nu), pet_pack(proof_v))
     }
 
 
@@ -123,42 +126,38 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
     try:
         # retrieve petition
         petition = loads(outputs[1])
-        options = petition['options']
-        scores = petition['scores']
-        pub_owner = pet_unpack(petition['owner'])
+        # retrieve ID list
+        spent_list = loads(outputs[2])
+        # retrieve parameters
         sig = pet_unpack(parameters[0])
-        signed_list = loads(outputs[2])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 3 or len(returns) != 0:
             return False 
-        if len(options) < 1 or len(options) != len(scores):
-            return False
 
-        # check tokens
-        if loads(inputs[0])['type'] != 'PToken' or loads(outputs[0])['type'] != 'PToken':
-            return False
-        if petition['type'] != 'PObject' or signed_list['type'] != 'PList':
-            return False
+        # check types
+        if loads(inputs[0])['type'] != 'PToken' or loads(outputs[0])['type'] != 'PToken': return False
+        if petition['type'] != 'PObject' or spent_list['type'] != 'PList': return False
 
-        # check UUID is not empty
-        if petition['UUID'] == '':
-            return False
+        # check fields
+        petition['UUID'] # check presence of UUID
+        petition['verifier'] # check presence of verifier
+        options = petition['options']
+        scores = petition['scores'] 
+        pub_owner = pet_unpack(petition['owner'])
+        if len(options) < 1 or len(options) != len(scores): return False
 
         # check initalised scores
-        if not all(init_score==0 for init_score in scores):
-        	return False
+        if not all(init_score==0 for init_score in scores): return False
 
         # verify signature
         pet_params = pet_setup()
         hasher = sha256()
         hasher.update(outputs[1].encode('utf8'))
-        if not do_ecdsa_verify(pet_params[0], pub_owner, sig, hasher.digest()):
-            return False
+        if not do_ecdsa_verify(pet_params[0], pub_owner, sig, hasher.digest()): return False
 
-        # verify that initilised list is empty
-        if signed_list['list']:
-            return False
+        # verify that the spent list is empty
+        if spent_list['list']: return False
 
         # otherwise
         return True
@@ -176,63 +175,55 @@ def sign_checker(inputs, reference_inputs, parameters, outputs, returns, depende
         # retrieve petition
         old_petition = loads(inputs[0])
         new_petition = loads(outputs[0])
-        options = new_petition['options']
-        scores = new_petition['scores']
-        UUID = pet_unpack(old_petition['UUID'])
-        new_values = loads(parameters[0])
-
         # retrieve ID list
         old_list = loads(inputs[1])
         new_list = loads(outputs[1])
-
-        # get parameters
+        # retrieve parameters
         bp_params = bp_setup()
+        new_values = loads(parameters[0])
         packed_sig = parameters[1]
         sig = (unpackG1(bp_params, packed_sig[0]), unpackG1(bp_params, packed_sig[1]))
         kappa = unpackG2(bp_params, parameters[2])
         nu = unpackG1(bp_params, parameters[3])
         proof_v = pet_unpack(parameters[4])
-        packed_vvk = parameters[5]
 
         # check format
         if len(inputs) != 2 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False 
-        if len(options) < 1 or len(options) != len(scores):
-            return False
 
-        # check tokens
-        if new_petition['type'] != 'PObject' or new_list['type'] != 'PList':
-            return False
+        # check types
+        if new_petition['type'] != 'PObject' or new_list['type'] != 'PList': return False      
 
-        # check petition UUID
-        if old_petition['UUID'] != new_petition['UUID']:
-            return False
+        # check format & consistency with old object
+        UUID = pet_unpack(new_petition['UUID'])
+        options = new_petition['options']
+        packed_vvk = new_petition['verifier']
+        scores = new_petition['scores']
+        if old_petition['UUID'] != new_petition['UUID']: return False
+        if len(old_petition['owner']) != len(new_petition['owner']): return False
+        if len(old_petition['options']) != len(new_petition['options']): return False
+        if old_petition['verifier'] != new_petition['verifier']: return False
 
         # check new values
-        if sum(new_values) != 1:
-            return False
-        for i in range(0, len(scores)):
-            if scores[i] != old_petition['scores'][i] + new_values[i]:
-                return False
-            if new_values[i] != 0 and new_values[i] != 1:
-                return False
+        if sum(new_values) != 1: return False
+        for i in range(len(scores)):
+            if scores[i] != old_petition['scores'][i] + new_values[i]: return False
+            if new_values[i] != 0 and new_values[i] != 1: return False
 
-        # check list
+        # check spent list
         packed_nu = parameters[3]
         if (packed_nu in old_list['list']) or (new_list['list'] != old_list['list'] + [packed_nu]):
             return False
 
         # verify signature and nu's correctness
         vvk = (unpackG2(bp_params,packed_vvk[0]), unpackG2(bp_params,packed_vvk[1]), unpackG2(bp_params,packed_vvk[2]))
-        if not coconut_petition_verify(bp_params, vvk, kappa, sig, proof_v, UUID, nu):
-            return False
+        if not coconut_petition_verify(bp_params, vvk, kappa, sig, proof_v, UUID, nu): return False
   
         # otherwise
         return True
 
-    except (KeyError, Exception):
+    except (KeyError, Exception): 
         return False
-
 
 
 ####################################################################
