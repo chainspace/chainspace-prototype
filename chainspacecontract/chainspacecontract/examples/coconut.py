@@ -16,6 +16,7 @@ from chainspacecontract import ChainspaceContract
 # coconut
 from chainspacecontract.examples.coconut_util import pet_pack, pet_unpack, pack, unpackG1, unpackG2
 from chainspacecontract.examples.coconut_lib import setup, mix_verify, prepare_mix_sign, verify_mix_sign, mix_sign
+from chainspacecontract.examples.coconut_lib import show_mix_sign
 
 ## contract name
 contract = ChainspaceContract('coconut')
@@ -77,7 +78,7 @@ def request(inputs, reference_inputs, parameters, clear_m, hidden_m, pub, *args)
     (cm, c, proof) = prepare_mix_sign(params, clear_m, hidden_m, pub)
 
     # new petition object
-    issue_request = {
+    request = {
         'type' : 'CoCoRequest',
         'instance' : loads(inputs[0]),
         'clear_m' : pet_pack(clear_m),
@@ -93,7 +94,7 @@ def request(inputs, reference_inputs, parameters, clear_m, hidden_m, pub, *args)
 
     # return
     return {
-		'outputs': (inputs[0], dumps(issue_request)),
+		'outputs': (inputs[0], dumps(request)),
         'extra_parameters' : (pet_pack(proof), pack(pub))
 	}
 
@@ -125,6 +126,27 @@ def issue(inputs, reference_inputs, parameters, sk, index):
         'outputs': (dumps(updated_request),),
         'extra_parameters' : ((index, packed_enc_sig),)
     }
+
+
+# ------------------------------------------------------------------
+# verify
+# ------------------------------------------------------------------
+@contract.method('verify')
+def verify(inputs, reference_inputs, parameters, hidden_m):
+	# load instance
+	instance = loads(reference_inputs[0])['instance']
+
+	# build proof
+	params = setup(instance['q'])
+	packed_vvk = instance['verifier']
+	vvk = (unpackG2(params,packed_vvk[0]), unpackG2(params,packed_vvk[1]), [unpackG2(params,y) for y in packed_vvk[2]])
+	(kappa, proof_v) = show_mix_sign(params, vvk, hidden_m)
+
+	# returns
+	return {
+		'returns': (dumps(True),),
+		'extra_parameters' : ((pack(kappa), pet_pack(proof_v)),)
+	}
 
 
 ####################################################################
@@ -240,7 +262,40 @@ def issue_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         # check signature add
       	if new_sigs != old_sigs + [added_sig]: return False
 
-      	# TODO: verify the partial signature using VK (to include in create_instance)
+      	## TODO: verify the partial signature using VK (to include in create_instance)
+      	
+        # otherwise
+        return True
+
+    except (KeyError, Exception):
+        return False
+
+# ------------------------------------------------------------------
+# check issue
+# ------------------------------------------------------------------
+@contract.checker('verify')
+def verify_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+    try:
+    	# retrieve data
+        request = loads(reference_inputs[0])
+        instance = request['instance']
+
+        # check format
+        if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
+            return False 
+
+        # verify signature
+        """
+        packet = request['sigs']
+        (indexes, packed_enc_sigs) = zip(*packet)
+		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
+		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
+		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
+		aggr = aggregate_th_sign(params, dec_sigs)
+		aggr = randomize(params, aggr)
+		kappa = unpackG2(params,parameters[0])
+        proof_v = pet_unpack(parameters[1])
+        """
       	
         # otherwise
         return True

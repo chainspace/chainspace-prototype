@@ -247,6 +247,86 @@ class Test(unittest.TestCase):
 		checker_service_process.terminate()
 		checker_service_process.join()
 
+    # --------------------------------------------------------------
+    # test verify
+    # --------------------------------------------------------------
+    def test_verify(self):
+		## run service
+		checker_service_process = Process(target=coconut_contract.run_checker_service)
+		checker_service_process.start()
+		time.sleep(0.1)
+
+		## create transactions
+		# init
+		init_transaction = coconut.init()
+		token = init_transaction['transaction']['outputs'][0]
+		# create instance
+		create_transaction = coconut.create(
+			(token,),
+			None,
+			None,
+			q,
+			t,
+			n,
+			callback, 
+			vvk,
+			sig
+		)
+		instance = create_transaction['transaction']['outputs'][1]
+		# request
+		request_transaction = coconut.request(
+		    (instance,),
+		    None,
+		    None,
+		    clear_m, 
+		    hidden_m, 
+		    pub
+		)
+		old_request = request_transaction['transaction']['outputs'][1]
+
+		# issue tsignatures
+		for i in range(t):
+			transaction = coconut.issue(
+			    (old_request,),
+			    None,
+			    None,
+			    sk[i],
+			    i
+			)
+			old_request = transaction['transaction']['outputs'][0]
+
+		# some crypto
+		# ------------------------------------
+		packet = loads(old_request)['sigs']
+		(indexes, packed_enc_sigs) = zip(*packet)
+		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
+		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
+		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
+		aggr = aggregate_th_sign(params, dec_sigs)
+		aggr = randomize(params, aggr)
+		packed_sig = (pack(aggr[0]),pack(aggr[1]))
+		# ------------------------------------
+
+		# verify signature
+		transaction = coconut.verify(
+		    None,
+		    (old_request,),
+		    (packed_sig,),
+		    hidden_m,
+		)
+
+		## submit transaction
+		response = requests.post(
+		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+		    + '/verify', json=transaction_to_solution(transaction)
+		)
+		self.assertTrue(response.json()['success'])
+
+		## stop service
+		checker_service_process.terminate()
+		checker_service_process.join()
+
+
 ####################################################################
 # main
 ###################################################################
