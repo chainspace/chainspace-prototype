@@ -26,11 +26,11 @@ from chainspacecontract.examples.coconut_lib import elgamal_dec, aggregate_th_si
 from chainspacecontract.examples.coconut_lib import verify, show_mix_sign, mix_verify, prepare_mix_sign, mix_sign
 from bplib.bp import BpGroup, G2Elem
 
+
 ####################################################################
-q = 10 # max number of messages
+q = 5 # max number of messages
 t, n = 2, 3 # threshold and total numbero of authorities
-epoch = 1 # coconut's epoch
-callback = 'addition' # id of the call back contract
+callback = 'hello.init' # id of the call back contract
 params = setup(q) # system's parameters
 clear_m = [1, 2] # messages for plaintext signature
 hidden_m = [3, 4, 5] # messages for blind signature
@@ -116,11 +116,10 @@ class Test(unittest.TestCase):
 		checker_service_process.terminate()
 		checker_service_process.join()
 
-
     # --------------------------------------------------------------
-    # test request issue
+    # test request
     # --------------------------------------------------------------
-    def test_request_issue(self):
+    def test_request(self):
 		## run service
 		checker_service_process = Process(target=coconut_contract.run_checker_service)
 		checker_service_process.start()
@@ -143,12 +142,11 @@ class Test(unittest.TestCase):
 			sig
 		)
 		instance = create_transaction['transaction']['outputs'][1]
-		# create
-		transaction = coconut.request_issue(
+		# request
+		transaction = coconut.request(
 		    (instance,),
 		    None,
 		    None,
-		    q,
 		    clear_m, 
 		    hidden_m, 
 		    pub
@@ -157,7 +155,7 @@ class Test(unittest.TestCase):
 		## submit transaction
 		response = requests.post(
 		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/request_issue', json=transaction_to_solution(transaction)
+		    + '/request', json=transaction_to_solution(transaction)
 		)
 		self.assertTrue(response.json()['success'])
 
@@ -168,7 +166,6 @@ class Test(unittest.TestCase):
     # --------------------------------------------------------------
     # test issue
     # --------------------------------------------------------------
-    """
     def test_issue(self):
 		## run service
 		checker_service_process = Process(target=coconut_contract.run_checker_service)
@@ -179,28 +176,55 @@ class Test(unittest.TestCase):
 		# init
 		init_transaction = coconut.init()
 		token = init_transaction['transaction']['outputs'][0]
-
-		# request issue transaction
-		parameters = (q, t, n, epoch)
-		G = params[0]
-		ID = G.order().random()
-		request_issue_transaction = coconut.request_issue(
-		    (token,),
-		    None,
-		    parameters,
-		    pub,
-		    ID
+		# create instance
+		create_transaction = coconut.create(
+			(token,),
+			None,
+			None,
+			q,
+			t,
+			n,
+			callback, 
+			vvk,
+			sig
 		)
-		issue_request = request_issue_transaction['transaction']['outputs'][1]
-
-		# issue transaction
-		transaction = coconut.issue(
-		    (issue_request,),
+		instance = create_transaction['transaction']['outputs'][1]
+		# request
+		request_transaction = coconut.request(
+		    (instance,),
 		    None,
-		    parameters,
-		    sk[0],
-		    vvk
+		    None,
+		    clear_m, 
+		    hidden_m, 
+		    pub
 		)
+		old_request = request_transaction['transaction']['outputs'][1]
+
+		# issue t signatures
+		for i in range(t):
+			transaction = coconut.issue(
+			    (old_request,),
+			    None,
+			    None,
+			    sk[i],
+			    i
+			)
+			old_request = transaction['transaction']['outputs'][0]
+
+		# some crypto - to show that this actually works
+		# ------------------------------------
+		packet = loads(old_request)['sigs']
+		(indexes, packed_enc_sigs) = zip(*packet)
+		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
+		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
+		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
+		aggr = aggregate_th_sign(params, dec_sigs)
+		aggr = randomize(params, aggr)
+		(kappa, proof_v) = show_mix_sign(params, vvk, hidden_m)
+		print("\n\n=================== VERIFICATION ===================\n")
+		print(mix_verify(params, vvk, kappa, aggr, proof_v, clear_m))
+		print("\n====================================================\n\n")
+		# ------------------------------------
 
 		## submit transaction
 		response = requests.post(
@@ -212,162 +236,6 @@ class Test(unittest.TestCase):
 		## stop service
 		checker_service_process.terminate()
 		checker_service_process.join()
-
-    # --------------------------------------------------------------
-    # test add
-    # --------------------------------------------------------------
-    def test_add(self):
-		## run service
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
-
-		## create transactions
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-
-		# request issue transaction
-		parameters = (q, t, n, epoch)
-		G = params[0]
-		ID = G.order().random()
-		request_issue_transaction = coconut.request_issue(
-		    (token,),
-		    None,
-		    parameters,
-		    pub,
-		    ID
-		)
-		issue_request = request_issue_transaction['transaction']['outputs'][1]
-
-		# issue transaction
-		issue_transaction = coconut.issue(
-		    (issue_request,),
-		    None,
-		    parameters,
-		    sk[0],
-		    vvk
-		)
-		old_credentials = issue_transaction['transaction']['outputs'][0]
-		packed_cm = issue_transaction['transaction']['parameters'][4]
-		packed_c = issue_transaction['transaction']['parameters'][5]
-		packed_vvk = issue_transaction['transaction']['parameters'][6]
-
-		# add credentials
-		transaction = coconut.add(
-		    (old_credentials,),
-		    None,
-		    parameters,
-		    sk[0],
-		    packed_cm,
-		    packed_c,
-		    packed_vvk
-		)
-
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/add', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
-
-	# --------------------------------------------------------------
-    # test spend
-    # --------------------------------------------------------------
-    def test_spend(self):
-		## run service
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
-
-		## create transactions
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		ID_list = init_transaction['transaction']['outputs'][1]
-
-		# request issue transaction
-		parameters = (q, t, n, epoch)
-		G = params[0]
-		ID = G.order().random()
-		request_issue_transaction = coconut.request_issue(
-		    (token,),
-		    None,
-		    parameters,
-		    pub,
-		    ID
-		)
-		issue_request = request_issue_transaction['transaction']['outputs'][1]
-
-		# issue transaction
-		issue_transaction = coconut.issue(
-		    (issue_request,),
-		    None,
-		    parameters,
-		    sk[0],
-		    vvk
-		)
-		old_credentials = issue_transaction['transaction']['outputs'][0]
-		packed_cm = issue_transaction['transaction']['parameters'][4]
-		packed_c = issue_transaction['transaction']['parameters'][5]
-		packed_vvk = issue_transaction['transaction']['parameters'][6]
-
-		# add credentials
-		add_transaction = coconut.add(
-		    (old_credentials,),
-		    None,
-		    parameters,
-		    sk[1],
-		    packed_cm,
-		    packed_c,
-		    packed_vvk
-		)
-		credentials = add_transaction['transaction']['outputs'][0]
-		enc_sigs = loads(credentials)['sigs']
-
-
-		# decrypt credentials
-		cm = unpackG1(params, packed_cm)
-		c = [(unpackG1(params, packed_c[0]), unpackG1(params, packed_c[1]))]
-		#(h, enc_epsilon1) = mix_sign(params, sk[0], cm, c, [epoch]) 
-		#(h, enc_epsilon2) = mix_sign(params, sk[1], cm, c, [epoch])
-
-		sigs = []
-		for enc_sig in enc_sigs:
-			(h, enc_epsilon) = (
-				unpackG1(params, enc_sig[0]), 
-				(unpackG1(params, enc_sig[1][0]), unpackG1(params, enc_sig[1][1]))
-			)
-			sigs.append((h, elgamal_dec(params, priv, enc_epsilon)))
-
-		sig = aggregate_th_sign(params, sigs)
-		sig = randomize(params, sig)
-
-		# spend credentials
-		transaction = coconut.spend(
-		    (ID_list,),
-		    None,
-		    parameters,
-		    sig,
-		    ID,
-		    packed_vvk
-		)
-
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/spend', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
-	"""
 
 ####################################################################
 # main

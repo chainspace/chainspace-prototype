@@ -226,6 +226,7 @@ def transaction_to_solution(data):
 
     for dependency in transaction['dependencies']:
         del dependency['dependencies']
+        #dependency.pop('dependencies', None)
 
     for single_transaction in (transaction,) + tuple(transaction['dependencies']):
         single_transaction['inputs'] = []
