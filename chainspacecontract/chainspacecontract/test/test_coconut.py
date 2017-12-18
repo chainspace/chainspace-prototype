@@ -30,7 +30,7 @@ from bplib.bp import BpGroup, G2Elem
 ####################################################################
 q = 5 # max number of messages
 t, n = 2, 3 # threshold and total numbero of authorities
-callback = 'hello.init' # id of the call back contract
+callback = 'hello.init' # id of the callback contract
 params = setup(q) # system's parameters
 clear_m = [1, 2] # messages for plaintext signature
 hidden_m = [3, 4, 5] # messages for blind signature
@@ -200,8 +200,25 @@ class Test(unittest.TestCase):
 		)
 		old_request = request_transaction['transaction']['outputs'][1]
 
-		# issue t signatures
-		for i in range(t):
+		# issue a signatures
+		transaction = coconut.issue(
+		    (old_request,),
+		    None,
+		    None,
+		    sk[0],
+		    0
+		)
+		old_request = transaction['transaction']['outputs'][0]
+
+		## submit transaction
+		response = requests.post(
+		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+		    + '/issue', json=transaction_to_solution(transaction)
+		)
+		self.assertTrue(response.json()['success'])
+
+		# issue the other t-1 signatures
+		for i in range(1,t):
 			transaction = coconut.issue(
 			    (old_request,),
 			    None,
@@ -225,13 +242,6 @@ class Test(unittest.TestCase):
 		print(mix_verify(params, vvk, kappa, aggr, proof_v, clear_m))
 		print("\n====================================================\n\n")
 		# ------------------------------------
-
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/issue', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
 
 		## stop service
 		checker_service_process.terminate()

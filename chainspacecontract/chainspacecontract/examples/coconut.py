@@ -123,7 +123,7 @@ def issue(inputs, reference_inputs, parameters, sk, index):
     # return
     return {
         'outputs': (dumps(updated_request),),
-        'extra_parameters' : (index, packed_enc_sig)
+        'extra_parameters' : ((index, packed_enc_sig),)
     }
 
 
@@ -223,12 +223,25 @@ def request_checker(inputs, reference_inputs, parameters, outputs, returns, depe
 @contract.checker('issue')
 def issue_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
+    	# retrieve data
+        old_request = loads(inputs[0])
+        new_request = loads(outputs[0])
+        old_sigs = old_request.pop('sigs', None)
+        new_sigs = new_request.pop('sigs', None)
+        added_sig = parameters[0]
+
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
 
-        # check signature add
+        # check fields
+        if old_request != new_request: return False
 
+        # check signature add
+      	if new_sigs != old_sigs + [added_sig]: return False
+
+      	# TODO: verify the partial signature using VK (to include in create_instance)
+      	
         # otherwise
         return True
 
