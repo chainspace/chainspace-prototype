@@ -142,7 +142,6 @@ def transfer_checker(inputs, reference_inputs, parameters, outputs, returns, dep
         if len(inputs) != 2 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False
 
-
         if input_from_account['pub'] != output_from_account['pub'] or input_to_account['pub'] != output_to_account['pub']:
             return False
 
@@ -180,6 +179,9 @@ def transfer_checker(inputs, reference_inputs, parameters, outputs, returns, dep
             # NOTE: the checker of the dependency is automatcally called
             callback = dependencies[0]
             if callback['contractID']+'.'+callback['methodID'] != input_from_account['callback']: return False
+            # NOTE: this is not enough -- this only verifes that a particular process has been called,
+            # we also need to verify the inputs of that process: e.g., verifying that a bank transfer has been done
+            # is useless if you don't verify the beneficiary. Any idea ?
 
         # otherwise
         return True

@@ -262,7 +262,8 @@ def issue_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         # check signature add
       	if new_sigs != old_sigs + [added_sig]: return False
 
-      	## TODO: verify the partial signature using VK (to include in create_instance)
+      	## Question: Should we verify the partial signature using VK (to include in the 'instance' object).
+      	## if we do so, the size of the object will increse by a group element for each authority.
       	
         # otherwise
         return True
