@@ -132,9 +132,9 @@ def issue(inputs, reference_inputs, parameters, sk, index):
 # verify
 # ------------------------------------------------------------------
 @contract.method('verify')
-def verify(inputs, reference_inputs, parameters, hidden_m):
+def verify(inputs, reference_inputs, parameters, clear_m, hidden_m):
 	# load instance
-	instance = loads(reference_inputs[0])['instance']
+	instance = loads(reference_inputs[0])
 
 	# build proof
 	params = setup(instance['q'])
@@ -145,7 +145,7 @@ def verify(inputs, reference_inputs, parameters, hidden_m):
 	# returns
 	return {
 		'returns': (dumps(True),),
-		'extra_parameters' : ((pack(kappa), pet_pack(proof_v)),)
+		'extra_parameters' : (dumps(clear_m), pack(kappa), pet_pack(proof_v))
 	}
 
 
@@ -275,33 +275,30 @@ def issue_checker(inputs, reference_inputs, parameters, outputs, returns, depend
 # ------------------------------------------------------------------
 @contract.checker('verify')
 def verify_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
-    try:
-    	# retrieve data
-        request = loads(reference_inputs[0])
-        instance = request['instance']
+	try:
+		# retrieve data
+		instance = loads(reference_inputs[0])
 
-        # check format
-        if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
-            return False 
+		# check format
+		if len(inputs) != 0 or len(reference_inputs) != 1 or len(outputs) != 0 or len(returns) != 1:
+			return False 
 
-        # verify signature
-        """
-        packet = request['sigs']
-        (indexes, packed_enc_sigs) = zip(*packet)
-		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
-		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
-		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
-		aggr = aggregate_th_sign(params, dec_sigs)
-		aggr = randomize(params, aggr)
-		kappa = unpackG2(params,parameters[0])
-        proof_v = pet_unpack(parameters[1])
-        """
-      	
-        # otherwise
-        return True
+		# verify signature
+		params = setup(instance['q'])
+		packed_sig = parameters[0]
+		sig = (unpackG1(params,packed_sig[0]),unpackG1(params,packed_sig[1]))
+		clear_m = loads(parameters[1])
+		kappa = unpackG2(params,parameters[2])
+		proof_v = pet_unpack(parameters[3])
+		packed_vvk = instance['verifier']
+		vvk = (unpackG2(params,packed_vvk[0]), unpackG2(params,packed_vvk[1]), [unpackG2(params,y) for y in packed_vvk[2]])
+		if not mix_verify(params, vvk, kappa, sig, proof_v, clear_m): return False
 
-    except (KeyError, Exception):
-        return False
+		# otherwise
+		return True
+
+	except (KeyError, Exception):
+		return False
 
 
 ####################################################################

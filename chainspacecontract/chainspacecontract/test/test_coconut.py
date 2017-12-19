@@ -310,9 +310,10 @@ class Test(unittest.TestCase):
 		# verify signature
 		transaction = coconut.verify(
 		    None,
-		    (old_request,),
+		    (instance,),
 		    (packed_sig,),
-		    hidden_m,
+		    clear_m,
+		    hidden_m
 		)
 
 		## submit transaction
@@ -321,6 +322,10 @@ class Test(unittest.TestCase):
 		    + '/verify', json=transaction_to_solution(transaction)
 		)
 		self.assertTrue(response.json()['success'])
+
+		print("\n\n=================== VERIFICATION ===================\n")
+		print(transaction['transaction']['returns'][0])
+		print("\n====================================================\n\n")
 
 		## stop service
 		checker_service_process.terminate()
