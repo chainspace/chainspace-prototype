@@ -70,13 +70,19 @@ class ChainspaceContract(object):
     @contextmanager
     def test_service(self, port=5000):
         """ A test service context manager that spins up and down a service on a port (default 5000)."""
+        
+        # We import these here to only burden test code with dependencies
         from multiprocessing import Process
         import time
 
+        # Start web server
         checker_service_process = Process(target=self.run_checker_service)
         checker_service_process.start()
         time.sleep(0.1)
+
         yield checker_service_process
+        
+        # Tear down web server
         checker_service_process.terminate()
         checker_service_process.join()
 
