@@ -52,6 +52,62 @@ client.process_transaction(transaction2)
 
 ```
 
+Here are the HTTP calls for interaction (A)
+
+**Part 1 - initialise the contract**
+
+```
+POST http://127.0.0.1:5000/api/1.0/transaction/process HTTP/1.1
+{
+  "transaction":
+  {
+    "inputIDs": [],
+    "methodID": "init",
+    "parameters": [],
+    "outputs": ["0"],
+    "returns": [],
+    "dependencies": [],
+    "referenceInputIDs": [],
+    "contractID": "addition"
+  },
+  "store": {}
+}
+
+HTTP/1.1 200 OK
+{
+  u'outcome': u'accepted_t_commit',
+  u'success': u'True'
+}
+```
+
+**Part 2 - invoke the 'increment' method**
+
+```
+POST http://127.0.0.1:5000/api/1.0/transaction/process HTTP/1.1
+{
+  "transaction":
+  {
+    "inputIDs": ["a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7"],
+    "methodID": "increment",
+    "parameters": [],
+    "outputs": ["1"],
+    "returns": [],
+    "dependencies": [],
+    "referenceInputIDs": [],
+    "contractID": "addition"
+  },
+  "store":
+  {
+    "a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7": "0"
+  }
+}
+
+HTTP/1.1 200 OK
+{
+  u'outcome': u'accepted_t_commit',
+  u'success': u'True'
+}
+```
 Here are the HTTP calls for interaction (B) when the Chainspace node invokes the python checker (via `PythonChecker` Java class).
 
 **Part 1 - initialise the contract**
