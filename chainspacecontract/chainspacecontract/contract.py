@@ -206,8 +206,6 @@ class ChainspaceContract(object):
                     elif method_name != "init":
                         txt = transaction_inline_objects(return_value)
 
-                    
-                        #self.flask_app.testing = True
                         app = self.flask_app.test_client()
                         args = app.post('/' + self.contract_name + '/' + method_name, 
                                  data=json.dumps(txt),
