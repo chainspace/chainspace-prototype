@@ -204,24 +204,18 @@ class ChainspaceContract(object):
                     if method_name not in self.checkers and method_name != "init":
                         print("POTENTIAL ERROR: '%s' method has no checker." % method_name)
                     elif method_name != "init":
-                        try:
-                            txt = transaction_inline_objects(return_value)
+                        txt = transaction_inline_objects(return_value)
 
-                            args = (tuple(txt['inputs']),
-                                tuple(txt['referenceInputs']),
-                                tuple(txt['parameters']),
-                                tuple(txt['outputs']),
-                                tuple(txt['returns']),
-                                tuple(txt['dependencies']))
-
-                            if not self.checkers[method_name](*args):
-                                print("POTENTIAL ERROR: '%s' method output does not satify checker." % method_name)
-
-                        except Exception as e:
-                            print("!!!!!!!!!!!")
-                            print(e)
-                            print(method_name)
-                            raise e
+                    
+                        #self.flask_app.testing = True
+                        app = self.flask_app.test_client()
+                        args = app.post('/' + self.contract_name + '/' + method_name, 
+                                 data=json.dumps(txt),
+                                 content_type='application/json')
+                        
+                        result = json.loads(args.data)["success"]
+                        if not result:
+                            print("POTENTIAL ERROR: '%s' method output does not satify checker." % method_name)
 
                 _checker_mode.on = False
                 return return_value
