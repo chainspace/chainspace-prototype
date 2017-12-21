@@ -136,16 +136,10 @@ class ChainspaceContract(object):
                     del kwargs['__checker_mode']
                 checker_mode = _checker_mode.on
 
-                if inputs is None:
-                    inputs = ()
-                if reference_inputs is None:
-                    reference_inputs = ()
-                if parameters is None:
-                    parameters = ()
-
-                inputs = tuple(inputs)
-                reference_inputs = tuple(reference_inputs)
-                parameters = tuple(parameters)
+                # Cleanup defaults.
+                inputs = tuple(inputs) if inputs is not None else ()
+                reference_inputs = tuple(reference_inputs) if reference_inputs is not None else ()
+                parameters = tuple(parameters) if parameters is not None else ()
 
                 self.dependent_transactions_log = []
                 if self.methods_original['init'] == function:
@@ -157,8 +151,7 @@ class ChainspaceContract(object):
                     if key not in result or result[key] is None:
                         result[key] = tuple()
 
-                result['parameters'] = parameters
-                result['parameters'] += result['extra_parameters']
+                result['parameters'] = parameters + result['extra_parameters']
                 del result['extra_parameters']
 
                 if checker_mode:
@@ -299,24 +292,26 @@ _checker_mode = _CheckerMode()
 def transaction_inline_objects(data):
     """ Takes a dictionary containing a `transcation' and a store of object IDs to json objects, 
     and returns a transaction with all object IDs substituted with the actual objects. """
-    data = deepcopy(data) # Ensure the call is side effect free.
-
-    store = data['store']
-    transaction = data['transaction']
+    
+    store = deepcopy(data['store'])
+    transaction = deepcopy(data['transaction'])
 
     for dependency in transaction['dependencies']:
         del dependency['dependencies']
 
     for single_transaction in (transaction,) + tuple(transaction['dependencies']):
+        # Transform 'inputs'.
         single_transaction['inputs'] = []
-        single_transaction['referenceInputs'] = []
         for object_id in single_transaction['inputIDs']:
             single_transaction['inputs'].append(store[object_id])
+        del single_transaction['inputIDs']
+        single_transaction['inputs'] = tuple(single_transaction['inputs'])
+        
+        # Transform 'references'.
+        single_transaction['referenceInputs'] = []
         for object_id in single_transaction['referenceInputIDs']:
             single_transaction['referenceInputs'].append(store[object_id])
-        del single_transaction['inputIDs']
         del single_transaction['referenceInputIDs']
-        single_transaction['inputs'] = tuple(single_transaction['inputs'])
         single_transaction['referenceInputs'] = tuple(single_transaction['referenceInputs'])
 
     return transaction
