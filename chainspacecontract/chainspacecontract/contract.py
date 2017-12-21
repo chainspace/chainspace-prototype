@@ -1,5 +1,8 @@
 import hashlib
 import json
+from copy import deepcopy
+from contextlib import contextmanager
+
 
 import click
 from flask import Flask
@@ -64,6 +67,19 @@ class ChainspaceContract(object):
         self._populate_empty_checkers()
         self.flask_app.run(port=port)
 
+    @contextmanager
+    def test_service(self, port=5000):
+        """ A test service context manager that spins up and down a service on a port (default 5000)."""
+        from multiprocessing import Process
+        import time
+
+        checker_service_process = Process(target=self.run_checker_service)
+        checker_service_process.start()
+        time.sleep(0.1)
+        yield checker_service_process
+        checker_service_process.terminate()
+        checker_service_process.join()
+
     def checker(self, method_name):
         """ A decorator declaring a function to be a checker for a particular contract procedure.
         The function is expected to have a checker signature of: 
@@ -79,7 +95,7 @@ class ChainspaceContract(object):
 
             @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
-                dependencies = (request.json['dependencies'] if 'dependencies' in request.json else [])
+                dependencies = (request.json['dependencies'] if 'dependencies' in request.json else ())
                 for dependency in dependencies:
                     dependency['inputs'] = tuple(dependency['inputs'])
                     dependency['referenceInputs'] = tuple(dependency['referenceInputs'])
@@ -182,8 +198,32 @@ class ChainspaceContract(object):
                     result['outputs'] = tuple(outputs)
                     return_value = {'transaction': result, 'store': store}
 
-
                 self._trigger_callbacks(return_value)
+
+                if __debug__ and not _checker_mode.on:
+                    # Automatically run the checker to ensure procedure output passes check.
+                    if method_name not in self.checkers and method_name != "init":
+                        print("POTENTIAL ERROR: '%s' method has no checker." % method_name)
+                    elif method_name != "init":
+                        try:
+                            txt = transaction_inline_objects(return_value)
+
+                            args = (tuple(txt['inputs']),
+                                tuple(txt['referenceInputs']),
+                                tuple(txt['parameters']),
+                                tuple(txt['outputs']),
+                                tuple(txt['returns']),
+                                tuple(txt['dependencies']))
+
+                            if not self.checkers[method_name](*args):
+                                print("POTENTIAL ERROR: '%s' method output does not satify checker." % method_name)
+
+                        except Exception as e:
+                            print("!!!!!!!!!!!")
+                            print(e)
+                            print(method_name)
+                            raise e
+
                 _checker_mode.on = False
                 return return_value
 
@@ -212,11 +252,20 @@ class ChainspaceContract(object):
 
 
 class ChainspaceObject(str):
+    """ A string that remembers an object_id. """
+
     def __new__(cls, object_id, value):
         return super(ChainspaceObject, cls).__new__(cls, value)
 
     def __init__(self, object_id, value):
         self.object_id = object_id
+
+    def __copy__(self):
+        return ChainspaceObject(self.object_id, self)
+
+    def __deepcopy__(self, memo):
+        return ChainspaceObject(self.object_id, self)
+
 
     @staticmethod
     def from_transaction(transaction, output_index):
@@ -241,16 +290,16 @@ class _CheckerMode(object):
 
 _checker_mode = _CheckerMode()
 
-
 def transaction_inline_objects(data):
     """ Takes a dictionary containing a `transcation' and a store of object IDs to json objects, 
     and returns a transaction with all object IDs substituted with the actual objects. """
+    data = deepcopy(data) # Ensure the call is side effect free.
+
     store = data['store']
     transaction = data['transaction']
 
     for dependency in transaction['dependencies']:
         del dependency['dependencies']
-        #dependency.pop('dependencies', None)
 
     for single_transaction in (transaction,) + tuple(transaction['dependencies']):
         single_transaction['inputs'] = []

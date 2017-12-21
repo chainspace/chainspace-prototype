@@ -41,12 +41,12 @@ hidden_m = [3, 4, 5] # messages for blind signature
 # ------------------------------------
 packed_vvk = (pack(vvk[0]),pack(vvk[1]),[pack(vvk[2][i]) for i in range(q)])
 instance = {
-	'type' : 'CoCoInstance',
-	'q' : q,
-	't' : t,
-	'n' : n,
-	'callback' : callback,
-	'verifier' : packed_vvk
+    'type' : 'CoCoInstance',
+    'q' : q,
+    't' : t,
+    'n' : n,
+    'callback' : callback,
+    'verifier' : packed_vvk
 }
 hasher = sha256()
 hasher.update(dumps(instance).encode('utf8'))
@@ -62,274 +62,266 @@ class Test(unittest.TestCase):
     # test init
     # --------------------------------------------------------------
     def test_init(self):
+
         checker_service_process = Process(target=coconut_contract.run_checker_service)
         checker_service_process.start()
         time.sleep(0.1)
 
-        ## create transaction
-        transaction = coconut.init()
+        try:
 
-        ## submit transaction
-        response = requests.post(
-            'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-            + '/init', json=transaction_to_solution(transaction)
-        )
-        self.assertTrue(response.json()['success'])
+            ## create transaction
+            transaction = coconut.init()
 
-        ## stop service
-        checker_service_process.terminate()
-        checker_service_process.join()
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/init', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
+
+        finally:
+            ## stop service
+            checker_service_process.terminate()
+            checker_service_process.join()
+
+    def test_context(self):
+
+        with coconut_contract.test_service():
+            ## create transaction
+            transaction = coconut.init()
+
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/init', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
+
+
 
     # --------------------------------------------------------------
     # test request issue
     # --------------------------------------------------------------
     def test_create(self):
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
+        with coconut_contract.test_service():
 
-		## create transaction
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
+            ## create transaction
+            # init
+            init_transaction = coconut.init()
+            token = init_transaction['transaction']['outputs'][0]
+            # create instance
+            transaction = coconut.create(
+                (token,),
+                None,
+                None,
+                q,
+                t,
+                n,
+                callback, 
+                vvk,
+                sig
+            )
 
-		## submit transaction
-		response = requests.post(
-			'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-			+ '/create', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/create', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
 
     # --------------------------------------------------------------
     # test request
     # --------------------------------------------------------------
     def test_request(self):
-		## run service
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
+        with coconut_contract.test_service():
 
-		## create transactions
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		create_transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
-		instance = create_transaction['transaction']['outputs'][1]
-		# request
-		transaction = coconut.request(
-		    (instance,),
-		    None,
-		    None,
-		    clear_m, 
-		    hidden_m, 
-		    pub
-		)
+            ## create transactions
+            # init
+            init_transaction = coconut.init()
+            token = init_transaction['transaction']['outputs'][0]
+            # create instance
+            create_transaction = coconut.create(
+                (token,),
+                None,
+                None,
+                q,
+                t,
+                n,
+                callback, 
+                vvk,
+                sig
+            )
+            instance = create_transaction['transaction']['outputs'][1]
+            # request
+            transaction = coconut.request(
+                (instance,),
+                None,
+                None,
+                clear_m, 
+                hidden_m, 
+                pub
+            )
 
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/request', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/request', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
 
     # --------------------------------------------------------------
     # test issue
     # --------------------------------------------------------------
     def test_issue(self):
-		## run service
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
+        with coconut_contract.test_service():
 
-		## create transactions
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		create_transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
-		instance = create_transaction['transaction']['outputs'][1]
-		# request
-		request_transaction = coconut.request(
-		    (instance,),
-		    None,
-		    None,
-		    clear_m, 
-		    hidden_m, 
-		    pub
-		)
-		old_request = request_transaction['transaction']['outputs'][1]
+            ## create transactions
+            # init
+            init_transaction = coconut.init()
+            token = init_transaction['transaction']['outputs'][0]
+            # create instance
+            create_transaction = coconut.create(
+                (token,),
+                None,
+                None,
+                q,
+                t,
+                n,
+                callback, 
+                vvk,
+                sig
+            )
+            instance = create_transaction['transaction']['outputs'][1]
+            # request
+            request_transaction = coconut.request(
+                (instance,),
+                None,
+                None,
+                clear_m, 
+                hidden_m, 
+                pub
+            )
+            old_request = request_transaction['transaction']['outputs'][1]
 
-		# issue a signatures
-		transaction = coconut.issue(
-		    (old_request,),
-		    None,
-		    None,
-		    sk[0],
-		    0
-		)
-		old_request = transaction['transaction']['outputs'][0]
+            # issue a signatures
+            transaction = coconut.issue(
+                (old_request,),
+                None,
+                None,
+                sk[0],
+                0
+            )
+            old_request = transaction['transaction']['outputs'][0]
 
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/issue', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/issue', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
 
-		# issue the other t-1 signatures
-		for i in range(1,t):
-			transaction = coconut.issue(
-			    (old_request,),
-			    None,
-			    None,
-			    sk[i],
-			    i
-			)
-			old_request = transaction['transaction']['outputs'][0]
+            # issue the other t-1 signatures
+            for i in range(1,t):
+                transaction = coconut.issue(
+                    (old_request,),
+                    None,
+                    None,
+                    sk[i],
+                    i
+                )
+                old_request = transaction['transaction']['outputs'][0]
 
-		# some crypto - to show that this actually works
-		# ------------------------------------
-		packet = loads(old_request)['sigs']
-		(indexes, packed_enc_sigs) = zip(*packet)
-		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
-		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
-		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
-		aggr = aggregate_th_sign(params, dec_sigs)
-		aggr = randomize(params, aggr)
-		(kappa, proof_v) = show_mix_sign(params, vvk, hidden_m)
-		print("\n\n=================== VERIFICATION ===================\n")
-		print(mix_verify(params, vvk, kappa, aggr, proof_v, clear_m))
-		print("\n====================================================\n\n")
-		# ------------------------------------
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
+            # some crypto - to show that this actually works
+            # ------------------------------------
+            packet = loads(old_request)['sigs']
+            (indexes, packed_enc_sigs) = zip(*packet)
+            (h, packed_enc_epsilon) = zip(*packed_enc_sigs)
+            enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
+            dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
+            aggr = aggregate_th_sign(params, dec_sigs)
+            aggr = randomize(params, aggr)
+            (kappa, proof_v) = show_mix_sign(params, vvk, hidden_m)
+            print("\n\n=================== VERIFICATION ===================\n")
+            print(mix_verify(params, vvk, kappa, aggr, proof_v, clear_m))
+            print("\n====================================================\n\n")
+            # ------------------------------------
 
     # --------------------------------------------------------------
     # test verify
     # --------------------------------------------------------------
     def test_verify(self):
-		## run service
-		checker_service_process = Process(target=coconut_contract.run_checker_service)
-		checker_service_process.start()
-		time.sleep(0.1)
+        with coconut_contract.test_service():
 
-		## create transactions
-		# init
-		init_transaction = coconut.init()
-		token = init_transaction['transaction']['outputs'][0]
-		# create instance
-		create_transaction = coconut.create(
-			(token,),
-			None,
-			None,
-			q,
-			t,
-			n,
-			callback, 
-			vvk,
-			sig
-		)
-		instance = create_transaction['transaction']['outputs'][1]
-		# request
-		request_transaction = coconut.request(
-		    (instance,),
-		    None,
-		    None,
-		    clear_m, 
-		    hidden_m, 
-		    pub
-		)
-		old_request = request_transaction['transaction']['outputs'][1]
+            ## create transactions
+            # init
+            init_transaction = coconut.init()
+            token = init_transaction['transaction']['outputs'][0]
+            # create instance
+            create_transaction = coconut.create(
+                (token,),
+                None,
+                None,
+                q,
+                t,
+                n,
+                callback, 
+                vvk,
+                sig
+            )
+            instance = create_transaction['transaction']['outputs'][1]
+            # request
+            request_transaction = coconut.request(
+                (instance,),
+                None,
+                None,
+                clear_m, 
+                hidden_m, 
+                pub
+            )
+            old_request = request_transaction['transaction']['outputs'][1]
 
-		# issue tsignatures
-		for i in range(t):
-			transaction = coconut.issue(
-			    (old_request,),
-			    None,
-			    None,
-			    sk[i],
-			    i
-			)
-			old_request = transaction['transaction']['outputs'][0]
+            # issue tsignatures
+            for i in range(t):
+                transaction = coconut.issue(
+                    (old_request,),
+                    None,
+                    None,
+                    sk[i],
+                    i
+                )
+                old_request = transaction['transaction']['outputs'][0]
 
-		# some crypto
-		# ------------------------------------
-		packet = loads(old_request)['sigs']
-		(indexes, packed_enc_sigs) = zip(*packet)
-		(h, packed_enc_epsilon) = zip(*packed_enc_sigs)
-		enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
-		dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
-		aggr = aggregate_th_sign(params, dec_sigs)
-		aggr = randomize(params, aggr)
-		packed_sig = (pack(aggr[0]),pack(aggr[1]))
-		# ------------------------------------
+            # some crypto
+            # ------------------------------------
+            packet = loads(old_request)['sigs']
+            (indexes, packed_enc_sigs) = zip(*packet)
+            (h, packed_enc_epsilon) = zip(*packed_enc_sigs)
+            enc_epsilon = [(unpackG1(params,x[0]), unpackG1(params,x[1])) for x in packed_enc_epsilon]
+            dec_sigs = [(unpackG1(params,h[0]), elgamal_dec(params, priv, enc)) for enc in enc_epsilon]
+            aggr = aggregate_th_sign(params, dec_sigs)
+            aggr = randomize(params, aggr)
+            packed_sig = (pack(aggr[0]),pack(aggr[1]))
+            # ------------------------------------
 
-		# verify signature
-		transaction = coconut.verify(
-		    None,
-		    (instance,),
-		    (packed_sig,),
-		    clear_m,
-		    hidden_m
-		)
+            # verify signature
+            transaction = coconut.verify(
+                None,
+                (instance,),
+                (packed_sig,),
+                clear_m,
+                hidden_m
+            )
 
-		## submit transaction
-		response = requests.post(
-		    'http://127.0.0.1:5000/' + coconut_contract.contract_name 
-		    + '/verify', json=transaction_to_solution(transaction)
-		)
-		self.assertTrue(response.json()['success'])
+            ## submit transaction
+            response = requests.post(
+                'http://127.0.0.1:5000/' + coconut_contract.contract_name 
+                + '/verify', json=transaction_to_solution(transaction)
+            )
+            self.assertTrue(response.json()['success'])
 
-		print("\n\n=================== VERIFICATION ===================\n")
-		print(transaction['transaction']['returns'][0])
-		print("\n====================================================\n\n")
-
-		## stop service
-		checker_service_process.terminate()
-		checker_service_process.join()
+            print("\n\n=================== VERIFICATION ===================\n")
+            print(transaction['transaction']['returns'][0])
+            print("\n====================================================\n\n")
 
 
 ####################################################################
