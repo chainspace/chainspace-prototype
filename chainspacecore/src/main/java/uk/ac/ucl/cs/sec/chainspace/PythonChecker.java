@@ -203,7 +203,10 @@ class PythonChecker {
             System.out.println("\nChecker URL:");
             System.out.println("\t" + getURL(transactionForChecker.getMethodID()));
         }
-        return Utils.makePostRequest(this.getURL(transactionForChecker.getMethodID()), transactionForChecker.toJson());
+        return Utils.makePostRequest(
+                this.getURL(transactionForChecker.getMethodID()),
+                transactionForChecker.toJson(),
+                true);
     }
 
 

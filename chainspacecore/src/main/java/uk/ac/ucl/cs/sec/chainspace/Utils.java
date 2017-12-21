@@ -1,6 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -102,6 +103,9 @@ public class Utils {
         return Utils.hash(transactionJson);
     }
 
+    static String makePostRequest(String url, String postData) throws IOException {
+        return makePostRequest(url, postData, false);
+    }
 
     /**
      * makePostRequest
@@ -111,7 +115,7 @@ public class Utils {
      * @return the string response of the server
      * @throws IOException general IO exception, thrown if anything goes bad
      */
-    static String makePostRequest(String url, String postData) throws IOException {
+    static String makePostRequest(String url, String postData, boolean log) throws IOException {
 
         // prepare post request
         HttpClient httpClient = HttpClientBuilder.create().build();
@@ -120,11 +124,22 @@ public class Utils {
         post.setEntity(postingString);
         post.setHeader("Content-type", "application/json");
 
+        if (log) {
+            System.out.println("POST " + url + " HTTP/1.1");
+            System.out.println(postData);
+        }
         // execute
         HttpResponse response   = httpClient.execute(post);
 
         // return string response
-        return new BasicResponseHandler().handleResponse(response);
+        String responseBody = new BasicResponseHandler().handleResponse(response);
+
+        if (log) {
+            StatusLine s = response.getStatusLine();
+            System.out.println(s.getProtocolVersion() + " " + s.getStatusCode() + " " + s.getReasonPhrase());
+            System.out.println(responseBody);
+        }
+        return responseBody;
 
     }
 

@@ -55,6 +55,8 @@ cd chainspacecore
 mvn -Dversion=1.0-SNAPSHOT package assembly:single
 ```
 
+
+
 Make sure chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar file got generated:
 
 ```
