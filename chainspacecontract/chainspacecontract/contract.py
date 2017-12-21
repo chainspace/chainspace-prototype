@@ -7,8 +7,11 @@ from flask import jsonify
 from flask import request
 
 
+
 class ChainspaceContract(object):
     def __init__(self, contract_name):
+        """ Initializes a new contract by name. """
+
         self.contract_name = contract_name
         self.flask_app = Flask(contract_name)
 
@@ -42,6 +45,8 @@ class ChainspaceContract(object):
         contract.register_callback(self.local_callback)
 
     def run(self):
+        """ Runs the checker service (flask application) CLI (default on port 5000). """
+
         @click.group(help='Chainspace contract: {}'.format(self.contract_name))
         def cli():
             pass
@@ -55,10 +60,17 @@ class ChainspaceContract(object):
         cli()
 
     def run_checker_service(self, port=5000):
+        """ Runs the flash app on `port' providing a checker service for the contract. """
         self._populate_empty_checkers()
         self.flask_app.run(port=port)
 
     def checker(self, method_name):
+        """ A decorator declaring a function to be a checker for a particular contract procedure.
+        The function is expected to have a checker signature of: 
+
+            checker(inputs, reference_inputs, parameters, outputs, returns, dependencies)
+
+        """
         def checker_decorator(function):
             self.checkers[method_name] = function
 
@@ -89,6 +101,11 @@ class ChainspaceContract(object):
         return checker_decorator
 
     def method(self, method_name):
+        """ A decordator declaring a function to be a procedure with a certain method_name. 
+        The function must have the signature:
+
+            method(inputs, reference_inputs, parameters)
+        """
         def method_decorator(function):
             def function_wrapper(inputs=None, reference_inputs=None, parameters=None, *args, **kwargs):
                 if '__checker_mode' in kwargs:
@@ -147,22 +164,24 @@ class ChainspaceContract(object):
                     for dependency in result['dependencies']:
                         dependencies.append(dependency['solution'])
                     result['dependencies'] = dependencies
-                    return_value = {'solution': result}
-
+                    
                     for dependency in result['dependencies']:
                         del dependency['dependencies']
+                    return_value = {'solution': result}
+
                 else:
                     dependencies = []
                     for dependency in result['dependencies']:
                         store.update(dependency['store'])
                         dependencies.append(dependency['transaction'])
                     result['dependencies'] = dependencies
-                    return_value = {'transaction': result, 'store': store}
-
+                    
                     outputs = []
                     for output_index in range(len(result['outputs'])):
                         outputs.append(ChainspaceObject.from_transaction(result, output_index))
                     result['outputs'] = tuple(outputs)
+                    return_value = {'transaction': result, 'store': store}
+
 
                 self._trigger_callbacks(return_value)
                 _checker_mode.on = False
@@ -177,6 +196,9 @@ class ChainspaceContract(object):
 
 
     def register_standard_checker(self, method_name, function):
+        """ A function that registers a simple procedure into a checker. 
+        This can only work if the checker simply re-runs the procedure and checks outputs are equal."""
+
         @self.checker(method_name)
         def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters, __checker_mode=True)
@@ -220,7 +242,9 @@ class _CheckerMode(object):
 _checker_mode = _CheckerMode()
 
 
-def transaction_to_solution(data):
+def transaction_inline_objects(data):
+    """ Takes a dictionary containing a `transcation' and a store of object IDs to json objects, 
+    and returns a transaction with all object IDs substituted with the actual objects. """
     store = data['store']
     transaction = data['transaction']
 
@@ -241,3 +265,6 @@ def transaction_to_solution(data):
         single_transaction['referenceInputs'] = tuple(single_transaction['referenceInputs'])
 
     return transaction
+
+# This is the legacy name. Deprecated.
+transaction_to_solution = transaction_inline_objects
