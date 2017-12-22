@@ -81,11 +81,13 @@ class ChainspaceContract(object):
         checker_service_process.start()
         time.sleep(0.1)
 
-        yield checker_service_process
-        
-        # Tear down web server
-        checker_service_process.terminate()
-        checker_service_process.join()
+        try:
+            yield checker_service_process
+    
+        finally:
+            # Tear down web server
+            checker_service_process.terminate()
+            checker_service_process.join()
 
     def checker(self, method_name):
         """ A decorator declaring a function to be a checker for a particular contract procedure.

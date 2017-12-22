@@ -2,75 +2,70 @@
 	Hello world contract.
 """
 
-
 ####################################################################
 # imports
 ####################################################################
-# general
+
 from json import dumps, loads
-# chainspace
 from chainspacecontract import ChainspaceContract
 
-## contract name
 contract = ChainspaceContract('hello')
 
 
 ####################################################################
 # methods
 ####################################################################
-# ------------------------------------------------------------------
-# init
-# ------------------------------------------------------------------
+
 @contract.method('init')
 def init():
-	return {
-	    'outputs': (dumps({'type' : 'HelloToken'}),),
-	}
+	return { 'outputs': (dumps({'type' : 'HelloToken'}),) }
 
-# ------------------------------------------------------------------
-# hello
-# ------------------------------------------------------------------
+
 @contract.method('hello')
 def hello(inputs, reference_inputs, parameters):
-    instance = {
+
+    # Checks that the first input is a token.
+    if not (loads(inputs[0]) == {'type' : 'HelloToken'}):
+        raise Exception("Expected a contract token as a first input.")
+
+    # Create a new "HelloMessage" object, just containing a message.
+    HelloMessage = dumps({
         'type' : 'HelloMessage',
         'message' : 'Hello, world!'
-    }
+    })
 
-    # return
-    return {
-        'outputs': (inputs[0], dumps(instance)),
-    }
+    # Return both a fresh token and a HelloMessage.
+    return { 'outputs': (inputs[0], HelloMessage) }
 
 
 ####################################################################
 # checker
 ####################################################################
-# ------------------------------------------------------------------
-# check hello
-# ------------------------------------------------------------------
+
 @contract.checker('hello')
-def create_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+def hello_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
-        # retrieve instances
+        ret = True
+
+        # parse inputs
+        ret &= reference_inputs == () and returns == () and dependencies == []
+
+        # check input format
+        ret &= len(inputs) == 1
+        ret &= len(outputs) == 2
+
         token = loads(inputs[0])
         instance = loads(outputs[1])
-        
-        # check format
-        if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
-            return False 
 
         # check types
-        if token['type'] != 'HelloToken' or inputs[0] != outputs[0]: return False
-        if instance['type'] != 'HelloMessage': return False
+        ret &=  token['type'] == 'HelloToken'
+        ret &= inputs[0] == outputs[0]
+        ret &=  instance['type'] == 'HelloMessage'
 
         # check content
-        if instance['message'] != 'Hello, world!': return False
-   
-        # otherwise
-        return True
-
-    except (KeyError, Exception):
+        ret &=  instance['message'] == 'Hello, world!'
+        return ret
+    except:
         return False
 
 
@@ -79,7 +74,5 @@ def create_checker(inputs, reference_inputs, parameters, outputs, returns, depen
 ####################################################################
 if __name__ == '__main__':
     contract.run()
-
-
 
 ####################################################################
