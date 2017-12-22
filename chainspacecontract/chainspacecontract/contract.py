@@ -44,6 +44,7 @@ class ChainspaceContract(object):
         self.dependent_transactions_log.append(transaction)
 
     def register_dependency(self, contract):
+        """ Registers another contract, that can be used as a library for this one. """
         self.dependencies.append(contract)
         contract.register_callback(self.local_callback)
 
@@ -63,7 +64,7 @@ class ChainspaceContract(object):
         cli()
 
     def run_checker_service(self, port=5000):
-        """ Runs the flash app on `port' providing a checker service for the contract. """
+        """ Runs the flash app on 'port' providing a checker service for the contract. """
         self._populate_empty_checkers()
         self.flask_app.run(port=port)
 
@@ -282,7 +283,7 @@ class _CheckerMode(object):
 _checker_mode = _CheckerMode()
 
 def transaction_inline_objects(data):
-    """ Takes a dictionary containing a `transcation' and a store of object IDs to json objects, 
+    """ Takes a dictionary containing a 'transcation' and a store of object IDs to json objects, 
     and returns a transaction with all object IDs substituted with the actual objects. """
     
     store = deepcopy(data['store'])
