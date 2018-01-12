@@ -109,7 +109,7 @@ public class ConsoleClient {
             System.out.println("11. TEST_CORE_1");
             System.out.println("12. TEST_CORE_2");
             System.out.println("13. TEST_CORE_3");
-
+            System.out.println("18. ADD n  DUMMY KEYS AND VALUES ASYNCHRONOUSLY TO THE MAP (BULK TEST)");
 
             cmd = sc.nextInt();
             String key, input;
@@ -124,6 +124,17 @@ public class ConsoleClient {
                     String value = console.nextLine();
                     String result = client.put(key, value);
                     System.out.println("Previous value: " + result);
+                    break;
+                case RequestType.BULK_PUT:
+                    System.out.println("Putting n values in the map");
+                    int nVals = 0;
+                    System.out.println("Enter n:");
+                    nVals = Integer.parseInt(console.nextLine());
+                    for(int j = 0; j < nVals; j++) {
+                        key = Integer.toString(j) ;
+                        String myValue = Integer.toString(j) ;
+                        client.putAsynch(key, myValue);
+                    }
                     break;
                 case RequestType.GET:
                     System.out.println("Reading value from the map");
