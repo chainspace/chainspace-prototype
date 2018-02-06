@@ -191,8 +191,10 @@ def mix_ttp_th_keygen(params, t, n, q):
 	""" generate keys for threshold signature """
 	(G, o, g1, hs, g2, e) = params
 	# generate polynomials
-	v = np.poly1d([o.random() for _ in range(0,t)])
-	w = [np.poly1d([o.random() for _ in range(0,t)]) for __ in range(q)]
+	#v = np.poly1d([o.random() for _ in range(0,t)])
+	#w = [np.poly1d([o.random() for _ in range(0,t)]) for __ in range(q)]
+	v = np.poly1d([10 for _ in range(0,t)])
+	w = [np.poly1d([10 for _ in range(0,t)]) for __ in range(q)]
 	# generate shares
 	x = [v(i) % o for i in range(1,n+1)]
 	y = [[w[j](i) % o for j in range(len(w))] for i in range(1,n+1)]
