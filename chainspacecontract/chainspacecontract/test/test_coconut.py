@@ -100,7 +100,7 @@ class Test(unittest.TestCase):
 
 
     # --------------------------------------------------------------
-    # test request issue
+    # test create instance
     # --------------------------------------------------------------
     def test_create(self):
         with coconut_contract.test_service():
@@ -280,7 +280,7 @@ class Test(unittest.TestCase):
             )
             old_request = request_transaction['transaction']['outputs'][1]
 
-            # issue tsignatures
+            # issue t signatures
             for i in range(t):
                 transaction = coconut.issue(
                     (old_request,),
@@ -312,7 +312,7 @@ class Test(unittest.TestCase):
                 hidden_m
             )
 
-            ## submit transaction
+            ## submit t ransaction
             response = requests.post(
                 'http://127.0.0.1:5000/' + coconut_contract.contract_name 
                 + '/verify', json=transaction_to_solution(transaction)
