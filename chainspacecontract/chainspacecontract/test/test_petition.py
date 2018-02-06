@@ -25,6 +25,8 @@ from chainspacecontract.examples.coconut_lib import ttp_th_keygen, elgamal_keyge
 from chainspacecontract.examples.coconut_lib import prepare_blind_sign, blind_sign, aggregate_th_sign, randomize
 from chainspacecontract.examples.coconut_lib import show_coconut_petition, coconut_petition_verify
 
+# debug
+import time
 
 
 ####################################################################
@@ -147,6 +149,7 @@ class Test(unittest.TestCase):
         # ------------------------------------
 
         # add signature to th petition
+        start = time.time()
         transaction = petition.sign(
             (old_petition, old_list),
             None,
@@ -155,6 +158,8 @@ class Test(unittest.TestCase):
             sig,
             vvk
         )
+        end = time.time()
+        print((end-start)*1000)
 
         ## submit transaction
         response = requests.post(

@@ -9,8 +9,6 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-
-
 class ChainspaceContract(object):
     def __init__(self, contract_name):
         """ Initializes a new contract by name. """
@@ -225,7 +223,6 @@ class ChainspaceContract(object):
             self.methods_original[method_name] = function
 
             return function_wrapper
-
         return method_decorator
 
 

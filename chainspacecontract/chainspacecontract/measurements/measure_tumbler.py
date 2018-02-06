@@ -37,16 +37,16 @@ instance = {
     'list' : [],
     'vvk' : packed_vvk
 }
-def auth_sig():
-    hasher = sha256()
-    hasher.update(dumps(instance).encode('utf8'))
-    m = Bn.from_binary(hasher.digest())
-    auth_sigs = [sign(bp_params, ski, m) for ski in sk]
-    return aggregate_th_sign(bp_params, auth_sigs)
+
+hasher = sha256()
+hasher.update(dumps(instance).encode('utf8'))
+m = Bn.from_binary(hasher.digest())
+auth_sigs = [sign(bp_params, ski, m) for ski in sk]
+auth_sig = aggregate_th_sign(bp_params, auth_sigs)
 # ------------------------------------
 
 ##
-RUNS = 1
+RUNS = 10000
 
 
 def main():
@@ -66,13 +66,13 @@ def main():
             None,
             None,
             vvk,
-            auth_sig()
+            auth_sig
         )
         end_time = time.time()
         times.append((end_time-start_time)*1000)
     mean = numpy.mean(times)
     sd = numpy.std(times)
-    print "[g] create_account tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+    print "[g] create_tumbler tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
     # check
     create_tumbler_tx = tumbler.create_tumbler(
@@ -80,7 +80,7 @@ def main():
         None,
         None,
         vvk,
-        auth_sig()
+        auth_sig
     )
     solution = transaction_to_solution(create_tumbler_tx)
     times = []
@@ -163,7 +163,11 @@ def main():
     sd = numpy.std(times)
     print "[c] redeem tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
-    
+    '''
+    print("\nTransactions:")
+    print(create_tumbler_tx)
+    print(redeem_tx)
+    '''
 
 
 if __name__ == '__main__':

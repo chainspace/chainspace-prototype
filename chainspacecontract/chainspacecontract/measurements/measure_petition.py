@@ -33,7 +33,7 @@ pet_params = pet_setup()
 
 
 ##
-RUNS = 1
+RUNS = 10000
 
 
 def main():
@@ -157,9 +157,11 @@ def main():
     sd = numpy.std(times)
     print "[c] sign tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
-
-    
-    
+    '''
+    print("\nTransactions:")
+    print(create_petition_tx)
+    print(sign_tx)
+    '''
 
 
 if __name__ == '__main__':

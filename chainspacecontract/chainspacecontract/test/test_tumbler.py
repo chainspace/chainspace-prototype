@@ -152,7 +152,7 @@ class Test(unittest.TestCase):
         sig = aggregate_th_sign(bp_params, sigs)
         sig = randomize(bp_params, sig)
         # reveal ID and merchant addr
-        print(verify(bp_params, vvk, m, sig))
+        #print(verify(bp_params, vvk, m, sig))
         # ------------------------------------
 
         # add signature to th petition

@@ -25,7 +25,7 @@ from chainspacecontract.examples.coconut_lib import elgamal_dec, aggregate_th_si
 # debug
 from chainspacecontract.examples.coconut_lib import verify, show_mix_sign, mix_verify, prepare_mix_sign, mix_sign
 from bplib.bp import BpGroup, G2Elem
-
+import time
 
 ####################################################################
 q = 5 # max number of messages
@@ -304,6 +304,7 @@ class Test(unittest.TestCase):
             # ------------------------------------
 
             # verify signature
+            start_time = time.time()
             transaction = coconut.verify(
                 None,
                 (instance,),
@@ -311,6 +312,7 @@ class Test(unittest.TestCase):
                 clear_m,
                 hidden_m
             )
+            end_time = time.time(); print((end_time-start_time)*1000)
 
             ## submit t ransaction
             response = requests.post(

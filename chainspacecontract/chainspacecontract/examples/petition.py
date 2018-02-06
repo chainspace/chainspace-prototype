@@ -19,6 +19,9 @@ from chainspacecontract.examples.coconut_lib import show_coconut_petition, cocon
 # chainspace
 from chainspacecontract import ChainspaceContract
 
+# debug
+import time
+
 ## contract name
 contract = ChainspaceContract('petition')
 
@@ -79,34 +82,34 @@ def create_petition(inputs, reference_inputs, parameters, UUID, options, priv_ow
 # ------------------------------------------------------------------
 @contract.method('sign')
 def sign(inputs, reference_inputs, parameters, priv_signer, sig, vvk):
-    # ini petition, list and parameters
-    old_petition = loads(inputs[0])
-    new_petition = loads(inputs[0])
-    old_list = loads(inputs[1])
-    new_list = loads(inputs[1])
-    new_values = loads(parameters[0])
+	# ini petition, list and parameters
+	old_petition = loads(inputs[0])
+	new_petition = loads(inputs[0])
+	old_list = loads(inputs[1])
+	new_list = loads(inputs[1])
+	new_values = loads(parameters[0])
 
-    # update petition values
-    for i in range(0,len(new_values)):
-        new_petition['scores'][i] = old_petition['scores'][i] + new_values[i]
+	# update petition values
+	for i in range(0,len(new_values)):
+		new_petition['scores'][i] = old_petition['scores'][i] + new_values[i]
 
-    # prepare showing of credentials
-    UUID = pet_unpack(old_petition['UUID'])
-    bp_params = bp_setup()
-    (kappa, nu, proof_v) = show_coconut_petition(bp_params, vvk, priv_signer, UUID)
-    #print(coconut_petition_verify(bp_params, vvk, kappa, sig, proof_v, UUID, nu))
+	# prepare showing of credentials
+	UUID = pet_unpack(old_petition['UUID'])
+	bp_params = bp_setup()
+	(kappa, nu, proof_v) = show_coconut_petition(bp_params, vvk, priv_signer, UUID)
+	#print(coconut_petition_verify(bp_params, vvk, kappa, sig, proof_v, UUID, nu))
 
-    # update spent list
-    new_list['list'].append(pack(nu))
+	# update spent list
+	new_list['list'].append(pack(nu))
 
-    # pack sig
-    packed_sig = (pack(sig[0]),pack(sig[1]))
+	# pack sig
+	packed_sig = (pack(sig[0]),pack(sig[1]))
 
-    # return
-    return {
-        'outputs': (dumps(new_petition),dumps(new_list)),
-        'extra_parameters' : (packed_sig, pack(kappa), pack(nu), pet_pack(proof_v))
-    }
+	# return
+	return {
+		'outputs': (dumps(new_petition),dumps(new_list)),
+		'extra_parameters' : (packed_sig, pack(kappa), pack(nu), pet_pack(proof_v))
+	}
 
 
 

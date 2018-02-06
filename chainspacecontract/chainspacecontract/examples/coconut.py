@@ -25,6 +25,7 @@ contract = ChainspaceContract('coconut')
 from chainspacecontract.examples.hello import contract as hello_contract
 contract.register_dependency(hello_contract)
 
+import time
 
 ####################################################################
 # methods
@@ -45,25 +46,25 @@ def init():
 # ------------------------------------------------------------------
 @contract.method('create')
 def create(inputs, reference_inputs, parameters, q, t, n, callback, vvk, sig):
-    # pack sig and vvk
-    packed_sig = (pack(sig[0]),pack(sig[1]))
-    packed_vvk = (pack(vvk[0]),pack(vvk[1]),[pack(vvk[2][i]) for i in range(q)])
+	# pack sig and vvk
+	packed_sig = (pack(sig[0]),pack(sig[1]))
+	packed_vvk = (pack(vvk[0]),pack(vvk[1]),[pack(vvk[2][i]) for i in range(q)])
 
-    # new petition object
-    instance = {
-        'type' : 'CoCoInstance',
-        'q' : q,
-        't' : t,
-        'n' : n,
-        'callback' : callback,
-        'verifier' : packed_vvk
-    }
+	# new petition object
+	instance = {
+		'type' : 'CoCoInstance',
+		'q' : q,
+		't' : t,
+		'n' : n,
+		'callback' : callback,
+		'verifier' : packed_vvk
+	}
 
-    # return
-    return {
-        'outputs': (inputs[0], dumps(instance)),
-        'extra_parameters' : (packed_sig,)
-    }
+	# return
+	return {
+		'outputs': (inputs[0], dumps(instance)),
+		'extra_parameters' : (packed_sig,)
+	}
 
 # ------------------------------------------------------------------
 # request
@@ -133,14 +134,21 @@ def issue(inputs, reference_inputs, parameters, sk, index):
 # ------------------------------------------------------------------
 @contract.method('verify')
 def verify(inputs, reference_inputs, parameters, clear_m, hidden_m):
+	#start_time = time.time()
+
+
 	# load instance
 	instance = loads(reference_inputs[0])
-
+	
 	# build proof
 	params = setup(instance['q'])
 	packed_vvk = instance['verifier']
 	vvk = (unpackG2(params,packed_vvk[0]), unpackG2(params,packed_vvk[1]), [unpackG2(params,y) for y in packed_vvk[2]])
 	(kappa, proof_v) = show_mix_sign(params, vvk, hidden_m)
+
+	tnm = (dumps(clear_m), pack(kappa), pet_pack(proof_v))
+	#end_time = time.time(); print((end_time-start_time)*1000)
+
 
 	# returns
 	return {

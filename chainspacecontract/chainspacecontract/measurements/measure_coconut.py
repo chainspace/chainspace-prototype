@@ -40,19 +40,17 @@ instance = {
     'callback' : callback,
     'verifier' : packed_vvk
 }
-def auth_sig():
-    hasher = sha256()
-    hasher.update(dumps(instance).encode('utf8'))
-    m = Bn.from_binary(hasher.digest())
-    sigs = [mix_sign(params, ski, None, [], [m]) for ski in sk]
-    sig = aggregate_th_sign(params, sigs)
-    #print(mix_verify(params, vvk, None, sig, None, [m]))
-    return sig
+hasher = sha256()
+hasher.update(dumps(instance).encode('utf8'))
+m = Bn.from_binary(hasher.digest())
+sigs = [mix_sign(params, ski, None, [], [m]) for ski in sk]
+auth_sig = aggregate_th_sign(params, sigs)
+#print(mix_verify(params, vvk, None, sig, None, [m]))
 # ------------------------------------
 
 
 ##
-RUNS = 1
+RUNS = 10000
 
 
 def main():
@@ -76,7 +74,7 @@ def main():
             n,
             callback, 
             vvk,
-            auth_sig()
+            auth_sig
         )
         end_time = time.time()
         times.append((end_time-start_time)*1000)
@@ -94,7 +92,7 @@ def main():
         n,
         callback, 
         vvk,
-        auth_sig()
+        auth_sig
     )
     solution = transaction_to_solution(create_tx)
     times = []
@@ -275,6 +273,14 @@ def main():
     mean = numpy.mean(times)
     sd = numpy.std(times)
     print "[c] verify tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+
+    '''
+    print("\nTransactions:")
+    print(create_tx)
+    print(request_tx)
+    print(issue_tx)
+    print(verify_tx)
+    '''
 
 if __name__ == '__main__':
     main()
