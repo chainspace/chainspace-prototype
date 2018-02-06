@@ -150,8 +150,10 @@ def ttp_th_keygen(params, t, n):
 	""" generate keys for threshold signature """
 	(G, o, g1, hs, g2, e) = params
 	# generate polynomials
-	v = np.poly1d([o.random() for _ in range(0,t)])
-	w = np.poly1d([o.random() for _ in range(0,t)])
+	#v = np.poly1d([o.random() for _ in range(0,t)])
+	#w = np.poly1d([o.random() for _ in range(0,t)])
+	v = np.poly1d([10 for _ in range(0,t)])
+	w = np.poly1d([10 for _ in range(0,t)])
 	# generate shares
 	x = [v(i) % o for i in range(1,n+1)]
 	y = [w(i) % o for i in range(1,n+1)]
@@ -282,7 +284,8 @@ def show_coconut_petition(params, vk, m, UUID):
 	(G, o, g1, hs, g2, e) = params
 	(g2, X, Y) = vk
 	kappa = X + m*Y
-	nu = (UUID*m)*g1
+	#nu = (UUID*m)*g1
+	nu = m * G.hashG1(str(UUID))
 	proof = prove_show_coconut_petition(params, vk, m, UUID)
 	return (kappa, nu, proof)
 
@@ -480,7 +483,8 @@ def prove_show_coconut_petition(params, vk, m, UUID):
 	wm = o.random()
 	# compute the witnesses commitments
 	Aw = X + wm*Y
-	Bw = (UUID*wm)*g1
+	#Bw = (UUID*wm)*g1
+	Bw = wm*G.hashG1(str(UUID))
 	# create the challenge
 	c = to_challenge([g1, g2, X, Y, Aw, Bw] + hs)
 	# create responses 
@@ -494,6 +498,7 @@ def verify_show_coconut_petition(params, vk, kappa, proof, UUID, nu):
 	(c, rm) = proof
 	# re-compute witnesses commitments
 	Aw = c*kappa + rm*Y + (1-c)*X
-	Bw = (UUID*rm)*g1 + nu*c
+	#Bw = (UUID*rm)*g1 + nu*c
+	Bw = rm*G.hashG1(str(UUID)) + nu*c
 	# compute the challenge prime
 	return c == to_challenge([g1, g2, X, Y, Aw, Bw] + hs)
