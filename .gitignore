@@ -13,6 +13,8 @@ chainspacecore-1-1
 chainspacecore-1-2
 chainspacecore-1-3
 simplelog_client
-
+contrib/core-tools/screenlog.0
+contrib/screenlog.0
 workspace.xml
 tasks.xml
+.idea
