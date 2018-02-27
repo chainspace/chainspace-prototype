@@ -174,6 +174,23 @@ transaction2 = increment.increment(inputs=[our_object])
 client.process_transaction(transaction2)
 ```
 
+### Dockerisation
+ 
+```cd``` into root chainspace directory first.  
+ 
+To build an image:
+
+```
+docker build -t chainspace .
+```
+
+To run an image in a container:
+
+```
+docker run -p 5000:5000 -t chainspace:latest
+```
+
+
 ### Troubleshooting
 
 If the response you get contains `"outcome": "accepted_t_abort"`, it might mean that the checker didn't validate the transaction.
