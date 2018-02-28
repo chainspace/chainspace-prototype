@@ -48,6 +48,24 @@ The link to the contract is present in the data structure of the `CSTransaction`
 
 ## Transaction Deployment And Verification Example (Mac)
 
+You need to have Python 2.7 (as well as pip) installed to run Chainspace.
+
+It's preferable to install python virtualenv to manage local python environments and their dependencies.
+
+```
+virtualenv .chainspace.env
+source .chainspace.env/bin/activate
+```
+
+Install Python modules:
+
+```
+> pip install -e ./chainspaceapi
+> pip install -e ./chainspacecontract
+> pip install petlib
+> deactivate
+```
+
 Assemble an application bundle:
 
 ```
@@ -127,22 +145,10 @@ Let's submit and verify a transaction using the "increment" method in the "addit
 
 #### Sending transactions:
 
-You need to have Python 2.7 (as well as pip) installed to run Chainspace.
-
-Preferrably install python virtualenv to manage local python environments and their dependencies.
+Begin by entering the virtual environment:
 
 ```
-virtualenv .chainspace.env
 source .chainspace.env/bin/activate
-```
-
-
-Install Python modules:
-
-```
-> pip install -e ./chainspaceapi
-> pip install -e ./chainspacecontract
-> pip install petlib
 ```
 
 If you ever need to debug the chainspace contract code in your python REPL, you can force
