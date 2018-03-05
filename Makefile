@@ -17,7 +17,7 @@ start-nodes-debug:
 tail-node:
 	tail -f chainspacecore-0-0/screenlog.0
 
-start-client:
+start-client-api:
 	cd chainspacecore && ./runclientservice.sh
 
 kill-all:
