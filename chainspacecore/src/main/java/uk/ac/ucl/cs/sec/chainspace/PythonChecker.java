@@ -75,7 +75,7 @@ class PythonChecker {
             logPid(checkerProcess, this.port);
 
 
-            Thread.sleep(1000);
+            Thread.sleep(2000);
 
             System.out.println("checkerProcess isAlive: " + checkerProcess.isAlive());
 
