@@ -1,5 +1,5 @@
 ps:
-	ps aux | grep -v grep | grep chainspace | awk '{print $2 " " $11 " " $12 " " $13}'
+	ps aux | grep -v grep | grep chainspace | awk '{print $$2 " " $$11 " " $$12 " " $$13}'
 
 list-nodes:
 	screen -list
@@ -21,7 +21,7 @@ start-client-api:
 	cd chainspacecore && ./runclientservice.sh
 
 kill-all:
-	ps aux | grep -v grep | grep chainspace | awk '{print $2}' | xargs kill
+	ps aux | grep -v grep | grep chainspace | awk '{print $$2}' | xargs kill
 
 
 
