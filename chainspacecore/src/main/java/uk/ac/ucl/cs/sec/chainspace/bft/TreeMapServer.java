@@ -218,7 +218,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     // Run checkPrepareT function only when there is no information present in local sequences
                     else {
                     */
-                    reply = checkPrepareT(t);
+                    reply = checkPrepareT(t); // Verify and store the transaction
                     logMsg(strLabel,strModule,"checkPrepare responding with "+reply);
                     //}
                     return reply.getBytes("UTF-8");

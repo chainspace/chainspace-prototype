@@ -11,8 +11,8 @@ import unittest
 import requests
 # chainspace
 from chainspacecontract import transaction_to_solution
-from chainspacecontract.examples.petition_simple import contract as petition_simple_contract
-from chainspacecontract.examples import petition_simple
+from chainspacecontract.examples.petition_simple_v2 import contract as petition_simple_contract
+from chainspacecontract.examples import petition_simple_v2 as petition_simple
 
 
 ####################################################################

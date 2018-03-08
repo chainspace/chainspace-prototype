@@ -178,7 +178,27 @@ client.process_transaction(transaction1)
 our_object = transaction1['transaction']['outputs'][0]
 transaction2 = increment.increment(inputs=[our_object])
 client.process_transaction(transaction2)
+
+>>> our_object
+'0'
+>>> type(our_object)
+<class 'chainspacecontract.contract.ChainspaceObject'>
+
+>>> our_object.object_id
+'a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7'
+>>>
+
+
+transaction2['transaction']['outputs']
+('1',)
+
+>>> transaction2
+{'transaction': {'inputIDs': ['a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7'], 'methodID': 'increment', 'parameters': (), 'outputs': ('1',), 'returns': (), 'dependencies': [], 'referenceInputIDs': [], 'contractID': 'addition'}, 'store': {'a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7': '0'}}
+
+
 ```
+
+Note: Object Ids seem to be deterministic ie start the same each time you restart?
 
 ### Dockerisation
  
