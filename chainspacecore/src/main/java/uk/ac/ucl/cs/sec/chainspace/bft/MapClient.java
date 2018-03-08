@@ -81,17 +81,24 @@ public class MapClient implements Map<String, String> {
         asynchReplies = new HashMap<String, TOMMessage>();
     }
 
-    public int mapObjectToShard(String object) {
+    public int mapObjectToShard(String objectId) {
         String strModule = "mapObjectToShard";
-        BigInteger iObject = new BigInteger(object, 16);
         int numShards = shardToConfig.size();
         if (numShards == 0) {
             logMsg(strLabel, strModule, "0 shards found. Now exiting");
             System.exit(-1);
         }
-        int shardID = iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
-        logMsg(strLabel, strModule, "Mapped object " + object + " to shard " + shardID);
-        return shardID;
+        int shardId =  objectToShardAlgorithm(objectId, numShards);
+        logMsg(strLabel, strModule, "Mapped object " + objectId + " to shard " + shardId + ". numShards = " + numShards);
+        return shardId;
+    }
+
+    static int objectToShardAlgorithm(String objectId, int numShards) {
+
+        BigInteger iObject = new BigInteger(objectId, 16);
+
+        return iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
+
     }
 
     // This function returns a unique client ID every time it is called
@@ -445,7 +452,7 @@ public class MapClient implements Map<String, String> {
                 TODO
              */
             if (inputObjects.size() == 0) {
-                int shardID = 0;
+                int shardID = 1;
                 System.out.println("\n>> SUBMITTING INIT FUNCTION TO SHARD " + shardID);
 
                 ByteArrayOutputStream bs = new ByteArrayOutputStream();
