@@ -205,15 +205,35 @@ Note: Object Ids seem to be deterministic ie start the same each time you restar
 ```cd``` into root chainspace directory first.  
  
 To build an image:
-
 ```
 docker build -t chainspace .
 ```
 
-To run an image in a container:
-
+Retrieve the docker login command that you can use to authenticate your Docker client to your registry:
 ```
-docker run -p 5000:5000 -t chainspace:latest
+aws ecr get-login --no-include-email --region eu-west-1
+```
+
+Run the docker login command that was returned in the previous step (you can use ```$(!!)`` to do that).
+
+After the build completes, tag your image so you can push the image to this repository:
+```
+docker tag chainspace:latest 987195267860.dkr.ecr.eu-west-1.amazonaws.com/chainspace/app:latest
+```
+
+Run the following command to push this image to your newly created AWS repository:
+```
+docker push 987195267860.dkr.ecr.eu-west-1.amazonaws.com/chainspace/app:latest
+```
+
+Create a new task in AWS, and the run it:
+```
+aws ecs run-task --task-definition task-def-name --cluster cluster-name
+```
+
+To run an image in a container:
+```
+docker run -p 5000:5000 -t [image-name]
 ```
 
 
