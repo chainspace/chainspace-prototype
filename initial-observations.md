@@ -202,6 +202,8 @@ Note: Object Ids seem to be deterministic ie start the same each time you restar
 
 ### Dockerisation
  
+The Dockerfile is a great reference point for understanding what's required to run Chainspace.
+ 
 ```cd``` into root chainspace directory first.  
  
 To build an image:
@@ -226,18 +228,18 @@ Run the following command to push this image to your newly created AWS repositor
 docker push 987195267860.dkr.ecr.eu-west-1.amazonaws.com/chainspace/app:latest
 ```
 
-Create a new task in AWS, and the run it:
+If you're replacing an existing task in the AWS cluster, be sure to stop the existing task before running a new one.
+Alternatively, create a new task and the run it:
 ```
-aws ecs run-task --task-definition task-def-name --cluster cluster-name
-```
-
-To run an image in a container:
-```
-docker run -p 5000:5000 -t [image-name]
+aws ecs run-task --task-definition [task-def-name] --cluster [cluster-name]
 ```
 
+The existing task will run the docker container for you. However, if you need to run it manually:
+```
+docker run -p 5010:5000 -t [image-name]
+```
 
-### Troubleshooting
+### Troubleshooting / Debugging
 
 If the response you get contains `"outcome": "accepted_t_abort"`, it might mean that the checker didn't validate the transaction.
 
@@ -261,6 +263,28 @@ Submit a POST request to this endpoint with the following body:
 
 You should get `{ "success": true }`. If not, check you stored the inputs and outputs in the shards correctly.
 
+If you're getting the ```RESOURCE:PORTS``` error after attempting to run a task on AWS, it's likely that you're running
+an existing task using the same port(s).
+
+Once a task has started running, SSH into the relevant ec2 instance:
+```
+ssh ec2-user@ec2-52-208-247-232.eu-west-1.compute.amazonaws.com
+```
+
+List the docker processes using ```docker ps``` and then enter the relevant container:
+```
+docker exec -it [container id] bash
+```
+
+From here, you can ```make tail-node``` to view the screen log of the first node.
+
+It may also be useful to take a look at the checker log:
+```
+cat chainspacecore-0-1/checker.13001.log.0
+```
+
+Be advised that running ```make kill-all``` from within the docker container will kill the entire container. Instead, see
+which processes are running using ```make ps``` and then ```kill [process ID]``` for each appropriate process.
 
 # Observations / TODO
 
