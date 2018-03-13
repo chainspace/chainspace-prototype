@@ -9,11 +9,13 @@ RUN apt-get install screen
 RUN apt-get -y install virtualenv
 RUN apt-get -y install python
 RUN apt-get -y install python-setuptools
+RUN apt-get -y install build-essential libssl-dev libffi-dev python-dev
 RUN easy_install pip
-RUN virtualenv .chainspace.env
-RUN . .chainspace.env/bin/activate
-RUN pip install -e ./app/chainspaceapi
-RUN pip install -e ./app/chainspacecontract
 WORKDIR /app
-CMD ./contrib/core-tools/easystart.mac.sh && cd chainspacecore && java -cp lib/BFT-SMaRt.jar:target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Client ChainSpaceClientConfig/config.txt cd chainspacecore && java -cp lib/BFT-SMaRt.jar:target/chainspace-1.0-SNAPSHOT-jar-with-dependencies.jar uk.ac.ucl.cs.sec.chainspace.Client ChainSpaceClientConfig/config.txt
+RUN virtualenv .chainspace.env
+RUN . .chainspace.env/bin/activate && pip install -U setuptools
+RUN . .chainspace.env/bin/activate && pip install -e ./chainspaceapi
+RUN . .chainspace.env/bin/activate && pip install -e ./chainspacecontract
+RUN . .chainspace.env/bin/activate && pip install petlib
+CMD make start-nodes && make start-client-api
 
