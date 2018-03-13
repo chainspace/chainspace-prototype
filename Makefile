@@ -1,6 +1,9 @@
 ps:
 	ps aux | grep -v grep | grep chainspace | awk '{print $$2 " " $$11 " " $$12 " " $$13}'
 
+check-port:
+	lsof -i :$(port)
+
 list-nodes:
 	screen -list
 
