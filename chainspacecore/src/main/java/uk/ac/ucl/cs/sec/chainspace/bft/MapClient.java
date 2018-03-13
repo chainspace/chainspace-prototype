@@ -310,27 +310,11 @@ public class MapClient implements Map<String, String> {
 
     public void createObjects(List<String> outputObjects) {
         TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
-        boolean earlyTerminate = false;
+
         String strModule = "CREATE_OBJECT (DRIVER): ";
 
         try {
-            HashMap<Integer, ArrayList<String>> shardToObjects = new HashMap<>(); // Objects managed by a shard
-
-            // Group objects by the managing shard
-            for (String output : outputObjects) {
-                int shardID = mapObjectToShard(output);
-
-                logMsg(strLabel, strModule, "Mapped object " + output + " to shard " + shardID);
-
-                if (shardID == -1) {
-                    logMsg(strLabel, strModule, "Cannot map output " + output + " to a shard. Will not create object.");
-                } else {
-                    if (!shardToObjects.containsKey(shardID)) {
-                        shardToObjects.put(shardID, new ArrayList<String>());
-                    }
-                    shardToObjects.get(shardID).add(output);
-                }
-            }
+            HashMap<Integer, ArrayList<String>> shardToObjects = groupObjectsByShard(outputObjects, strModule);
 
             // Send a request to each shard relevant to the outputs
             for (int shardID : shardToObjects.keySet()) {
@@ -345,6 +329,7 @@ public class MapClient implements Map<String, String> {
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                     @Override
                     public void replyReceived(RequestContext context, TOMMessage reply) {
+                        logMsg(strLabel, strModule, "reply recieved from shard " + shardID + " " + new String(reply.getContent()));
                     }
                 }, reqType);
 
@@ -353,6 +338,27 @@ public class MapClient implements Map<String, String> {
         } catch (Exception e) {
             logMsg(strLabel, strModule, "Experienced Exception " + e.getMessage());
         }
+    }
+
+    private HashMap<Integer, ArrayList<String>> groupObjectsByShard(List<String> outputObjects, String strModule) {
+        HashMap<Integer, ArrayList<String>> shardToObjects = new HashMap<>(); // Objects managed by a shard
+
+        // Group objects by the managing shard
+        for (String output : outputObjects) {
+            int shardID = mapObjectToShard(output);
+
+            logMsg(strLabel, strModule, "Mapped object " + output + " to shard " + shardID);
+
+            if (shardID == -1) {
+                logMsg(strLabel, strModule, "Cannot map output " + output + " to a shard. Will not create object.");
+            } else {
+                if (!shardToObjects.containsKey(shardID)) {
+                    shardToObjects.put(shardID, new ArrayList<String>());
+                }
+                shardToObjects.get(shardID).add(output);
+            }
+        }
+        return shardToObjects;
     }
 
 
