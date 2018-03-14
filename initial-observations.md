@@ -286,6 +286,34 @@ cat chainspacecore-0-1/checker.13001.log.0
 Be advised that running ```make kill-all``` from within the docker container will kill the entire container. Instead, see
 which processes are running using ```make ps``` and then ```kill [process ID]``` for each appropriate process.
 
+
+# Setting up a working dev cycle
+
+For now there is no log aggregation and so in order to see what is happening with CS its useful to have a routine setup in your terminal.
+
+The scripts do utilise the `screen` program so in theory you can use screen to view all the log files and script some kind of setup.
+
+However, to begin with its probably simpler to just create multiple tabs.
+
+A good setup is to have the following tabs open:
+
+TAB1  - "Control" - terminal in the root CS dir so you can run the make commands
+TAB2  - "REPL" - terminal in root CS dir, activate the python virtualenve and running python so you can make client calls
+TAB3  - "DB-0-0" - db debug for shard 1 running sqlite - open it in the root CS dir when you restart everything need to repone the db
+TAB3  - "DB-1-0" - db debug for shard 2
+TAB4  - "Client API" - running the client api (make start-client-api)
+TAB5  - "NODE-0-0" - Shard 0 node logs - run make tail-logs to see command basically tailing screen.0.log
+TAB6  - "NODE-0-1" - Shard 1 replicas dont really need them all unless you are debugging BFT
+TAB7  - "NODE-0-2"
+TAB8  - "NODE-0-3"
+TAB9  - "NODE-1-0" - Shard 1 node logs - run make tail-logs to see command basically tailing screen.0.log
+TAB10 - "NODE-1-1" - Shard 1 replicas dont really need them all unless you are debugging BFT
+TAB11 - "NODE-1-2"
+TAB12 - "NODE-1-3"
+
+When you kill-all and restart you will need to restart the client api, reopen the dbs and restart the tails. Usually this is pretty quick because it was the last command you typed in the terminal.
+
+
 # Observations / TODO
 
 [1] Core.java:161 - contract path is hardcoded to by `.py` files - this needs to be pushed to the checker
