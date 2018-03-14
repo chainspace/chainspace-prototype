@@ -27,7 +27,7 @@ class SQLiteConnector extends DatabaseConnector {
      */
     SQLiteConnector() throws SQLException, ClassNotFoundException {
         this.connection = openConnection(Main.DATABASE_NAME);
-        initialiseDb(this.connection);
+        initialiseDbSchema(this.connection);
 
     }
 
@@ -45,7 +45,7 @@ class SQLiteConnector extends DatabaseConnector {
      * statement.execute(sql);
      * But I think that is a performance nehancement and for now want more integrity
      */
-    static void initialiseDb(Connection connection) throws ClassNotFoundException, SQLException {
+    static void initialiseDbSchema(Connection connection) throws ClassNotFoundException, SQLException {
 
         Constraints constraints = (DEBUG_ALLOW_REPEAT) ? DISABLE_CONSTRAINTS : ENABLE_CONSTRAINTS;
 
