@@ -1,10 +1,13 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import static java.lang.String.valueOf;
+import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.initialiseDbSchema;
+import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.openConnection;
 
 public class TestDatabase {
     private static final String OBJECT_ID_A = "a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7";
@@ -76,6 +79,18 @@ public class TestDatabase {
             statement.setInt(1, id);
             statement.setString(2, digest);
             statement.executeUpdate();
+        }
+    }
+
+    public static void initialise() throws SQLException, ClassNotFoundException {
+        File databaseFile = new File("testdatabase.sqlite");
+        if (databaseFile.exists()) {
+            databaseFile.delete();
+        }
+
+        try (Connection connection = openConnection("testdatabase")) {
+            initialiseDbSchema(connection);
+            populateTestData(connection);
         }
     }
 }
