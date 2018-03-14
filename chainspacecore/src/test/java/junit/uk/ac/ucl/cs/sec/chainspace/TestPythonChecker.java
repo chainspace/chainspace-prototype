@@ -1,6 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -13,6 +14,7 @@ public class TestPythonChecker {
 
     @Test
     public void test_python_checker_starts() throws Exception {
+
         PythonChecker checker = new PythonChecker("addition");
 
         try {
@@ -22,6 +24,11 @@ public class TestPythonChecker {
             System.out.println("\n" + e.getMessage() + "\n");
         }
 
+    }
+
+    @BeforeClass
+    public static void set_checker_test_port() {
+        System.setProperty("checker.start.port", "44444");
     }
 
     @After
