@@ -1,11 +1,14 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
 
@@ -46,10 +49,10 @@ class ClientService {
     private void addRoutes(Service service) {
 
         // returns a json containing the node ID
-        service.path("/api", () -> service.path("/"+Main.VERSION, () -> {
+        service.path("/api", () -> service.path("/" + Main.VERSION, () -> {
 
             // debug
-            service.get("/", (request, response) -> "Hello, world!");
+            service.get("/", (request, response) -> "Chainspace Client API (v " + Main.VERSION + ")");
 
             // process a transaction
             service.post("/transaction/process", this::processTransactionRequest);
@@ -62,7 +65,26 @@ class ClientService {
     }
 
     private String getTransactions(Request request, Response response) {
-        return "[{ \"id\" : \"foo\" }]";
+        response.type("application/json");
+        try {
+            Connection conn = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
+            TransactionQuery query = new TransactionQuery(conn);
+
+            List<TransactionQuery.TransactionLogEntry> txs = query.retrieveTransactionLogEntries();
+
+            JSONArray responseJson = new JSONArray();
+
+            for (TransactionQuery.TransactionLogEntry entry : txs) {
+                responseJson.put(entry.asMap());
+            }
+
+            response.status(200);
+            return responseJson.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createHttpResponse(response, "Internal Error: " + e.getMessage(),
+                    "false", 500, "error").toString();
+        }
     }
 
 
@@ -73,7 +95,9 @@ class ClientService {
     private String processTransactionRequest(Request request, Response response) {
 
         // verbose print
-        if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
+        if (Main.VERBOSE) {
+            Utils.printHeader("Incoming transaction");
+        }
 
         // process the transaction & create response
         JSONObject responseJson;
@@ -90,14 +114,14 @@ class ClientService {
             }
 
 
-
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
 
             responseJson = createHttpResponse(response, e.getMessage(), "False", 400, "message");
 
             // verbose print
-            if (Main.VERBOSE) { Utils.printStacktrace(e); }
+            if (Main.VERBOSE) {
+                Utils.printStacktrace(e);
+            }
 
         }
 
@@ -110,7 +134,7 @@ class ClientService {
 
     }
 
-    private JSONObject createHttpResponse(Response response, String result, String successResponse, int statusCode, String outcome) {
+    private static JSONObject createHttpResponse(Response response, String result, String successResponse, int statusCode, String outcome) {
         JSONObject responseJson = new JSONObject();
 
         responseJson.put("success", successResponse);
@@ -127,7 +151,9 @@ class ClientService {
      */
     private String dumpTransactionRequest(Request request, Response response) {
 
-        if (Main.VERBOSE) { Utils.printHeader("Incoming transaction"); }
+        if (Main.VERBOSE) {
+            Utils.printHeader("Incoming transaction");
+        }
 
         // process the transaction & create response
         JSONObject responseJson = new JSONObject();
@@ -138,13 +164,14 @@ class ClientService {
             createHttpResponse(response, "", "True", 200, "");
 
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
 
             createHttpResponse(response, e.getMessage(), "False", 400, "message");
 
             // verbose print
-            if (Main.VERBOSE) { Utils.printStacktrace(e); }
+            if (Main.VERBOSE) {
+                Utils.printStacktrace(e);
+            }
 
         }
 
@@ -165,7 +192,7 @@ class ClientService {
     private void printInitMessage(int port) {
 
         // print node info
-        System.out.println("\nNode service is running on port " +port);
+        System.out.println("\nNode service is running on port " + port);
 
     }
 
@@ -177,10 +204,12 @@ class ClientService {
     private void printRequestDetails(Request request, String response) {
 
         // print request summary
-        System.out.println("\nNode service [POST] @" +request.url()+ " from " +request.ip());
+        System.out.println("\nNode service [POST] @" + request.url() + " from " + request.ip());
         System.out.println("\trequest content: " + request.body());
         System.out.println("\tresponse content: " + response);
-        if (Main.VERBOSE) { Utils.printLine(); }
+        if (Main.VERBOSE) {
+            Utils.printLine();
+        }
 
     }
 

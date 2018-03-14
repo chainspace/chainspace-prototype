@@ -1,11 +1,15 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import org.json.JSONObject;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static uk.ac.ucl.cs.sec.chainspace.TransactionQuery.ChainspaceObject.ObjectStatus.objectStatusFrom;
 
@@ -104,11 +108,17 @@ public class TransactionQuery {
         public final String timestamp;
         public final String transactionId;
         public final String transactionJson;
+        private final LinkedHashMap<String, Object> map;
 
         public TransactionLogEntry(String timestamp, String transactionId, String transactionJson) {
             this.timestamp = timestamp;
             this.transactionId = transactionId;
             this.transactionJson = transactionJson;
+
+            map = new LinkedHashMap<>();
+            map.put("timestamp", timestamp);
+            map.put("transactionId", transactionId);
+            map.put("transactionJson", new JSONObject(transactionJson));
         }
 
         public String toString() {
@@ -118,6 +128,10 @@ public class TransactionQuery {
                     .append(transactionId).append(" || ")
                     .append(transactionJson);
             return sb.toString();
+        }
+
+        public Map<String, Object> asMap() {
+            return map;
         }
     }
 
