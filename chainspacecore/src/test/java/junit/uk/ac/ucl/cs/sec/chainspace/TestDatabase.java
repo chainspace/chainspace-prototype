@@ -9,6 +9,9 @@ import static java.lang.String.valueOf;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.initialiseDbSchema;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.openConnection;
 
+/**
+ * For more background about the datastructures in here see https://arxiv.org/pdf/1708.03778.pdf
+ */
 public class TestDatabase {
     private static final String OBJECT_ID_A = "a9bde7fac83d70a4c6811d74d3cb218abc6c0f69e0dc5a77f0097be61faf79c7";
     private static final String OBJECT_ID_B = "404d5c43cf0f34857b65405cb2cdcf015cbe792ee0327157f1cd66ea8b340411";

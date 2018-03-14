@@ -13,9 +13,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.openConnection;
 
-/**
- * For more background about the datastructures in here see https://arxiv.org/pdf/1708.03778.pdf
- */
+
 public class TestTransactionQuery {
 
     private Connection connection;
