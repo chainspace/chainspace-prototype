@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -27,19 +29,40 @@ public class TestTransactionQuery {
     private Connection connection;
 
 
+    public static class TransactionLogEntry {
+        public final String timestamp;
+        public final String transactionId;
+        public final String transactionJson;
+
+        public TransactionLogEntry(String timestamp, String transactionId, String transactionJson) {
+            this.timestamp = timestamp;
+            this.transactionId = transactionId;
+            this.transactionJson = transactionJson;
+        }
+
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Transaction: ")
+                    .append(timestamp).append(" || ")
+                    .append(transactionId).append(" || ")
+                    .append(transactionJson);
+            return sb.toString();
+        }
+    }
+
     @Test
     public void retrieve_sequence_of_txs_given_an_initial_object() throws SQLException {
-        System.out.println("Executing some queries");
 
-
-        int rowCount;
 
         String sql = "SELECT * from logs";
 
+        List<TransactionLogEntry> transactionLogEntries = new ArrayList<>();
+
+        int rowCount;
+
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            System.out.println("Executing SQL query " + sql);
             ResultSet rs = statement.executeQuery();
-
-
 
             final int COL_TIME_STAMP = 1;
             final int COL_TRANSACTION_ID = 2;
@@ -47,17 +70,22 @@ public class TestTransactionQuery {
 
             int rowId = 0;
             while (rs.next()) {
-                System.out.println("ROW-" + rowId++ + " >> "
-                        + rs.getString(COL_TIME_STAMP) + " || "
-                        + rs.getString(COL_TRANSACTION_ID) + " || "
-                        + rs.getString(COL_TRANSACTION_JSON));
+                transactionLogEntries.add(
+                        new TransactionLogEntry(
+                                rs.getString(COL_TIME_STAMP),
+                                rs.getString(COL_TRANSACTION_ID),
+                                rs.getString(COL_TRANSACTION_JSON)));
+                rowId++;
             }
 
-
             rowCount = rowId++;
+            System.out.println("Retrieved " + rowCount + " Rows.");
         }
 
-        System.out.println("Retrieved " + rowCount + " Rows.");
+        for (TransactionLogEntry entry : transactionLogEntries) {
+            System.out.println(entry.toString());
+        }
+
 
         assertThat(rowCount, is(3));
 
@@ -111,7 +139,7 @@ public class TestTransactionQuery {
         String transactionJson = "{\"contractID\":\"" + contractId + "\"," +
                 "\"dependencies\":[],\"inputIDs\":" + inputIds + "," +
                 "\"methodID\":\"" + contractMethod + "\"," +
-                "\"outputs\":[\"" + output + "\"],\"parameters\":[],\"referenceInputIDs\":[],\"returns\":[]}\n";
+                "\"outputs\":[\"" + output + "\"],\"parameters\":[],\"referenceInputIDs\":[],\"returns\":[]}";
 
         String sql = "INSERT INTO logs (transaction_id, transaction_json) VALUES (?, ?)";
 
