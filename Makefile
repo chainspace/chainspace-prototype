@@ -22,6 +22,10 @@ tail-node:
 start-client-api:
 	cd chainspacecore && ./runclientservice.sh
 
+path=/
+curl-client:
+	curl -v -H "Accept: application/json" -H "Content-Type: application/json" http://localhost:5000/api/1.0$(path) && echo "\n\n"
+
 kill-all:
 	ps aux | grep -v grep | grep chainspace | awk '{print $$2}' | xargs kill
 

@@ -55,8 +55,14 @@ class ClientService {
             service.post("/transaction/process", this::processTransactionRequest);
             service.post("/transaction/dump", this::dumpTransactionRequest);
 
+            service.get("/transactions", this::getTransactions);
+
         }));
 
+    }
+
+    private String getTransactions(Request request, Response response) {
+        return "[{ \"id\" : \"foo\" }]";
     }
 
 
