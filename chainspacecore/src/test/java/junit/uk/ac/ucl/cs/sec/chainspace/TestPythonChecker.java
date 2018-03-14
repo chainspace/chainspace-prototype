@@ -28,7 +28,7 @@ public class TestPythonChecker {
     public void kill_any_checkers() throws Exception {
         System.out.println("\nKilling off any checkers that are still running...\n");
         File checkerPIds = new File("./checker.pids");
-        System.out.println("Reading pids from " + checkerPIds);
+        System.out.println("Reading pids objectStatusFrom " + checkerPIds);
         BufferedReader in = null;
         try {
             in = new BufferedReader(new FileReader(checkerPIds));

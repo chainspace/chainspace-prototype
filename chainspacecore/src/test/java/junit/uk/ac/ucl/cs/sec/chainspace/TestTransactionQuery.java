@@ -17,6 +17,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.initialiseDb;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.openConnection;
+import static uk.ac.ucl.cs.sec.chainspace.TestTransactionQuery.ChainspaceObject.ObjectStatus.objectStatusFrom;
 
 public class TestTransactionQuery {
 
@@ -50,15 +51,122 @@ public class TestTransactionQuery {
         }
     }
 
+    public static class ChainspaceObject {
+
+        public enum ObjectStatus {
+            ACTIVE(0), INACTIVE(1);
+
+            public final int value;
+
+            ObjectStatus(int value) {
+                this.value = value;
+            }
+
+            public String toString() {
+                StringBuilder sb = new StringBuilder();
+                sb.append("status: ")
+                        .append(this.name())
+                        .append(" (").append(value).append(")");
+                return sb.toString();
+            }
+
+            public static ObjectStatus objectStatusFrom(int value) {
+                switch (value) {
+                    case 0:
+                        return ACTIVE;
+                    case 1:
+                        return INACTIVE;
+                    default:
+                        throw new RuntimeException("Unmapped object status of " + value);
+                }
+            }
+
+        }
+
+
+        public final String id;
+        public final String value;
+        public final ObjectStatus status;
+
+        public ChainspaceObject(String id, String value, ObjectStatus status) {
+            this.id = id;
+            this.value = value;
+            this.status = status;
+        }
+
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("CS Object: ")
+                    .append(id).append(" || ")
+                    .append(value).append(" || ")
+                    .append(status);
+
+            return sb.toString();
+        }
+    }
+
     @Test
-    public void retrieve_sequence_of_txs_given_an_initial_object() throws SQLException {
+    public void retrieve_all_transaction_log_entries() throws SQLException {
+
+        List<TransactionLogEntry> transactionLogEntries = retrieveTransactionLogEntries();
+
+        for (TransactionLogEntry entry : transactionLogEntries) {
+            System.out.println(entry.toString());
+        }
 
 
+        assertThat(transactionLogEntries.size(), is(3));
+
+
+    }
+
+    @Test
+    public void retrieve_all_objects() throws SQLException {
+
+        List<ChainspaceObject> chainspaceObjects = retrieveObjects();
+
+        for (ChainspaceObject object : chainspaceObjects) {
+            System.out.println(object.toString());
+        }
+
+        assertThat(chainspaceObjects.size(), is(3));
+
+    }
+
+    private List<ChainspaceObject> retrieveObjects() throws SQLException {
+        String sql = "SELECT * from data";
+
+        List<ChainspaceObject> chainspaceObjects = new ArrayList<>();
+
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            System.out.println("Executing SQL query " + sql);
+            ResultSet rs = statement.executeQuery();
+
+            final int COL_ID = 1;
+            final int COL_VALUE = 2;
+            final int COL_STATUS = 3;
+
+            while (rs.next()) {
+                chainspaceObjects.add(
+                        new ChainspaceObject(
+                                rs.getString(COL_ID),
+                                rs.getString(COL_VALUE),
+                                objectStatusFrom(rs.getInt(COL_STATUS))));
+            }
+
+
+            System.out.println("Retrieved " + chainspaceObjects.size() + " Rows.");
+        }
+        return chainspaceObjects;
+    }
+
+    private List<TransactionLogEntry> retrieveTransactionLogEntries() throws SQLException {
         String sql = "SELECT * from logs";
 
         List<TransactionLogEntry> transactionLogEntries = new ArrayList<>();
 
-        int rowCount;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             System.out.println("Executing SQL query " + sql);
@@ -68,28 +176,18 @@ public class TestTransactionQuery {
             final int COL_TRANSACTION_ID = 2;
             final int COL_TRANSACTION_JSON = 3;
 
-            int rowId = 0;
             while (rs.next()) {
                 transactionLogEntries.add(
                         new TransactionLogEntry(
                                 rs.getString(COL_TIME_STAMP),
                                 rs.getString(COL_TRANSACTION_ID),
                                 rs.getString(COL_TRANSACTION_JSON)));
-                rowId++;
             }
 
-            rowCount = rowId++;
-            System.out.println("Retrieved " + rowCount + " Rows.");
+
+            System.out.println("Retrieved " + transactionLogEntries.size() + " Rows.");
         }
-
-        for (TransactionLogEntry entry : transactionLogEntries) {
-            System.out.println(entry.toString());
-        }
-
-
-        assertThat(rowCount, is(3));
-
-
+        return transactionLogEntries;
     }
 
     @Before
