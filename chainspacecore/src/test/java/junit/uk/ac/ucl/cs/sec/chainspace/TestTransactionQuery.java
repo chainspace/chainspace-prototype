@@ -7,9 +7,12 @@ import org.junit.Test;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static java.lang.String.valueOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.initialiseDb;
 import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.openConnection;
 
@@ -25,8 +28,40 @@ public class TestTransactionQuery {
 
 
     @Test
-    public void retrieve_sequence_of_txs_given_an_initial_object() {
-        System.out.println("Hey I am going to run a test!");
+    public void retrieve_sequence_of_txs_given_an_initial_object() throws SQLException {
+        System.out.println("Executing some queries");
+
+
+        int rowCount;
+
+        String sql = "SELECT * from logs";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet rs = statement.executeQuery();
+
+
+
+            final int COL_TIME_STAMP = 1;
+            final int COL_TRANSACTION_ID = 2;
+            final int COL_TRANSACTION_JSON = 3;
+
+            int rowId = 0;
+            while (rs.next()) {
+                System.out.println("ROW-" + rowId++ + " >> "
+                        + rs.getString(COL_TIME_STAMP) + " || "
+                        + rs.getString(COL_TRANSACTION_ID) + " || "
+                        + rs.getString(COL_TRANSACTION_JSON));
+            }
+
+
+            rowCount = rowId++;
+        }
+
+        System.out.println("Retrieved " + rowCount + " Rows.");
+
+        assertThat(rowCount, is(3));
+
+
     }
 
     @Before
@@ -52,8 +87,8 @@ public class TestTransactionQuery {
         insertObject(conn, OBJECT_ID_C, "2", 1);
 
         insertTransaction(conn, TX_ID_A, "addition", "init", null, "0");
-        insertTransaction(conn, TX_ID_B, "addition", "increment",OBJECT_ID_A,  "1");
-        insertTransaction(conn, TX_ID_C, "addition", "increment",OBJECT_ID_B,  "2");
+        insertTransaction(conn, TX_ID_B, "addition", "increment", OBJECT_ID_A, "1");
+        insertTransaction(conn, TX_ID_C, "addition", "increment", OBJECT_ID_B, "2");
     }
 
     private static void insertObject(Connection conn, String objectId, String value, int status) throws SQLException {
@@ -73,9 +108,9 @@ public class TestTransactionQuery {
                                           String output) throws SQLException {
 
         String inputIds = (inputObjectId == null) ? "[]" : "[\"" + inputObjectId + "\"]";
-        String transactionJson = "\"contractID\":\""+ contractId +"\"," +
-                "\"dependencies\":[],\"inputIDs\":"+ inputIds + "," +
-                "\"methodID\":\""+ contractMethod +"\"," +
+        String transactionJson = "{\"contractID\":\"" + contractId + "\"," +
+                "\"dependencies\":[],\"inputIDs\":" + inputIds + "," +
+                "\"methodID\":\"" + contractMethod + "\"," +
                 "\"outputs\":[\"" + output + "\"],\"parameters\":[],\"referenceInputIDs\":[],\"returns\":[]}\n";
 
         String sql = "INSERT INTO logs (transaction_id, transaction_json) VALUES (?, ?)";
