@@ -20,8 +20,6 @@ import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
 class ClientService {
 
 
-    private final Connection dbConnection;
-    private final TransactionQuery query;
 
     /**
      * Constructor
@@ -34,9 +32,11 @@ class ClientService {
 
         printInitMessage(port);
 
-        this.dbConnection = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
 
-        query = new TransactionQuery(dbConnection);
+    }
+
+    private static Connection initDbConnection() throws ClassNotFoundException, SQLException {
+        return SQLiteConnector.openConnection("../chainspacecore-1-1/database");
     }
 
 
@@ -47,8 +47,6 @@ class ClientService {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-
-        dbConnection.close();
     }
 
 
@@ -78,7 +76,11 @@ class ClientService {
 
     private String getTransactions(Request request, Response response) {
         response.type("application/json");
-        try {
+
+        try (Connection conn = initDbConnection()) {
+
+            TransactionQuery query = new TransactionQuery(conn);
+
             List<TransactionQuery.TransactionLogEntry> txs = query.retrieveTransactionLogEntries();
 
             JSONArray responseJson = new JSONArray();
@@ -98,7 +100,10 @@ class ClientService {
 
     private String getObjects(Request request, Response response) throws SQLException {
         response.type("application/json");
-        try {
+        try (Connection conn = initDbConnection()) {
+
+            TransactionQuery query = new TransactionQuery(conn);
+
             List<TransactionQuery.ChainspaceObject> csObjects = query.retrieveObjects();
 
             JSONArray responseJson = new JSONArray();
@@ -121,7 +126,10 @@ class ClientService {
      */
     private String getHashChain(Request request, Response response) {
         response.type("application/json");
-        try {
+        try (Connection conn = initDbConnection())  {
+
+            TransactionQuery query = new TransactionQuery(conn);
+
             List<TransactionQuery.TransactionDigest> transactionDigests = query.retrieveDigests();
 
             JSONArray responseJson = new JSONArray();
