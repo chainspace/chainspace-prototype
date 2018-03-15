@@ -1,6 +1,7 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
 import org.json.JSONObject;
+import sun.awt.image.ImageWatched;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -137,10 +138,14 @@ public class TransactionQuery {
     public static class TransactionDigest {
         public final int id;
         public final String digest;
+        private final Map<String, Object> map = new LinkedHashMap<>();
 
         public TransactionDigest(int id, String digest) {
             this.id = id;
             this.digest = digest;
+
+            map.put("id", id);
+            map.put("digest", digest);
         }
 
 
@@ -150,6 +155,10 @@ public class TransactionQuery {
                     .append(id).append(" || ")
                     .append(digest);
             return sb.toString();
+        }
+
+        public Map<String, Object> asMap() {
+            return map;
         }
     }
 

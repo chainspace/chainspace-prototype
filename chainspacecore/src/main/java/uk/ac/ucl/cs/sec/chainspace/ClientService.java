@@ -19,6 +19,10 @@ import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
  */
 class ClientService {
 
+
+    private final Connection dbConnection;
+    private final TransactionQuery query;
+
     /**
      * Constructor
      * Runs a node service and init a database.
@@ -28,8 +32,11 @@ class ClientService {
         // start service on given port
         addRoutes(Service.ignite().port(port));
 
-        // print init message
         printInitMessage(port);
+
+        this.dbConnection = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
+
+        query = new TransactionQuery(dbConnection);
     }
 
 
@@ -40,6 +47,8 @@ class ClientService {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
+
+        dbConnection.close();
     }
 
 
@@ -60,17 +69,16 @@ class ClientService {
 
             service.get("/transactions", this::getTransactions);
             service.get("/objects", this::getObjects);
+            service.get("/hashchain", this::getHashChain);
 
         }));
 
     }
 
+
     private String getTransactions(Request request, Response response) {
         response.type("application/json");
         try {
-            Connection conn = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
-            TransactionQuery query = new TransactionQuery(conn);
-
             List<TransactionQuery.TransactionLogEntry> txs = query.retrieveTransactionLogEntries();
 
             JSONArray responseJson = new JSONArray();
@@ -91,9 +99,6 @@ class ClientService {
     private String getObjects(Request request, Response response) throws SQLException {
         response.type("application/json");
         try {
-            Connection conn = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
-            TransactionQuery query = new TransactionQuery(conn);
-
             List<TransactionQuery.ChainspaceObject> csObjects = query.retrieveObjects();
 
             JSONArray responseJson = new JSONArray();
@@ -110,6 +115,30 @@ class ClientService {
                     "false", 500, "error").toString();
         }
     }
+
+    /**
+     * Refer to https://arxiv.org/pdf/1708.03778.pdf section on Node Hash Chains
+     */
+    private String getHashChain(Request request, Response response) {
+        response.type("application/json");
+        try {
+            List<TransactionQuery.TransactionDigest> transactionDigests = query.retrieveDigests();
+
+            JSONArray responseJson = new JSONArray();
+
+            for (TransactionQuery.TransactionDigest digest : transactionDigests) {
+                responseJson.put(digest.asMap());
+            }
+
+            response.status(200);
+            return responseJson.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createHttpResponse(response, "Internal Error: " + e.getMessage(),
+                    "false", 500, "error").toString();
+        }
+    }
+
 
     /**
      * processTransactionRequest
