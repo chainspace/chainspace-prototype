@@ -6,6 +6,8 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -19,18 +21,23 @@ import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
  */
 class ClientService {
 
-
+    private final int port;
+    private final InetAddress host;
 
     /**
      * Constructor
      * Runs a node service and init a database.
      */
-    ClientService(int port) throws SQLException, ClassNotFoundException {
+    ClientService(int port) throws SQLException, ClassNotFoundException, UnknownHostException {
+
 
         // start service on given port
         addRoutes(Service.ignite().port(port));
 
-        printInitMessage(port);
+        host = InetAddress.getLocalHost();
+        this.port = port;
+
+        printInitMessage();
 
 
     }
@@ -59,7 +66,7 @@ class ClientService {
         service.path("/api", () -> service.path("/" + Main.VERSION, () -> {
 
             // debug
-            service.get("/", (request, response) -> "Chainspace Client API (v " + Main.VERSION + ")");
+            service.get("/", this::getApiIndex);
 
             // process a transaction
             service.post("/transaction/process", this::processTransactionRequest);
@@ -71,6 +78,29 @@ class ClientService {
 
         }));
 
+    }
+
+    private String getApiIndex(Request request, Response response) {
+
+        JSONObject responseJson = new JSONObject();
+        responseJson.put("service-name", "Chainspace Client API");
+        responseJson.put("version", Main.VERSION);
+
+
+
+        JSONObject endpoints = new JSONObject();
+        endpoints.put("index", getExternalUrl("/"));
+        endpoints.put("transactions", getExternalUrl("/transactions"));
+        endpoints.put("objects", getExternalUrl("/objects"));
+        endpoints.put("hashchain", getExternalUrl("/hashchain"));
+        endpoints.put("process-transaction", getExternalUrl("/transaction/process"));
+
+
+        responseJson.put("endpoints", endpoints);
+
+        response.type("application/json");
+        response.status(200);
+        return responseJson.toString();
     }
 
 
@@ -249,11 +279,15 @@ class ClientService {
      * printInitMessage
      * Print on the console an init message.
      */
-    private void printInitMessage(int port) {
+    private void printInitMessage() {
 
-        // print node info
-        System.out.println("\nNode service is running on port " + port);
 
+        System.out.println("\nChainspace Client API service is running @ " + getExternalUrl("/"));
+
+    }
+
+    private String getExternalUrl(String path) {
+        return String.format("http://%s:%d/api/%s%s", host.getHostAddress(), port, Main.VERSION, path);
     }
 
 
