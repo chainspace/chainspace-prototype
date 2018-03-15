@@ -23,7 +23,7 @@ start-client-api:
 	cd chainspacecore && ./runclientservice.sh
 
 path=/
-curl-client:
+curl-client-api:
 	curl -v -H "Accept: application/json" -H "Content-Type: application/json" http://localhost:5000/api/1.0$(path) && echo "\n\n"
 
 kill-all:
