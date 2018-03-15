@@ -108,14 +108,13 @@ public class TransactionQuery {
         public final String timestamp;
         public final String transactionId;
         public final String transactionJson;
-        private final LinkedHashMap<String, Object> map;
+        private final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
         public TransactionLogEntry(String timestamp, String transactionId, String transactionJson) {
             this.timestamp = timestamp;
             this.transactionId = transactionId;
             this.transactionJson = transactionJson;
 
-            map = new LinkedHashMap<>();
             map.put("timestamp", timestamp);
             map.put("transactionId", transactionId);
             map.put("transactionJson", new JSONObject(transactionJson));
@@ -156,8 +155,9 @@ public class TransactionQuery {
 
     public static class ChainspaceObject {
 
+
         public enum ObjectStatus {
-            ACTIVE(0), INACTIVE(1);
+            INACTIVE(0), ACTIVE(1) ;
 
             public final int value;
 
@@ -176,9 +176,9 @@ public class TransactionQuery {
             public static ObjectStatus objectStatusFrom(int value) {
                 switch (value) {
                     case 0:
-                        return ACTIVE;
-                    case 1:
                         return INACTIVE;
+                    case 1:
+                        return ACTIVE;
                     default:
                         throw new RuntimeException("Unmapped object status of " + value);
                 }
@@ -191,11 +191,26 @@ public class TransactionQuery {
         public final String id;
         public final String value;
         public final ObjectStatus status;
+        private final Map<String, Object> map = new LinkedHashMap<>();
 
         public ChainspaceObject(String id, String value, ObjectStatus status) {
             this.id = id;
             this.value = value;
             this.status = status;
+
+            map.put("id", id);
+
+            if (isJson(value)) {
+                map.put("value", new JSONObject(value));
+            } else {
+                map.put("value", value);
+            }
+            map.put("status", status.name().toLowerCase());
+
+        }
+
+        private boolean isJson(String value) {
+            return value.startsWith("{") && value.endsWith("}");
         }
 
         public String toString() {
@@ -208,5 +223,10 @@ public class TransactionQuery {
 
             return sb.toString();
         }
+
+        public Map<String, Object> asMap() {
+            return map;
+        }
+
     }
 }

@@ -59,6 +59,7 @@ class ClientService {
             service.post("/transaction/dump", this::dumpTransactionRequest);
 
             service.get("/transactions", this::getTransactions);
+            service.get("/objects", this::getObjects);
 
         }));
 
@@ -87,6 +88,28 @@ class ClientService {
         }
     }
 
+    private String getObjects(Request request, Response response) throws SQLException {
+        response.type("application/json");
+        try {
+            Connection conn = SQLiteConnector.openConnection("../chainspacecore-1-1/database");
+            TransactionQuery query = new TransactionQuery(conn);
+
+            List<TransactionQuery.ChainspaceObject> csObjects = query.retrieveObjects();
+
+            JSONArray responseJson = new JSONArray();
+
+            for (TransactionQuery.ChainspaceObject csObject : csObjects) {
+                responseJson.put(csObject.asMap());
+            }
+
+            response.status(200);
+            return responseJson.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createHttpResponse(response, "Internal Error: " + e.getMessage(),
+                    "false", 500, "error").toString();
+        }
+    }
 
     /**
      * processTransactionRequest
