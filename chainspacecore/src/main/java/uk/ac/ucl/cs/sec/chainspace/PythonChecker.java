@@ -26,7 +26,13 @@ class PythonChecker {
         return new Integer(System.getProperty("checker.start.port", "13000"));
     }
 
-    private int port;
+    private static String initialisePythonExectutable() {
+        return System.getProperty("checker.python.bin", "../.chainspace.env/bin/python");
+    }
+
+    private final int port;
+
+    private final String pythonExecutable = initialisePythonExectutable();
 
 
     /**
@@ -53,7 +59,7 @@ class PythonChecker {
     void startChecker() throws StartCheckerException {
         System.out.println("\nStarting Checker @ " + getURL("") + "\n");
         System.out.println("Working dir: " + new File(".").getAbsolutePath());
-        String pythonExecutable = "../.chainspace.env/bin/python";
+
         ProcessBuilder pb = new ProcessBuilder(Arrays.asList(
                 pythonExecutable,
                 this.pythonScriptPath,
