@@ -329,7 +329,8 @@ public class MapClient implements Map<String, String> {
                 int req = clientProxyAsynch.get(shardID).invokeAsynchRequest(bs.toByteArray(), new ReplyListener() {
                     @Override
                     public void replyReceived(RequestContext context, TOMMessage reply) {
-                        logMsg(strLabel, strModule, "reply recieved from shard " + shardID + " " + new String(reply.getContent()));
+                        String content = reply.getContent() == null ? "<null>" : new String(reply.getContent());
+                        logMsg(strLabel, strModule, "reply received from shard " + shardID + " type: " + reply.getReqType() + " content: " + content);
                     }
                 }, reqType);
 
@@ -885,7 +886,7 @@ public class MapClient implements Map<String, String> {
     }
 
     void logMsg(String id, String module, String msg) {
-        System.out.println(id + module + msg);
+        System.out.println(id + "[thread-" + Thread.currentThread().getId() + "] " + module + msg);
     }
 }
 
