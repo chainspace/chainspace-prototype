@@ -168,7 +168,7 @@ public class MapClient implements Map<String, String> {
             //View v = new View(0, getStaticConf().getInitialView(), getStaticConf().getF(), getInitAdddresses());
             //sp.getViewManager().reconfigureTo(sp.getViewManager().getStaticConf().getInitialView());
             logMsg(strLabel, strModule, "Created new client proxy ID " + clientID + " for shard " + shardID + " with config " + config);
-            logMsg(strLabel, strModule, "The view of client " + clientID + "for shard " + shardID + " is: " + sp.getViewManager().getCurrentView().toString());
+            logMsg(strLabel, strModule, "The view of client " + clientID + " for shard " + shardID + " is: " + sp.getViewManager().getCurrentView().toString());
 
             // Asynch client proxy
             int clientIDAsynch = this.getNextClientID();
@@ -176,7 +176,7 @@ public class MapClient implements Map<String, String> {
             AsynchServiceProxy asp = new AsynchServiceProxy(clientIDAsynch, config);
             clientProxyAsynch.put(shardID, asp);
             logMsg(strLabel, strModule, "Created new ASYNCH client proxy ID " + clientIDAsynch + " for shard " + shardID + " with config " + config);
-            logMsg(strLabel, strModule, "The view of client " + clientID + "for shard " + shardID + " is: " + asp.getViewManager().getCurrentView().toString());
+            logMsg(strLabel, strModule, "The view of client " + clientID + " for shard " + shardID + " is: " + asp.getViewManager().getCurrentView().toString());
 
         }
     }
