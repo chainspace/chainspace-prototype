@@ -886,7 +886,7 @@ public class MapClient implements Map<String, String> {
     }
 
     void logMsg(String id, String module, String msg) {
-        System.out.println(id + "[thread-" + Thread.currentThread().getId() + "] " + module + msg);
+        System.out.println(id + " " + System.currentTimeMillis() + " [thread-" + Thread.currentThread().getId() + "] " + module + msg);
     }
 }
 

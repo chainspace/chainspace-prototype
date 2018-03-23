@@ -173,12 +173,14 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private byte[] executeSingle(byte[] command, MessageContext msgCtx) {
         int reqType;
-        String strModule = "executeSingle: ";
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "executeSingle");
+
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
             reqType = ois.readInt();
-            //logMsg(strLabel,strModule,"Received a request of type "+ RequestType.getReqName(reqType));
+            logMsg(strLabel,strModule,"executing a request of type "+ RequestType.getReqName(reqType));
             if (reqType == RequestType.PUT) {
                 String key = ois.readUTF();
                 String value = ois.readUTF();
@@ -718,7 +720,7 @@ public class TreeMapServer extends DefaultRecoverable {
     }
 
     void logMsg(String id, String module, String msg ) {
-        System.out.println(id+module+msg);
+        System.out.println(id + " " + System.currentTimeMillis() + " [thread-" + Thread.currentThread().getId() + "] " + module+msg);
     }
 
     @Override
