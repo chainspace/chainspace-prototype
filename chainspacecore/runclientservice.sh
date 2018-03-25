@@ -2,7 +2,7 @@
 
 
 
-BFT_SMART_LIB=lib/bft-smart-1.1-UCL.jar
+BFT_SMART_LIB=lib/bft-smart-1.2-UCL.jar
 
 
 rm config/currentView

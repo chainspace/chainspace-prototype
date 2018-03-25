@@ -8,11 +8,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <!--<bft-smart-jar>bft-smart-1.1.jar</bft-smart-jar>-->
-        <!--<bft-smart-jar>bft-smart-1.1-beta.jar</bft-smart-jar>-->
-        <!--<bft-smart-jar>bft-smart-1.2.jar</bft-smart-jar>-->
-        <!--<bft-smart-jar>BFT-SMaRt.jar</bft-smart-jar>-->
-        <bft-smart-jar>bft-smart-1.1-UCL.jar</bft-smart-jar>
+        <bft-smart-jar>bft-smart-1.2-UCL.jar</bft-smart-jar>
     </properties>
 
     <build>
