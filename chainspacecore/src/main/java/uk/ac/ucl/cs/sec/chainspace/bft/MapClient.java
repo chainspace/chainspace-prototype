@@ -156,7 +156,7 @@ public class MapClient implements Map<String, String> {
         // Each shard has a synch and asynch client, with different client IDs
         for (int shardID : shardToConfig.keySet()) {
             String config = shardToConfig.get(shardID);
-            logMsg(strLabel, strModule, "Shard " + shardID + "Config " + config);
+            logMsg(strLabel, strModule, "Shard " + shardID + " Config " + config);
 
             // Synch client proxy
             int clientID = this.getNextClientID();
