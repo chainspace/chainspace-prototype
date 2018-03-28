@@ -249,6 +249,32 @@ public class MapClient implements Map<String, String> {
         }
     }
 
+    public void putAsynch(String key, String value) {
+        String strModule = "BULK PUT (DRIVER)";
+        TOMMessageType reqType = TOMMessageType.ORDERED_REQUEST; // ACCEPT_T messages require BFT consensus, so type is ordered
+
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(out);
+
+            oos.writeInt(RequestType.PUT);
+            oos.writeUTF(key);
+            oos.writeUTF(value);
+            oos.close();
+            logMsg(strLabel,strModule,"Putting a key-value pair in shard ID "+defaultShardID);
+
+            int req = clientProxyAsynch.get(defaultShardID).invokeAsynchRequest(out.toByteArray(), new ReplyListener() {
+                @Override
+                public void replyReceived(RequestContext context, TOMMessage reply) { }
+            }, reqType);
+
+        } catch (IOException ioe) {
+            logMsg(strLabel,strModule,"Exception putting value into table " + ioe.getMessage());
+        }
+    }
+
+
+
     @Override
     public String get(Object key) {
         String strModule = "GET (DRIVER)";

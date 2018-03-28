@@ -66,7 +66,8 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     # return
     return {
         'outputs': (inputs[0], dumps(new_vote)),
-        'extra_parameters' : ('proof_init', pack(proof_init))        
+        'extra_parameters' :
+            (pack(proof_init),)
     }
 
 # ------------------------------------------------------------------
@@ -132,13 +133,13 @@ def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter
     # return
     return {
         'outputs': (dumps(new_vote),),
-        'extra_parameters' : {
-            'votes'     : dumps(enc_added_votes),
-            'signature' : pack(sig),
-            'voter_pub' : voter_pub,  # already packed
-            'proof_bin' : dumps(proof_bin),
-            'proof_sum' : pack(proof_sum)
-        }
+        'extra_parameters' : (
+            dumps(enc_added_votes),
+            pack(sig),
+            voter_pub, # already packed
+            dumps(proof_bin),
+            pack(proof_sum)
+        )
     }
 
 # ------------------------------------------------------------------
@@ -186,10 +187,10 @@ def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
     # return
     return {
         'outputs': (dumps(result),),
-        'extra_parameters' : {
-            'proof_dec' : dumps(proof_dec),
-            'signature' : pack(sig)
-        }
+        'extra_parameters' : (
+            dumps(proof_dec),
+            pack(sig)
+        )
     }
 
 # ------------------------------------------------------------------
@@ -235,7 +236,7 @@ def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, 
 
         # check proof
         params = setup()
-        proof_init = unpack(parameters['proof_init'])
+        proof_init = unpack(parameters[0])
         tally_pub  = unpack(vote['tally_pub'])
         for value in vote['scores']:
             if not verifyzero(params, tally_pub, unpack(value), proof_init):
@@ -274,9 +275,9 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
             return False
 
         # check that voter has been removed from participants
-        if not parameters['voter_pub'] in old_vote['participants']:
+        if not parameters[2] in old_vote['participants']:
             return False
-        if parameters['voter_pub'] in new_vote['participants']:
+        if parameters[2] in new_vote['participants']:
             return False
         if len(old_vote['participants']) != len(new_vote['participants']) + 1:
             return False
@@ -284,11 +285,11 @@ def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dep
         # generate params, retrieve tally's public key and the parameters
         params = setup()
         tally_pub  = unpack(old_vote['tally_pub'])
-        added_vote = loads(parameters['votes'])
-        sig        = unpack(parameters['signature'])
-        voter_pub  = unpack(parameters['voter_pub'])
-        proof_bin  = loads(parameters['proof_bin'])
-        proof_sum  = unpack(parameters['proof_sum'])
+        added_vote = loads(parameters[0])
+        sig        = unpack(parameters[1])
+        voter_pub  = unpack(parameters[2])
+        proof_bin  = loads(parameters[3])
+        proof_sum  = unpack(parameters[4])
 
         # verify signature
         (G, _, _, _) = params
@@ -348,8 +349,8 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         params = setup()
         (G, _, (h0, _, _, _), _) = params
         tally_pub  = unpack(vote['tally_pub'])
-        sig        = unpack(parameters['signature'])
-        proof_dec  = loads(parameters['proof_dec'])
+        proof_dec  = loads(parameters[0])
+        sig        = unpack(parameters[1])
         outcome    = result['outcome']
 
         # verify proof of correct decryption
