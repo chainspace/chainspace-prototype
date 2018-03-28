@@ -317,3 +317,9 @@ When you kill-all and restart you will need to restart the client api, reopen th
 # Observations / TODO
 
 [1] Core.java:161 - contract path is hardcoded to by `.py` files - this needs to be pushed to the checker
+
+
+# Working with the repo
+
+https://help.github.com/articles/syncing-a-fork/
+https://help.github.com/articles/configuring-a-remote-for-a-fork/
