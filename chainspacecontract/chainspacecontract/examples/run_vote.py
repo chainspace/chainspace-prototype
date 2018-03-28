@@ -58,17 +58,34 @@ post_transaction("init", init_transaction)
 
 vote_token = init_transaction['transaction']['outputs'][0]
 
-# initialise vote (all votes are zero)
+# Create the vote
 tx_create_vote = vote.create_vote((vote_token, ), None, None, json.dumps(options), json.dumps(participants), pack(tally_priv), pack(tally_pub))
-
-pp_object(tx_create_vote)
-
 post_transaction("create_vote", tx_create_vote)
+vote_root = tx_create_vote['transaction']['outputs'][1]
 
 
-old_vote = tx_create_vote['transaction']['outputs'][1]
+# First voter
+tx_add_vote_1 = vote.add_vote((vote_root,), None, None, json.dumps([1, 0]), pack(voter1_priv), pack(voter1_pub))
+post_transaction("add_vote", tx_add_vote_1)
+vote_1 = tx_add_vote_1['transaction']['outputs'][0]
 
-transaction = vote.add_vote((old_vote,), None, None, json.dumps([1, 0]), pack(voter1_priv), pack(voter1_pub))
+# Second voter
+tx_add_vote_2 = vote.add_vote((vote_1,), None, None, json.dumps([0, 1]), pack(voter2_priv), pack(voter2_pub))
+post_transaction("add_vote", tx_add_vote_2)
+vote_2 = tx_add_vote_2['transaction']['outputs'][0]
+
+# Third voter
+tx_add_vote_3 = vote.add_vote((vote_2,), None, None, json.dumps([1, 0]), pack(voter3_priv), pack(voter3_pub))
+post_transaction("add_vote", tx_add_vote_3)
+vote_3 = tx_add_vote_3['transaction']['outputs'][0]
+
+
+# Tally the results
+tx_tally = vote.tally((vote_3,), None, None, pack(tally_priv), pack(tally_pub))
+
+post_transaction("tally", tx_tally)
+
+pp_json(tx_tally)
 
 
 checker_service_process.terminate()
