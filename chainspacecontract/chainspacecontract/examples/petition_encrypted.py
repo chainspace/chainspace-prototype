@@ -25,7 +25,7 @@ from chainspacecontract.examples.utils import binencrypt, make_table, dec
 from chainspacecontract.examples.utils import provezero, verifyzero, provebin, verifybin, proveone, verifyone
 
 ## contract name
-contract = ChainspaceContract('petition')
+contract = ChainspaceContract('petition_encrypted')
 
 
 ####################################################################
@@ -125,7 +125,7 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, signato
     sum_c = (sum_a, sum_b)
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
-    print "ADD-SIGNATURE: Removing participant [" + signatory_id + "] from " + str(new_signature['participants'])
+    print "ADD-SIGNATURE: Adding participant [" + signatory_id + "] from " + str(new_signature['participants'])
     new_signature['participants'].append(signatory_id)
     print "ADD-SIGNATURE: " + str(new_signature['participants'])
 
@@ -224,7 +224,7 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
         petition  = loads(outputs[1])
         num_options = len(petition['options'])
 
-        # check format
+        print "CHECKING (create) - check format"
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False 
         if num_options < 1 or num_options != len(petition['scores']):
@@ -232,13 +232,13 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
         if petition['participants'] == None:
             return False
 
-        # check tokens
-        if loads(inputs[0])['type'] != 'PetitionEnctoken' or loads(outputs[0])['type'] != 'PetitionEncToken':
+        print "CHECKING (create) - check tokens"
+        if loads(inputs[0])['type'] != 'PetitionEncToken' or loads(outputs[0])['type'] != 'PetitionEncToken':
             return False
         if petition['type'] != 'PetitionEncObject':
             return False
 
-        # check proof
+        print "CHECKING (create) - check proof"
         params = setup()
         proof_init = unpack(parameters[0])
         tally_pub  = unpack(petition['tally_pub'])
@@ -280,26 +280,29 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if new_signature['type'] != 'PetitionEncObject':
             return False
 
-        print "CHECKING - participant is added and not already in"
-        print "CHECKING - participant   - " + parameters[3]
-        print "CHECKING - old_signature - " + str(old_signature['participants'])
-        print "CHECKING - new_signature - " + str(new_signature['participants'])
+        participant = parameters[1]
 
-        if not parameters[3] in new_signature['participants']:
+        print "CHECKING - participant is added and not already in"
+
+        if not participant in new_signature['participants']:
+            print "FAIL: not in new signature"
             return False
-        if parameters[3] in old_signature['participants']:
+        if participant in old_signature['participants']:
+            print "FAIL: was in the old signatures"
             return False
         if len(new_signature['participants']) != len(old_signature['participants']) + 1:
+            print "FAIL: Len of new signatures should be old + 1"
             return False
 
+        print "CHECKING - Generate params"
         # generate params, retrieve tally's public key and the parameters
         params = setup()
         tally_pub  = unpack(old_signature['tally_pub'])
         added_signature = loads(parameters[0])
-        proof_bin  = loads(parameters[3])
-        proof_sum  = unpack(parameters[4])
+        proof_bin  = loads(parameters[2])
+        proof_sum  = unpack(parameters[3])
 
-        print "CHACKING - verify proofs of binary (Signatures have to be bin values)"
+        print "CHECKING - verify proofs of binary (Signatures have to be bin values)"
         for i in range(0, num_options):
             if not verifybin(params, tally_pub, unpack(added_signature[i]), unpack(proof_bin[i])):
                 return False

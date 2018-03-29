@@ -33,11 +33,14 @@ def pp_object(obj):
 
 
 def post_transaction(method, tx):
+    url = 'http://127.0.0.1:5000/' + petition_contract.contract_name + '/' + method
     response = requests.post(
-        'http://127.0.0.1:5000/' + petition_contract.contract_name + '/' + method,
+        url,
         json=transaction_to_solution(tx)
     )
-    results.append(response.status_code)
+    print response.text
+    json_response = json.loads(response.text)
+    results.append((json_response['success'], url))
 
 
 params = setup()
@@ -93,9 +96,12 @@ pp_object(tx_tally)
 checker_service_process.terminate()
 checker_service_process.join()
 
+
+print "\n\nSUMMARY:\n"
 all_ok = True
 for result in results:
-    if result != 200:
+    print "RESULT: " + str(result)
+    if not result[0]:
         all_ok = False
 
-print "\n\nRESULT OF ALL CHECKER CALLS: " + str(all_ok) + "\n\n"
+print "\n\nRESULT OF ALL CONTRACT CALLS: " + str(all_ok) + "\n\n"
