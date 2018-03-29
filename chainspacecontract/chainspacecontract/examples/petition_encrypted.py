@@ -38,7 +38,7 @@ contract = ChainspaceContract('petition')
 def init():
     # return
     return {
-        'outputs': (dumps({'type' : 'VoteToken'}),)
+        'outputs': (dumps({'type' : 'PetitionEncToken'}),)
     }
 
 # ------------------------------------------------------------------
@@ -61,7 +61,7 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
     
     # new petition object
     new_petition = {
-        'type'          : 'VoteObject',
+        'type'          : 'PetitionEncObject',
         'options'       : loads(options),
         'scores'        : scores,
         'participants'  : loads(participants),
@@ -233,9 +233,9 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
             return False
 
         # check tokens
-        if loads(inputs[0])['type'] != 'VoteToken' or loads(outputs[0])['type'] != 'VoteToken':
+        if loads(inputs[0])['type'] != 'PetitionEnctoken' or loads(outputs[0])['type'] != 'PetitionEncToken':
             return False
-        if petition['type'] != 'VoteObject':
+        if petition['type'] != 'PetitionEncObject':
             return False
 
         # check proof
@@ -277,7 +277,7 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
             return False
 
         print "CHECKING - tokens"
-        if new_signature['type'] != 'VoteObject':
+        if new_signature['type'] != 'PetitionEncObject':
             return False
 
         print "CHECKING - participant is removed"
