@@ -85,7 +85,7 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('add_signature')
-def add_signature(inputs, reference_inputs, parameters, added_signature, voter_priv, voter_pub):
+def add_signature(inputs, reference_inputs, parameters, added_signature, voter_id):
 
     old_signature = loads(inputs[0])
     new_signature = loads(inputs[0])
@@ -125,23 +125,22 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, voter_p
     sum_c = (sum_a, sum_b)
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
-    # remove voter from participants
-    new_signature['participants'].remove(voter_pub)
-    
+    print "ADD-SIGNATURE: Removing participant [" + voter_id + "] from " + str(new_signature['participants'])
+    new_signature['participants'].remove(voter_id)
+    print "ADD-SIGNATURE: " + str(new_signature['participants'])
+
     # compute signature
     (G, _, _, _) = params
     hasher = sha256()
     hasher.update(dumps(old_signature).encode('utf8'))
     hasher.update(dumps(enc_added_signatures).encode('utf8'))
-    sig = do_ecdsa_sign(G, unpack(voter_priv), hasher.digest())
 
     # return
     return {
         'outputs': (dumps(new_signature),),
         'extra_parameters' : (
             dumps(enc_added_signatures),
-            pack(sig),
-            voter_pub, # already packed
+            voter_id,
             dumps(proof_bin),
             pack(proof_sum)
         )
@@ -260,6 +259,8 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
 def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
+        print "CHECKING - parameters " + str(parameters)
+
         # retrieve vote
         old_signature = loads(inputs[0])
         new_signature = loads(outputs[0])
@@ -275,14 +276,18 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if old_signature['tally_pub'] != new_signature['tally_pub']:
             return False
 
-        # check tokens
+        print "CHECKING - tokens"
         if new_signature['type'] != 'VoteObject':
             return False
 
-        # check that voter has been removed from participants
-        if not parameters[2] in old_signature['participants']:
+        print "CHECKING - participant is removed"
+        print "CHECKING - participant   - " + parameters[3]
+        print "CHECKING - old_signature - " + str(old_signature['participants'])
+        print "CHECKING - new_signature - " + str(new_signature['participants'])
+
+        if not parameters[3] in old_signature['participants']:
             return False
-        if parameters[2] in new_signature['participants']:
+        if parameters[3] in new_signature['participants']:
             return False
         if len(old_signature['participants']) != len(new_signature['participants']) + 1:
             return False
@@ -291,25 +296,15 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         params = setup()
         tally_pub  = unpack(old_signature['tally_pub'])
         added_signature = loads(parameters[0])
-        sig        = unpack(parameters[1])
-        voter_pub  = unpack(parameters[2])
         proof_bin  = loads(parameters[3])
         proof_sum  = unpack(parameters[4])
 
-        # verify signature
-        (G, _, _, _) = params
-        hasher = sha256()
-        hasher.update(dumps(old_signature).encode('utf8'))
-        hasher.update(dumps(added_signature).encode('utf8'))
-        if not do_ecdsa_verify(G, voter_pub, sig, hasher.digest()):
-            return False
-
-        # verify proofs of binary (votes have to be bin values)
+        print "CHACKING - verify proofs of binary (votes have to be bin values)"
         for i in range(0, num_options):
             if not verifybin(params, tally_pub, unpack(added_signature[i]), unpack(proof_bin[i])):
                 return False
 
-        # verify proof of sum of votes (sum of votes has to be 1)
+        print "CHECKING - verify proof of sum of votes (sum of votes has to be 1)"
         sum_a, sum_b = unpack(added_signature[-1])
         sum_c = (sum_a, sum_b)
         for i in range(0, num_options-1):
@@ -317,7 +312,7 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if not verifyone(params, tally_pub, sum_c, proof_sum):
             return False
 
-        # verify that output == input + vote
+        print "CHECKING - verify that output == input + vote"
         for i in range(0, num_options):
             tmp_c = add(unpack(old_signature['scores'][i]), unpack(added_signature[i]))
             if not new_signature['scores'][i] == pack(tmp_c):

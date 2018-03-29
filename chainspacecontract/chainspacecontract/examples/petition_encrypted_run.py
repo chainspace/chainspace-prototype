@@ -58,24 +58,24 @@ post_transaction("init", init_transaction)
 
 petition_token = init_transaction['transaction']['outputs'][0]
 
-# Create the signatory
+print "\nCreate the petition\n"
 tx_create_petition = petition_contract.create_petition((petition_token,), None, None, json.dumps(options), json.dumps(participants), pack(tally_priv), pack(tally_pub))
 post_transaction("create_petition", tx_create_petition)
 petition_root = tx_create_petition['transaction']['outputs'][1]
 
 
-# First signatory
-tx_add_signature_1 = petition_contract.add_signature((petition_root,), None, None, json.dumps([1, 0]), pack(voter1_priv), pack(voter1_pub))
+print "\nFirst signature\n"
+tx_add_signature_1 = petition_contract.add_signature((petition_root,), None, None, json.dumps([1, 0]), pack(voter1_pub))
 post_transaction("add_signature", tx_add_signature_1)
 signature_1 = tx_add_signature_1['transaction']['outputs'][0]
 
-# Second signatory
-tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]), pack(voter2_priv), pack(voter2_pub))
+print "\nSecond signature\n"
+tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]), pack(voter2_pub))
 post_transaction("add_signature", tx_add_signature_2)
 signature_2 = tx_add_signature_2['transaction']['outputs'][0]
 
-# Third signatory
-tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]), pack(voter3_priv), pack(voter3_pub))
+print "\nThird signature\n"
+tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]), pack(voter3_pub))
 post_transaction("add_signature", tx_add_signature_3)
 signature_3 = tx_add_signature_3['transaction']['outputs'][0]
 
