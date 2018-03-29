@@ -56,32 +56,32 @@ post_transaction("init", init_transaction)
 
 # pp_object(init_transaction)
 
-vote_token = init_transaction['transaction']['outputs'][0]
+petition_token = init_transaction['transaction']['outputs'][0]
 
-# Create the vote
-tx_create_vote = petition_contract.create_petition((vote_token, ), None, None, json.dumps(options), json.dumps(participants), pack(tally_priv), pack(tally_pub))
-post_transaction("create_vote", tx_create_vote)
-vote_root = tx_create_vote['transaction']['outputs'][1]
+# Create the signatory
+tx_create_petition = petition_contract.create_petition((petition_token,), None, None, json.dumps(options), json.dumps(participants), pack(tally_priv), pack(tally_pub))
+post_transaction("create_petition", tx_create_petition)
+petition_root = tx_create_petition['transaction']['outputs'][1]
 
 
-# First voter
-tx_add_vote_1 = petition_contract.add_signature((vote_root,), None, None, json.dumps([1, 0]), pack(voter1_priv), pack(voter1_pub))
-post_transaction("add_vote", tx_add_vote_1)
-vote_1 = tx_add_vote_1['transaction']['outputs'][0]
+# First signatory
+tx_add_signature_1 = petition_contract.add_signature((petition_root,), None, None, json.dumps([1, 0]), pack(voter1_priv), pack(voter1_pub))
+post_transaction("add_signature", tx_add_signature_1)
+signature_1 = tx_add_signature_1['transaction']['outputs'][0]
 
-# Second voter
-tx_add_vote_2 = petition_contract.add_signature((vote_1,), None, None, json.dumps([0, 1]), pack(voter2_priv), pack(voter2_pub))
-post_transaction("add_vote", tx_add_vote_2)
-vote_2 = tx_add_vote_2['transaction']['outputs'][0]
+# Second signatory
+tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]), pack(voter2_priv), pack(voter2_pub))
+post_transaction("add_signature", tx_add_signature_2)
+signature_2 = tx_add_signature_2['transaction']['outputs'][0]
 
-# Third voter
-tx_add_vote_3 = petition_contract.add_signature((vote_2,), None, None, json.dumps([1, 0]), pack(voter3_priv), pack(voter3_pub))
-post_transaction("add_vote", tx_add_vote_3)
-vote_3 = tx_add_vote_3['transaction']['outputs'][0]
+# Third signatory
+tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]), pack(voter3_priv), pack(voter3_pub))
+post_transaction("add_signature", tx_add_signature_3)
+signature_3 = tx_add_signature_3['transaction']['outputs'][0]
 
 
 # Tally the results
-tx_tally = petition_contract.tally((vote_3,), None, None, pack(tally_priv), pack(tally_pub))
+tx_tally = petition_contract.tally((signature_3,), None, None, pack(tally_priv), pack(tally_pub))
 
 post_transaction("tally", tx_tally)
 
