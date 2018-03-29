@@ -59,8 +59,8 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
     c = (a, b)
     scores = [pack(c) for _ in loads(options)]
     
-    # new vote object
-    new_vote = {
+    # new petition object
+    new_petition = {
         'type'          : 'VoteObject',
         'options'       : loads(options),
         'scores'        : scores,
@@ -73,7 +73,7 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
 
     # return
     return {
-        'outputs': (inputs[0], dumps(new_vote)),
+        'outputs': (inputs[0], dumps(new_petition)),
         'extra_parameters' :
             (pack(proof_init),)
     }
@@ -85,36 +85,33 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('add_signature')
-def add_signature(inputs, reference_inputs, parameters, added_vote, voter_priv, voter_pub):
+def add_signature(inputs, reference_inputs, parameters, added_signature, voter_priv, voter_pub):
 
+    old_signature = loads(inputs[0])
+    new_signature = loads(inputs[0])
+    added_signature = loads(added_signature)
     
-    # retrieve old vote & init new vote object
-    old_vote = loads(inputs[0])
-    new_vote = loads(inputs[0])
-    added_vote = loads(added_vote)
-    
-    # generate params & retrieve tally's public key
     params = setup()
-    tally_pub = unpack(old_vote['tally_pub'])
+    tally_pub = unpack(old_signature['tally_pub'])
 
     # encrypt votes & proofs to build
-    enc_added_votes = []  # encrypted votes
+    enc_added_signatures = []  # encrypted votes
     proof_bin       = []  # votes are binary, well-formed, and the prover know the vote's value
     sum_a, sum_b, sum_k = (0, 0, 0)  # sum of votes equals 1
 
     # loop over votes
-    for i in range(0,len(added_vote)):
+    for i in range(0, len(added_signature)):
         # encrypt added vote
-        (a, b, k) = binencrypt(params, tally_pub, added_vote[i])
+        (a, b, k) = binencrypt(params, tally_pub, added_signature[i])
         c = (a, b)
-        enc_added_votes.append(pack(c))
+        enc_added_signatures.append(pack(c))
 
         # update new scores
-        new_c = add(unpack(old_vote['scores'][i]), c)
-        new_vote['scores'][i] = pack(new_c)
+        new_c = add(unpack(old_signature['scores'][i]), c)
+        new_signature['scores'][i] = pack(new_c)
 
         # construct proof of binary
-        tmp1 = provebin(params, tally_pub, (a,b), k, added_vote[i])
+        tmp1 = provebin(params, tally_pub, (a,b), k, added_signature[i])
         proof_bin.append(pack(tmp1))
 
         # update sum of votes
@@ -129,20 +126,20 @@ def add_signature(inputs, reference_inputs, parameters, added_vote, voter_priv, 
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
     # remove voter from participants
-    new_vote['participants'].remove(voter_pub)
+    new_signature['participants'].remove(voter_pub)
     
     # compute signature
     (G, _, _, _) = params
     hasher = sha256()
-    hasher.update(dumps(old_vote).encode('utf8'))
-    hasher.update(dumps(enc_added_votes).encode('utf8'))
+    hasher.update(dumps(old_signature).encode('utf8'))
+    hasher.update(dumps(enc_added_signatures).encode('utf8'))
     sig = do_ecdsa_sign(G, unpack(voter_priv), hasher.digest())
 
     # return
     return {
-        'outputs': (dumps(new_vote),),
+        'outputs': (dumps(new_signature),),
         'extra_parameters' : (
-            dumps(enc_added_votes),
+            dumps(enc_added_signatures),
             pack(sig),
             voter_pub, # already packed
             dumps(proof_bin),
@@ -159,8 +156,8 @@ def add_signature(inputs, reference_inputs, parameters, added_vote, voter_priv, 
 @contract.method('tally')
 def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
-    # retrieve last vote
-    vote = loads(inputs[0])
+    # retrieve last petition
+    petition = loads(inputs[0])
 
     # generate params & retrieve tally's public key
     params = setup()
@@ -169,20 +166,20 @@ def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
     # decrypt aggregated results
     outcome = []
-    for item in vote['scores']:
+    for item in petition['scores']:
         outcome.append(dec(params, table, unpack(tally_priv), unpack(item)))
 
     # proof of decryption
     proof_dec = []
-    for i in range(0, len(vote['scores'])):
-        a, b = unpack(vote['scores'][i])
+    for i in range(0, len(petition['scores'])):
+        a, b = unpack(petition['scores'][i])
         ciphertext = (a, b - outcome[i] * h0) 
         tmp = provezero(params, unpack(tally_pub), ciphertext, unpack(tally_priv))
         proof_dec.append(pack(tmp))
 
     # signature
     hasher = sha256()
-    hasher.update(dumps(vote).encode('utf8'))
+    hasher.update(dumps(petition).encode('utf8'))
     hasher.update(dumps(outcome).encode('utf8'))
     sig = do_ecdsa_sign(G, unpack(tally_priv), hasher.digest())
 
@@ -224,29 +221,29 @@ def read(inputs, reference_inputs, parameters):
 def create_petition_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
-        # retrieve vote
-        vote  = loads(outputs[1])
-        num_votes = len(vote['options'])
+        # retrieve petition
+        petition  = loads(outputs[1])
+        num_options = len(petition['options'])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 2 or len(returns) != 0:
             return False 
-        if num_votes < 1 or num_votes != len(vote['scores']):
+        if num_options < 1 or num_options != len(petition['scores']):
             return False
-        if vote['participants'] == None:
+        if petition['participants'] == None:
             return False
 
         # check tokens
         if loads(inputs[0])['type'] != 'VoteToken' or loads(outputs[0])['type'] != 'VoteToken':
             return False
-        if vote['type'] != 'VoteObject':
+        if petition['type'] != 'VoteObject':
             return False
 
         # check proof
         params = setup()
         proof_init = unpack(parameters[0])
-        tally_pub  = unpack(vote['tally_pub'])
-        for value in vote['scores']:
+        tally_pub  = unpack(petition['tally_pub'])
+        for value in petition['scores']:
             if not verifyzero(params, tally_pub, unpack(value), proof_init):
                 return False
 
@@ -264,36 +261,36 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
     try:
 
         # retrieve vote
-        old_vote = loads(inputs[0])
-        new_vote = loads(outputs[0])
-        num_votes = len(old_vote['options'])
+        old_signature = loads(inputs[0])
+        new_signature = loads(outputs[0])
+        num_options = len(old_signature['options'])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
-        if num_votes != len(new_vote['scores']) or num_votes != len(new_vote['scores']):
+        if num_options != len(new_signature['scores']) or num_options != len(new_signature['scores']):
             return False
-        if new_vote['participants'] == None:
+        if new_signature['participants'] == None:
             return False
-        if old_vote['tally_pub'] != new_vote['tally_pub']:
+        if old_signature['tally_pub'] != new_signature['tally_pub']:
             return False
 
         # check tokens
-        if new_vote['type'] != 'VoteObject':
+        if new_signature['type'] != 'VoteObject':
             return False
 
         # check that voter has been removed from participants
-        if not parameters[2] in old_vote['participants']:
+        if not parameters[2] in old_signature['participants']:
             return False
-        if parameters[2] in new_vote['participants']:
+        if parameters[2] in new_signature['participants']:
             return False
-        if len(old_vote['participants']) != len(new_vote['participants']) + 1:
+        if len(old_signature['participants']) != len(new_signature['participants']) + 1:
             return False
 
         # generate params, retrieve tally's public key and the parameters
         params = setup()
-        tally_pub  = unpack(old_vote['tally_pub'])
-        added_vote = loads(parameters[0])
+        tally_pub  = unpack(old_signature['tally_pub'])
+        added_signature = loads(parameters[0])
         sig        = unpack(parameters[1])
         voter_pub  = unpack(parameters[2])
         proof_bin  = loads(parameters[3])
@@ -302,28 +299,28 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         # verify signature
         (G, _, _, _) = params
         hasher = sha256()
-        hasher.update(dumps(old_vote).encode('utf8'))
-        hasher.update(dumps(added_vote).encode('utf8'))
+        hasher.update(dumps(old_signature).encode('utf8'))
+        hasher.update(dumps(added_signature).encode('utf8'))
         if not do_ecdsa_verify(G, voter_pub, sig, hasher.digest()):
             return False
 
         # verify proofs of binary (votes have to be bin values)
-        for i in range(0, num_votes):
-            if not verifybin(params, tally_pub, unpack(added_vote[i]), unpack(proof_bin[i])):
+        for i in range(0, num_options):
+            if not verifybin(params, tally_pub, unpack(added_signature[i]), unpack(proof_bin[i])):
                 return False
 
         # verify proof of sum of votes (sum of votes has to be 1)
-        sum_a, sum_b = unpack(added_vote[-1])
+        sum_a, sum_b = unpack(added_signature[-1])
         sum_c = (sum_a, sum_b)
-        for i in range(0, num_votes-1):
-            sum_c = add(sum_c, unpack(added_vote[i]))
+        for i in range(0, num_options-1):
+            sum_c = add(sum_c, unpack(added_signature[i]))
         if not verifyone(params, tally_pub, sum_c, proof_sum):
             return False
 
         # verify that output == input + vote
-        for i in range(0, num_votes):
-            tmp_c = add(unpack(old_vote['scores'][i]), unpack(added_vote[i]))
-            if not new_vote['scores'][i] == pack(tmp_c):
+        for i in range(0, num_options):
+            tmp_c = add(unpack(old_signature['scores'][i]), unpack(added_signature[i]))
+            if not new_signature['scores'][i] == pack(tmp_c):
                 return False
 
         # otherwise
@@ -340,13 +337,13 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
     try:
 
         # retrieve vote
-        vote   = loads(inputs[0])
+        petition   = loads(inputs[0])
         result = loads(outputs[0])
 
         # check format
         if len(inputs) != 1 or len(reference_inputs) != 0 or len(outputs) != 1 or len(returns) != 0:
             return False 
-        if len(vote['options']) != len(result['outcome']):
+        if len(petition['options']) != len(result['outcome']):
             return False
 
         # check tokens
@@ -356,21 +353,21 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
         # generate params, retrieve tally's public key and the parameters
         params = setup()
         (G, _, (h0, _, _, _), _) = params
-        tally_pub  = unpack(vote['tally_pub'])
+        tally_pub  = unpack(petition['tally_pub'])
         proof_dec  = loads(parameters[0])
         sig        = unpack(parameters[1])
         outcome    = result['outcome']
 
         # verify proof of correct decryption
-        for i in range(0, len(vote['scores'])):
-            a, b = unpack(vote['scores'][i])
+        for i in range(0, len(petition['scores'])):
+            a, b = unpack(petition['scores'][i])
             ciphertext = (a, b - outcome[i] * h0) 
             if not verifyzero(params, tally_pub, ciphertext, unpack(proof_dec[i])):
                 return False
 
         # verify signature
         hasher = sha256()
-        hasher.update(dumps(vote).encode('utf8'))
+        hasher.update(dumps(petition).encode('utf8'))
         hasher.update(dumps(result['outcome']).encode('utf8'))
         if not do_ecdsa_verify(G, tally_pub, sig, hasher.digest()):
             return False

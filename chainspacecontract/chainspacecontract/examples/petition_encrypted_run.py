@@ -44,7 +44,7 @@ params = setup()
 (voter3_priv, voter3_pub) = key_gen(params)
 
 # set up options, participants, and tally's key
-options = ['alice', 'bob']
+options = ['YES', 'NO']
 participants = [pack(voter1_pub), pack(voter2_pub), pack(voter3_pub)]
 
 
