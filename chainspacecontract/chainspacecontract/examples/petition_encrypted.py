@@ -126,7 +126,7 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, voter_i
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
     print "ADD-SIGNATURE: Removing participant [" + voter_id + "] from " + str(new_signature['participants'])
-    new_signature['participants'].remove(voter_id)
+    new_signature['participants'].append(voter_id)
     print "ADD-SIGNATURE: " + str(new_signature['participants'])
 
     # compute signature
@@ -280,16 +280,16 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if new_signature['type'] != 'PetitionEncObject':
             return False
 
-        print "CHECKING - participant is removed"
+        print "CHECKING - participant is added and not already in"
         print "CHECKING - participant   - " + parameters[3]
         print "CHECKING - old_signature - " + str(old_signature['participants'])
         print "CHECKING - new_signature - " + str(new_signature['participants'])
 
-        if not parameters[3] in old_signature['participants']:
+        if not parameters[3] in new_signature['participants']:
             return False
-        if parameters[3] in new_signature['participants']:
+        if parameters[3] in old_signature['participants']:
             return False
-        if len(old_signature['participants']) != len(new_signature['participants']) + 1:
+        if len(new_signature['participants']) != len(old_signature['participants']) + 1:
             return False
 
         # generate params, retrieve tally's public key and the parameters

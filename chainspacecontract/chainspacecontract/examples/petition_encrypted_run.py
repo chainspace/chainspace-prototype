@@ -48,7 +48,7 @@ signatory_3_id = str(uuid.uuid1())
 
 # set up options, participants, and tally's key
 options = ['YES', 'NO']
-participants = [signatory_1_id, signatory_2_id, signatory_3_id]
+participants = []
 
 
 init_transaction = petition_encrypted.init()
