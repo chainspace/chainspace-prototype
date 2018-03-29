@@ -12,6 +12,7 @@
     </properties>
 
     <build>
+        <testSourceDirectory>src/test/java/junit</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
