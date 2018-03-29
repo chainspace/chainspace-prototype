@@ -1,8 +1,8 @@
 """
-    A petition that has encrypted YES|NO votes but that does not do:
+    A petition that has encrypted YES|NO signatures but that does not do:
 
     1) Checking the validity of the petition signatories (are they allowed to sign)
-    2) Maintining privacy (the public key of the signatory is used to prevent double voting)
+    2) Maintining privacy (the public key of the signatory is used to prevent double signing)
 
     This petition is an intermediate step towards a full coconut based private petition
 
@@ -85,7 +85,7 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('add_signature')
-def add_signature(inputs, reference_inputs, parameters, added_signature, voter_id):
+def add_signature(inputs, reference_inputs, parameters, added_signature, signatory_id):
 
     old_signature = loads(inputs[0])
     new_signature = loads(inputs[0])
@@ -94,14 +94,14 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, voter_i
     params = setup()
     tally_pub = unpack(old_signature['tally_pub'])
 
-    # encrypt votes & proofs to build
-    enc_added_signatures = []  # encrypted votes
-    proof_bin       = []  # votes are binary, well-formed, and the prover know the vote's value
-    sum_a, sum_b, sum_k = (0, 0, 0)  # sum of votes equals 1
+    # encrypt signatures & proofs to build
+    enc_added_signatures = []  # encrypted signatures
+    proof_bin       = []  # signatures are binary, well-formed, and the prover know the signature's value
+    sum_a, sum_b, sum_k = (0, 0, 0)  # sum of signatures equals 1
 
-    # loop over votes
+    # loop over signatures
     for i in range(0, len(added_signature)):
-        # encrypt added vote
+        # encrypt added signature
         (a, b, k) = binencrypt(params, tally_pub, added_signature[i])
         c = (a, b)
         enc_added_signatures.append(pack(c))
@@ -114,19 +114,19 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, voter_i
         tmp1 = provebin(params, tally_pub, (a,b), k, added_signature[i])
         proof_bin.append(pack(tmp1))
 
-        # update sum of votes
+        # update sum of signature
         if i == 0:
             sum_a, sum_b, sum_k = (a, b, k)
         else:
             sum_c = (sum_a, sum_b)
             sum_a, sum_b, sum_k = add_side(sum_c, c, sum_k, k)
         
-    # build proof that sum of votes equals 1
+    # build proof that sum of signatures equals 1
     sum_c = (sum_a, sum_b)
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
-    print "ADD-SIGNATURE: Removing participant [" + voter_id + "] from " + str(new_signature['participants'])
-    new_signature['participants'].append(voter_id)
+    print "ADD-SIGNATURE: Removing participant [" + signatory_id + "] from " + str(new_signature['participants'])
+    new_signature['participants'].append(signatory_id)
     print "ADD-SIGNATURE: " + str(new_signature['participants'])
 
     # compute signature
@@ -140,7 +140,7 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, voter_i
         'outputs': (dumps(new_signature),),
         'extra_parameters' : (
             dumps(enc_added_signatures),
-            voter_id,
+            signatory_id,
             dumps(proof_bin),
             pack(proof_sum)
         )
@@ -184,7 +184,7 @@ def tally(inputs, reference_inputs, parameters, tally_priv, tally_pub):
 
     # pack result
     result = {
-        'type'      : 'VoteResult',
+        'type'      : 'PetitionEncResult',
         'outcome'   : outcome
     }
 
@@ -261,7 +261,7 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
 
         print "CHECKING - parameters " + str(parameters)
 
-        # retrieve vote
+        # retrieve petition
         old_signature = loads(inputs[0])
         new_signature = loads(outputs[0])
         num_options = len(old_signature['options'])
@@ -299,12 +299,12 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         proof_bin  = loads(parameters[3])
         proof_sum  = unpack(parameters[4])
 
-        print "CHACKING - verify proofs of binary (votes have to be bin values)"
+        print "CHACKING - verify proofs of binary (Signatures have to be bin values)"
         for i in range(0, num_options):
             if not verifybin(params, tally_pub, unpack(added_signature[i]), unpack(proof_bin[i])):
                 return False
 
-        print "CHECKING - verify proof of sum of votes (sum of votes has to be 1)"
+        print "CHECKING - verify proof of sum of signatures (sum of signatures has to be 1)"
         sum_a, sum_b = unpack(added_signature[-1])
         sum_c = (sum_a, sum_b)
         for i in range(0, num_options-1):
@@ -312,7 +312,7 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if not verifyone(params, tally_pub, sum_c, proof_sum):
             return False
 
-        print "CHECKING - verify that output == input + vote"
+        print "CHECKING - verify that output == input + signature"
         for i in range(0, num_options):
             tmp_c = add(unpack(old_signature['scores'][i]), unpack(added_signature[i]))
             if not new_signature['scores'][i] == pack(tmp_c):
@@ -331,7 +331,7 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
 def tally_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
-        # retrieve vote
+        # retrieve petition
         petition   = loads(inputs[0])
         result = loads(outputs[0])
 
@@ -342,7 +342,7 @@ def tally_checker(inputs, reference_inputs, parameters, outputs, returns, depend
             return False
 
         # check tokens
-        if result['type'] != 'VoteResult':
+        if result['type'] != 'PetitionEncResult':
             return False
 
         # generate params, retrieve tally's public key and the parameters
