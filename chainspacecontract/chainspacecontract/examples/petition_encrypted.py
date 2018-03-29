@@ -25,7 +25,7 @@ from chainspacecontract.examples.utils import binencrypt, make_table, dec
 from chainspacecontract.examples.utils import provezero, verifyzero, provebin, verifybin, proveone, verifyone
 
 ## contract name
-contract = ChainspaceContract('vote')
+contract = ChainspaceContract('petition')
 
 
 ####################################################################
@@ -42,13 +42,13 @@ def init():
     }
 
 # ------------------------------------------------------------------
-# create vote event
+# create petition event
 # NOTE: 
 #   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
-@contract.method('create_vote')
-def create_vote(inputs, reference_inputs, parameters, options, participants, tally_priv, tally_pub):
+@contract.method('create_petition')
+def create_petition(inputs, reference_inputs, parameters, options, participants, tally_priv, tally_pub):
 
     # genrate param
     params = setup()
@@ -79,13 +79,13 @@ def create_vote(inputs, reference_inputs, parameters, options, participants, tal
     }
 
 # ------------------------------------------------------------------
-# add vote
+# add signature
 # NOTE: 
 #   - only 'inputs', 'reference_inputs' and 'parameters' are used to the framework
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
-@contract.method('add_vote')
-def add_vote(inputs, reference_inputs, parameters, added_vote, voter_priv, voter_pub):
+@contract.method('add_signature')
+def add_signature(inputs, reference_inputs, parameters, added_vote, voter_priv, voter_pub):
 
     
     # retrieve old vote & init new vote object
@@ -215,13 +215,13 @@ def read(inputs, reference_inputs, parameters):
 
 
 ####################################################################
-# checker
+# checkers
 ####################################################################
 # ------------------------------------------------------------------
-# check vote's creation
+# check petitions's creation
 # ------------------------------------------------------------------
-@contract.checker('create_vote')
-def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+@contract.checker('create_petition')
+def create_petition_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
         # retrieve vote
@@ -257,10 +257,10 @@ def create_vote_checker(inputs, reference_inputs, parameters, outputs, returns, 
         return False
 
 # ------------------------------------------------------------------
-# check add vote
+# check add signature
 # ------------------------------------------------------------------
-@contract.checker('add_vote')
-def add_vote_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+@contract.checker('add_signature')
+def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
     try:
 
         # retrieve vote
