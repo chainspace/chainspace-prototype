@@ -45,13 +45,9 @@ def post_transaction(method, tx):
 
 params = setup()
 (tally_priv, tally_pub) = key_gen(params)
-signatory_1_id = str(uuid.uuid1())
-signatory_2_id = str(uuid.uuid1())
-signatory_3_id = str(uuid.uuid1())
 
 # set up options, participants, and tally's key
 options = ['YES', 'NO']
-participants = []
 
 
 init_transaction = petition_encrypted.init()
@@ -65,23 +61,23 @@ post_transaction("init", init_transaction)
 petition_token = init_transaction['transaction']['outputs'][0]
 
 print "\nCreate the petition\n"
-tx_create_petition = petition_contract.create_petition((petition_token,), None, None, json.dumps(options), json.dumps(participants), pack(tally_priv), pack(tally_pub))
+tx_create_petition = petition_contract.create_petition((petition_token,), None, None, json.dumps(options), pack(tally_priv), pack(tally_pub))
 post_transaction("create_petition", tx_create_petition)
 petition_root = tx_create_petition['transaction']['outputs'][1]
 
 
 print "\nFirst signature\n"
-tx_add_signature_1 = petition_contract.add_signature((petition_root,), None, None, json.dumps([1, 0]), signatory_1_id)
+tx_add_signature_1 = petition_contract.add_signature((petition_root,), None, None, json.dumps([1, 0]))
 post_transaction("add_signature", tx_add_signature_1)
 signature_1 = tx_add_signature_1['transaction']['outputs'][0]
 
 print "\nSecond signature\n"
-tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]), signatory_2_id)
+tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]))
 post_transaction("add_signature", tx_add_signature_2)
 signature_2 = tx_add_signature_2['transaction']['outputs'][0]
 
 print "\nThird signature\n"
-tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]), signatory_3_id)
+tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]))
 post_transaction("add_signature", tx_add_signature_3)
 signature_3 = tx_add_signature_3['transaction']['outputs'][0]
 
