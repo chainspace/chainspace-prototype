@@ -1,6 +1,5 @@
 .DS_Store
 venv
-<<<<<<< HEAD
 out
 .chainspace.env
 checker.*.log.*
@@ -20,6 +19,3 @@ workspace.xml
 tasks.xml
 .idea
 *.sqlite
-=======
-.idea
->>>>>>> master
