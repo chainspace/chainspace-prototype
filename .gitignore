@@ -18,4 +18,5 @@ contrib/screenlog.0
 workspace.xml
 tasks.xml
 .idea
+*.iml
 *.sqlite
