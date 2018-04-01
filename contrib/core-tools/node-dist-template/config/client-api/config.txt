@@ -1,0 +1,3 @@
+shardConfigFile config/shards/shard_config.txt
+# Need to update this to whatever shard your client-api is running for
+thisClient 0
