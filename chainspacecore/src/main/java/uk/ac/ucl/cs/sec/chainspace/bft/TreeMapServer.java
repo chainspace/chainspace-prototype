@@ -37,7 +37,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
     int thisShard; // the shard this replica is part of
     int thisReplica; // ID of this replica within thisShard
     MapClient client;
-    String strLabel;
+    String strLabel = "[s?n?]";
     HashMap<String,String> configData;
     String shardConfigFile; // Contains info about shards and corresponding config files.
                             // This info should be passed on the client class.
@@ -80,7 +80,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
 
         File configHome = shardConfigDirs.get(thisShard);
 
-        logMsg(strLabel, "TreeMapServer<init>", "Starting ServiceReplica for shard " + thisShard + " with config from [" + configHome.getAbsolutePath() + "]");
+        logMsg(strLabel, "TreeMapServer<init> ", "Starting ServiceReplica for shard " + thisShard + " with config from [" + configHome.getAbsolutePath() + "]");
         new ServiceReplica(thisReplica, configHome.getAbsolutePath(), this, this, null, new DefaultReplier()); // Create the server
 
         try {
@@ -90,7 +90,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
             System.out.println("Error initializing the server. Now exiting.");
             System.exit(-1);
         }
-
+        logMsg(strLabel, "TreeMapServer<init> ", "Starting MapClient with shardConfigFile [" + shardConfigFile + "]");
         client = new MapClient(shardConfigFile, thisShard, thisReplica); // Create clients for talking with other shards
     }
 
