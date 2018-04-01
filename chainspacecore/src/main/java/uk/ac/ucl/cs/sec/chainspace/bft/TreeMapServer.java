@@ -80,7 +80,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
 
         File configHome = shardConfigDirs.get(thisShard);
 
-        logMsg(strLabel, "TreeMapServer<init> ", "Starting ServiceReplica for shard " + thisShard + " with config from [" + configHome.getAbsolutePath() + "]");
+        logMsg(strLabel, "TreeMapServer<init> ", "Starting ServiceReplica for shard " + thisShard + ", replica " + thisReplica + " with config from [" + configHome.getAbsolutePath() + "]");
         new ServiceReplica(thisReplica, configHome.getAbsolutePath(), this, this, null, new DefaultReplier()); // Create the server
 
         try {
