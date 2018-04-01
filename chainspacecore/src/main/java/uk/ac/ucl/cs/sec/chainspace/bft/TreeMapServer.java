@@ -3,6 +3,7 @@ package uk.ac.ucl.cs.sec.chainspace.bft;
 // These are the classes which receive requests from clients
 import bftsmart.tom.MessageContext;
 import bftsmart.tom.ServiceReplica;
+import bftsmart.tom.server.RequestVerifier;
 import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 
 // Classes that need to be declared to implement this
@@ -10,6 +11,7 @@ import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
@@ -19,7 +21,7 @@ import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-import bftsmart.tom.util.Logger;
+import bftsmart.tom.server.defaultservices.DefaultReplier;
 import uk.ac.ucl.cs.sec.chainspace.Core;
 import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
 
@@ -27,7 +29,7 @@ import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARED_T_ABORT;
 import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARE_T_SYSTEM_ERROR;
 
 
-public class TreeMapServer extends DefaultRecoverable {
+public class TreeMapServer extends DefaultRecoverable implements RequestVerifier {
 
     SimpleLogger slogger;
     Map<String, String> table;
@@ -42,8 +44,13 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private Core core;
 
-    public TreeMapServer(String configFile) {
+    public TreeMapServer(String configFileName) {
         this.slogger = new SimpleLogger();
+
+        File configFile = new File(configFileName);
+        if (!configFile.exists()) {
+            throw new RuntimeException("No config file @ [" + configFile.getAbsolutePath() + "] - cannot start TreeMapServer!");
+        }
 
         try { core = new Core(); }
         catch (ClassNotFoundException | SQLException e) {
@@ -52,7 +59,7 @@ public class TreeMapServer extends DefaultRecoverable {
         }
 
         configData = new HashMap<String,String>(); // will be filled with config data by readConfiguration()
-        readConfiguration(configFile);
+        readConfiguration(configFileName);
         if(!loadConfiguration()) {
             System.out.println("Could not load configuration. Now exiting.");
             System.exit(0);
@@ -63,7 +70,18 @@ public class TreeMapServer extends DefaultRecoverable {
         strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
 
-        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
+        File shardConfig = new File(shardConfigFile);
+        if (!shardConfig.exists()) {
+            throw new RuntimeException("Could not locate shard config file @ [" + shardConfig.getAbsolutePath() +"] - cannot start TreeMapServer!");
+        }
+
+        Map<Integer, File> shardConfigDirs = loadShardConfigDirs(shardConfig);
+
+
+        File configHome = shardConfigDirs.get(thisShard);
+
+        logMsg(strLabel, "TreeMapServer<init>", "Starting ServiceReplica for shard " + thisShard + " with config from [" + configHome.getAbsolutePath() + "]");
+        new ServiceReplica(thisReplica, configHome.getAbsolutePath(), this, this, null, new DefaultReplier()); // Create the server
 
         try {
             Thread.sleep(5000);
@@ -74,6 +92,42 @@ public class TreeMapServer extends DefaultRecoverable {
         }
 
         client = new MapClient(shardConfigFile, thisShard, thisReplica); // Create clients for talking with other shards
+    }
+
+    private static Map<Integer, File> loadShardConfigDirs(File shardConfigFile) {
+        // The format pf configFile is <shardID> \t <pathToShardConfigFile>
+
+        // Shard-to-Configuration Mapping
+        Map<Integer, File> shardConfigFileDirs = new HashMap<>();
+
+
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(shardConfigFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
+
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+", limit);
+
+                if (tokens.length == 2) {
+                    int shardID = Integer.parseInt(tokens[0]);
+                    File shardConfigDir = new File(tokens[1]);
+                    if (!shardConfigDir.exists()) {
+                        throw new RuntimeException("No such shard config dir @ [" + shardConfigDir.getAbsolutePath() + "] - cannot start TreeMapServer!");
+                    }
+                    shardConfigFileDirs.put(shardID, shardConfigDir);
+                } else {
+                    System.out.println("Skipping Line # " + countLine + " in config file: Insufficient tokens");
+                }
+            }
+            lineReader.close();
+            return shardConfigFileDirs;
+        } catch (Exception e) {
+            throw new RuntimeException("Could not load shard config files (See cause)", e);
+        }
+
     }
 
     private boolean loadConfiguration() {
@@ -756,5 +810,11 @@ public class TreeMapServer extends DefaultRecoverable {
             e.printStackTrace();
             return new byte[0];
         }
+    }
+
+
+    @Override
+    public boolean isValidRequest(byte[] request) {
+        return true;
     }
 }

@@ -10,6 +10,9 @@ list-nodes:
 build-jar:
 	cd chainspacecore && mvn -Dversion=1.0-SNAPSHOT package assembly:single
 
+dist-node:
+	./contrib/core-tools/build-node-dist.sh
+
 start-nodes:
 	./contrib/core-tools/easystart.mac.sh
 
