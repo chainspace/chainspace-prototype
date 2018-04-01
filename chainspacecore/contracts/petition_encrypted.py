@@ -48,7 +48,7 @@ def init():
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('create_petition')
-def create_petition(inputs, reference_inputs, parameters, options, participants, tally_priv, tally_pub):
+def create_petition(inputs, reference_inputs, parameters, options, tally_priv, tally_pub):
 
     # genrate param
     params = setup()
@@ -64,7 +64,6 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
         'type'          : 'PetitionEncObject',
         'options'       : loads(options),
         'scores'        : scores,
-        'participants'  : loads(participants),
         'tally_pub'     : tally_pub
     }
 
@@ -85,7 +84,7 @@ def create_petition(inputs, reference_inputs, parameters, options, participants,
 #   - if there are more than 3 param, the checker has to be implemented by hand
 # ------------------------------------------------------------------
 @contract.method('add_signature')
-def add_signature(inputs, reference_inputs, parameters, added_signature, signatory_id):
+def add_signature(inputs, reference_inputs, parameters, added_signature):
 
     old_signature = loads(inputs[0])
     new_signature = loads(inputs[0])
@@ -125,10 +124,6 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, signato
     sum_c = (sum_a, sum_b)
     proof_sum = proveone(params, tally_pub, sum_c, sum_k)
 
-    print "ADD-SIGNATURE: Adding participant [" + signatory_id + "] from " + str(new_signature['participants'])
-    new_signature['participants'].append(signatory_id)
-    print "ADD-SIGNATURE: " + str(new_signature['participants'])
-
     # compute signature
     (G, _, _, _) = params
     hasher = sha256()
@@ -140,7 +135,6 @@ def add_signature(inputs, reference_inputs, parameters, added_signature, signato
         'outputs': (dumps(new_signature),),
         'extra_parameters' : (
             dumps(enc_added_signatures),
-            signatory_id,
             dumps(proof_bin),
             pack(proof_sum)
         )
@@ -229,8 +223,6 @@ def create_petition_checker(inputs, reference_inputs, parameters, outputs, retur
             return False 
         if num_options < 1 or num_options != len(petition['scores']):
             return False
-        if petition['participants'] == None:
-            return False
 
         print "CHECKING (create) - check tokens"
         if loads(inputs[0])['type'] != 'PetitionEncToken' or loads(outputs[0])['type'] != 'PetitionEncToken':
@@ -271,8 +263,6 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
             return False 
         if num_options != len(new_signature['scores']) or num_options != len(new_signature['scores']):
             return False
-        if new_signature['participants'] == None:
-            return False
         if old_signature['tally_pub'] != new_signature['tally_pub']:
             return False
 
@@ -280,27 +270,14 @@ def add_signature_checker(inputs, reference_inputs, parameters, outputs, returns
         if new_signature['type'] != 'PetitionEncObject':
             return False
 
-        participant = parameters[1]
-
-        print "CHECKING - participant is added and not already in"
-
-        if not participant in new_signature['participants']:
-            print "FAIL: not in new signature"
-            return False
-        if participant in old_signature['participants']:
-            print "FAIL: was in the old signatures"
-            return False
-        if len(new_signature['participants']) != len(old_signature['participants']) + 1:
-            print "FAIL: Len of new signatures should be old + 1"
-            return False
 
         print "CHECKING - Generate params"
         # generate params, retrieve tally's public key and the parameters
         params = setup()
         tally_pub  = unpack(old_signature['tally_pub'])
         added_signature = loads(parameters[0])
-        proof_bin  = loads(parameters[2])
-        proof_sum  = unpack(parameters[3])
+        proof_bin  = loads(parameters[1])
+        proof_sum  = unpack(parameters[2])
 
         print "CHECKING - verify proofs of binary (Signatures have to be bin values)"
         for i in range(0, num_options):
