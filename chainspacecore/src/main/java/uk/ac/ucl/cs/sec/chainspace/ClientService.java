@@ -6,6 +6,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Connection;
@@ -23,6 +24,7 @@ class ClientService {
 
     private final int port;
     private final InetAddress host;
+    private final String databaseName;
 
     /**
      * Constructor
@@ -37,13 +39,28 @@ class ClientService {
         host = InetAddress.getLocalHost();
         this.port = port;
 
+        this.databaseName = dbNameFromSystemProperty("client.api.database");
+
         printInitMessage();
 
 
     }
 
-    private static Connection initDbConnection() throws ClassNotFoundException, SQLException {
-        return SQLiteConnector.openConnection("../chainspacecore-1-1/database");
+    private static String dbNameFromSystemProperty(String systemProperty) {
+        String databaseName = System.getProperty(systemProperty);
+        if (databaseName == null) {
+            throw new RuntimeException("Could not read system property -Dclient.api.database - you need to specify this when running the service");
+        }
+        File databaseFile = new File(databaseName +".sqlite");
+        if (!databaseFile.exists()) {
+            throw new RuntimeException("-Dclient.api.database [" + databaseFile.getAbsolutePath() + "] does not exist!");
+        }
+        return databaseName;
+    }
+
+    private Connection initDbConnection() throws ClassNotFoundException, SQLException {
+
+        return SQLiteConnector.openConnection(databaseName);
     }
 
 
@@ -281,9 +298,8 @@ class ClientService {
      */
     private void printInitMessage() {
 
-
         System.out.println("\nChainspace Client API service is running @ " + getExternalUrl("/"));
-
+        System.out.printf("\nReading from local database @ " + databaseName);
     }
 
     private String getExternalUrl(String path) {

@@ -141,7 +141,13 @@ public class Client {
         System.out.println("Initialised MapClient to talk to shard 0, replica 0");
 
         // start webservice
-        startClientService();
+        try {
+            startClientService();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("FATAL ERROR!!! Could not start webservice, shutting down.");
+            System.exit(-1);
+        }
 
 
         /*
@@ -187,10 +193,11 @@ public class Client {
         if (Main.VERBOSE) { Utils.printHeader("Starting Chainspace..."); }
 
         // run chainspace service
-        try {new ClientService(PORT);}
+        try {
+            new ClientService(PORT);
+        }
         catch (Exception e) {
-            if (Main.VERBOSE) { Utils.printStacktrace(e); }
-            else { err.println("[ERROR] Node service failed to start on port " + PORT); }
+            throw new RuntimeException("client-api service failed to start on port " + PORT +" - see cause", e);
         }
 
         // verbose print

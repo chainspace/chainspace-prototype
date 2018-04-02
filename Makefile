@@ -10,7 +10,7 @@ list-nodes:
 build-jar:
 	cd chainspacecore && mvn -Dversion=1.0-SNAPSHOT package assembly:single
 
-dist-node:
+dist:
 	./contrib/core-tools/build-node-dist.sh
 
 start-nodes:
