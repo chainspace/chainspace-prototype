@@ -24,7 +24,7 @@ public class Client {
 
 
     // CONFIG -- port number
-    public static final int PORT = 5000;
+    public static final int PORT = initialisePort();
 
     private static SimpleLogger slogger;
 
@@ -37,6 +37,10 @@ public class Client {
     static MapClient client;
 
 
+
+    private static int initialisePort() {
+        return new Integer(System.getProperty("client.api.port", "5000"));
+    }
     /**
      * loadConfiguration
      * Load the configuration file.
