@@ -2,7 +2,7 @@
 
 DIST=chainspacecore/target/dist
 
-NODE_0_0=${DIST}/node-0-0
+NODE_0_0=${DIST}/node_0_0
 
 UBER_JAR=`ls chainspacecore/target/chainspace*-with-dependencies.jar`
 BFT_JAR=`ls chainspacecore/lib/bft-smart*-UCL.jar`
@@ -23,7 +23,6 @@ mkdir -p ${NODE_0_0}/lib
 cp ${BFT_JAR} ${NODE_0_0}/lib
 cp -r ${DIST_TEMPLATE}/* ${NODE_0_0}
 
-
 echo -e "\nCreating client-api\n"
 
 CLIENT_API=${DIST}/client-api
@@ -42,6 +41,9 @@ NODE_0_1=${DIST}/node_0_1
 mkdir -p ${NODE_0_1}
 
 cp -r ${NODE_0_0}/* ${NODE_0_1}/
+
+sed -e "s/REPLICA_ID/0/g" ${NODE_0_0}/config/node/config.txt >> ${NODE_0_0}/config/node/config.txt
+sed -e "s/REPLICA_ID/1/g" ${NODE_0_1}/config/node/config.txt >> ${NODE_0_1}/config/node/config.txt
 
 
 echo -e "\nCreating client...\n"
