@@ -20,3 +20,4 @@ tasks.xml
 .idea
 *.iml
 *.sqlite
+*.process.id
