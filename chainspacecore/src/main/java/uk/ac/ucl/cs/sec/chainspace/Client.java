@@ -215,6 +215,9 @@ public class Client {
 
     }
 
+    /**
+     * Has no timeout configured to wait for replies
+     */
     static void submitTransactionNoWait(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
         out.println("\n>> SUBMITTING TRANSACTION...");
