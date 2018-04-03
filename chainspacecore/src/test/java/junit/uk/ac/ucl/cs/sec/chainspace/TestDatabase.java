@@ -87,9 +87,11 @@ public class TestDatabase {
 
     public static void initialise() throws SQLException, ClassNotFoundException {
         File databaseFile = new File("testdatabase.sqlite");
+        System.out.println("Making test db @ " + databaseFile.getAbsolutePath());
         if (databaseFile.exists()) {
             databaseFile.delete();
         }
+        databaseFile.deleteOnExit();
 
         try (Connection connection = openConnection("testdatabase")) {
             initialiseDbSchema(connection);
