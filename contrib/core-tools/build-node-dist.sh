@@ -47,9 +47,28 @@ mkdir -p ${NODE_0_1}
 
 cp -r ${NODE_0_0}/* ${NODE_0_1}/
 
-sed -e "s/REPLICA_ID/0/g" ${NODE_0_0}/config/node/config.txt >> ${NODE_0_0}/config/node/config.txt
-sed -e "s/REPLICA_ID/1/g" ${NODE_0_1}/config/node/config.txt >> ${NODE_0_1}/config/node/config.txt
+# This is messy but need more time to work out how to do it neater! -i doesnt seem to work on osx
+sed -e "s/REPLICA_ID/0/g" ${NODE_0_0}/config/node/config.txt >> ${NODE_0_0}/config/node/config.txt.1
+rm ${NODE_0_0}/config/node/config.txt
+cp ${NODE_0_0}/config/node/config.txt.1 ${NODE_0_0}/config/node/config.txt
+rm ${NODE_0_0}/config/node/config.txt.1
 
+sed -e "s/REPLICA_ID/1/g" ${NODE_0_1}/config/node/config.txt >> ${NODE_0_1}/config/node/config.txt.1
+rm ${NODE_0_1}/config/node/config.txt
+cp ${NODE_0_1}/config/node/config.txt.1 ${NODE_0_1}/config/node/config.txt
+rm ${NODE_0_1}/config/node/config.txt.1
+
+sed -e "s/__START_PORT__/17010/g" ${NODE_0_0}/start_node.sh >> ${NODE_0_0}/start_node.sh.1
+rm ${NODE_0_0}/start_node.sh
+cp ${NODE_0_0}/start_node.sh.1 ${NODE_0_0}/start_node.sh
+rm ${NODE_0_0}/start_node.sh.1
+chmod +x ${NODE_0_0}/start_node.sh
+
+sed -e "s/__START_PORT__/18010/g" ${NODE_0_1}/start_node.sh >> ${NODE_0_1}/start_node.sh.1
+rm ${NODE_0_1}/start_node.sh
+cp ${NODE_0_1}/start_node.sh.1 ${NODE_0_1}/start_node.sh
+rm ${NODE_0_1}/start_node.sh.1
+chmod +x ${NODE_0_1}/start_node.sh
 
 echo -e "\nCreating client...\n"
 
