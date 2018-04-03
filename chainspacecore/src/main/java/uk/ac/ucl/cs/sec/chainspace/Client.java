@@ -124,6 +124,8 @@ public class Client {
             System.exit(0);
         }
 
+        SystemProcess.writeProcessIdToFile("chainspace.client.api.process.id");
+
         // get filepath
         String configFile = args[0];
 

@@ -24,6 +24,7 @@ import java.io.FileReader;
 import bftsmart.tom.server.defaultservices.DefaultReplier;
 import uk.ac.ucl.cs.sec.chainspace.Core;
 import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
+import uk.ac.ucl.cs.sec.chainspace.SystemProcess;
 
 import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARED_T_ABORT;
 import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARE_T_SYSTEM_ERROR;
@@ -46,6 +47,8 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
 
     public TreeMapServer(String configFileName) {
         this.slogger = new SimpleLogger();
+
+        SystemProcess.writeProcessIdToFile("chainspace.node.process.id");
 
         File configFile = new File(configFileName);
         if (!configFile.exists()) {
