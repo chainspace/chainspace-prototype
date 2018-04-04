@@ -518,7 +518,7 @@ public class MapClient implements Map<String, String> {
         byte[] requestData = createRequest(t, TRANSACTION_SUBMIT);
         return clientProxyAsynch.get(shardID).invokeAsynchRequest( // SUBMIT_T request sent asynchronously to all relevant shards
                 requestData,
-                new ReplyListenerAsynchSingle(shardID, strLabel), // Expect single response from BFTInitiator of each shard to which the request was sent
+                new ReplyListenerAsynchSingle(shardID, strLabel, System.currentTimeMillis()), // Expect single response from BFTInitiator of each shard to which the request was sent
                 reqType);
     }
 
@@ -749,6 +749,7 @@ public class MapClient implements Map<String, String> {
         private final int shardID;
         private TOMMessage replies[];
         private String strModule;
+        private final long startTime;
 
         private Comparator<byte[]> comparator = new Comparator<byte[]>() {
             @Override
@@ -764,17 +765,18 @@ public class MapClient implements Map<String, String> {
             }
         };
 
-        private ReplyListenerAsynchSingle(int shardID, String strLabel) {
+        private ReplyListenerAsynchSingle(int shardID, String strLabel, long startTime) {
+            this.startTime = startTime;
             this.shardID = shardID;
             this.strLabel = strLabel;
             client = clientProxyAsynch.get(shardID);
             replies = new TOMMessage[client.getViewManager().getCurrentViewN()];
-            strModule = "AsynchReplyListenerSingle: ";
+            strModule = "ReplyListenerAsynchSingle: ";
         }
 
         @Override
         public void replyReceived(RequestContext context, TOMMessage reply) {
-
+            long latencyTime = System.currentTimeMillis() - startTime;
             // When to give reply to the application layer
             int pos = client.getViewManager().getCurrentViewPos(reply.getSender());
 
@@ -785,7 +787,8 @@ public class MapClient implements Map<String, String> {
                 try {
                     strReply = new String(reply.getContent(), "UTF-8");
 
-                    logMsg(strLabel, strModule, "Incoming Reply from sender : " + reply.getSender() + " (viewPos " + pos + "), content : [" + strReply + "]");
+                    logMsg(strLabel, strModule, "Reply from sender : " + reply.getSender() + " (viewPos " + pos + "),  TIMING:ASYNCH:LATENCY - " + latencyTime + "ms, content: " + strReply);
+
                     // Ignore dummy responses, only capture response from the BFTInitiator (which is non-dummy)
                     if (!strReply.equals(ResponseType.DUMMY)) {
                         String key = shardToClientAsynch.get(shardID) + ";" + context.getReqId() + ";" + context.getRequestType();
