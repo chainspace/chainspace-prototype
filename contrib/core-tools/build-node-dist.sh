@@ -13,7 +13,7 @@ echo -e "\nGoing to build a distribution zip file in [${DIST}] ...\n"
 
 rm -rf ${DIST}
 mkdir -p ${DIST}
-mkdir =p ${NODE_0_0}
+mkdir -p ${NODE_0_0}
 
 echo "Copying Jar file from [${UBER_JAR}]"
 
