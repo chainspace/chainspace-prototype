@@ -1,16 +1,10 @@
-## TODO
-
-- Fix python checker startup so that it includes the chainspace python libs
-- Get a more simple node setup running with a single shard that can be run inside the IDE
-
-
 ## Understanding the Code
 
 
 There are three parts to Chainspace:
 
 - Python client libraries
-- Client Service (localhost:5000)
+- Client API Service (localhost:5000)
 - Chainspace network of nodes (defaults to 2 shards, with 4 nodes in each)
 
 ## Chainspace network of nodes
@@ -23,9 +17,9 @@ The entry point for the node is the `TreeMapServer` class. This has a `main` met
 
 It in turn creates
 
-## The Client Service
+## The Client API Service
 
-The client service is used to submit transactions to the nodes. The client service maps data to shards, and sends transaction requests to the corresponding shards.
+The client api service is used to submit transactions to the nodes. The client service maps data to shards, and sends transaction requests to the corresponding shards.
 
 ## Verifying Transactions (Checking)
 
@@ -47,6 +41,10 @@ The link to the contract is present in the data structure of the `CSTransaction`
 
 
 ## Transaction Deployment And Verification Example (Mac)
+
+There is a `Makefile` which has these commands in it:
+
+@todo - tidy up this documentation to use the makefile instead
 
 You need to have Python 2.7 (as well as pip) installed to run Chainspace.
 
