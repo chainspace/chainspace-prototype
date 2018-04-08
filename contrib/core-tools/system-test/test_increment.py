@@ -56,18 +56,18 @@ obj_init = tx_init['transaction']['outputs'][0]
 # type(obj_init)
 # obj_init.object_id
 
-tx_increment_1 = addition_contract.increment(inputs=[obj_init])
-post_transaction(tx_increment_1)
-obj_1 = tx_increment_1['transaction']['outputs'][0]
-
-
-tx_increment_2 = addition_contract.increment(inputs=[obj_1])
-post_transaction(tx_increment_2)
-obj_2 = tx_increment_2['transaction']['outputs'][0]
-
-tx_increment_3 = addition_contract.increment(inputs=[obj_2])
-post_transaction(tx_increment_3)
-obj_3 = tx_increment_1['transaction']['outputs'][0]
+# tx_increment_1 = addition_contract.increment(inputs=[obj_init])
+# post_transaction(tx_increment_1)
+# obj_1 = tx_increment_1['transaction']['outputs'][0]
+#
+#
+# tx_increment_2 = addition_contract.increment(inputs=[obj_1])
+# post_transaction(tx_increment_2)
+# obj_2 = tx_increment_2['transaction']['outputs'][0]
+#
+# tx_increment_3 = addition_contract.increment(inputs=[obj_2])
+# post_transaction(tx_increment_3)
+# obj_3 = tx_increment_1['transaction']['outputs'][0]
 
 
 end_time = datetime.now()

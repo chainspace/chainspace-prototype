@@ -66,6 +66,19 @@ Install Python modules:
 > deactivate
 ```
 
+To run the coconut petition, you will need to install the bilinear pairing library which can be got from
+https://github.com/asonnino/coconut/tree/master/bplib-master
+
+```
+> pip install -e <place-you-cloned-coconue>/bplib-master
+```
+
+and you need numpy
+
+```
+> pip install numpy
+```
+
 Assemble an application bundle:
 
 ```
