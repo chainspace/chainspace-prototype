@@ -80,39 +80,52 @@ post_transaction("create_petition", tx_create_petition)
 petition_root = tx_create_petition['transaction']['outputs'][1]
 petition_root_list = tx_create_petition['transaction']['outputs'][2]
 
-pp_object(petition_root_list)
+# pp_json(petition_root)
+# pp_object(petition_root_list)
 
-# some crypto
-# ------------------------------------
-(priv_signer, pub_signer) = elgamal_keygen(bp_params)
-m = priv_signer
-(cm, c, proof_s) = prepare_blind_sign(bp_params, m, pub_signer)
-enc_sigs = [blind_sign(bp_params, ski, cm, c, pub_signer, proof_s) for ski in sk]
-(h, enc_epsilon) = zip(*enc_sigs)
-sigs = [(h[0], elgamal_dec(bp_params, priv_signer, enc)) for enc in enc_epsilon]
-sig = aggregate_th_sign(bp_params, sigs)
-sig = randomize(bp_params, sig)
-(kappa, nu, proof_v) = show_coconut_petition(bp_params, vvk, m, UUID)
-# ------------------------------------
+print "Current scores: " + str(json.loads(petition_root)['scores'])
+
+
+# The crypto needed to sign the petition
+def generate_signature():
+    (priv_key, pub_key) = elgamal_keygen(bp_params)
+    m = priv_key
+    (cm, c, proof_s) = prepare_blind_sign(bp_params, m, pub_key)
+    enc_sigs = [blind_sign(bp_params, ski, cm, c, pub_key, proof_s) for ski in sk]
+    (h, enc_epsilon) = zip(*enc_sigs)
+    sigs = [(h[0], elgamal_dec(bp_params, priv_key, enc)) for enc in enc_epsilon]
+    sig = aggregate_th_sign(bp_params, sigs)
+    sig = randomize(bp_params, sig)
+    return priv_key, sig
 
 
 print "\nFirst signature\n"
-tx_add_signature_1 = petition_contract.sign((petition_root, petition_root_list), None, (json.dumps([1, 0]), ), priv_signer, sig, vvk)
+(priv_signer_1, sig_1) = generate_signature()
+tx_add_signature_1 = petition_contract.sign((petition_root, petition_root_list), None, (json.dumps([1, 0]), ), priv_signer_1, sig_1, vvk)
 post_transaction("sign", tx_add_signature_1)
 signature_1 = tx_add_signature_1['transaction']['outputs'][0]
+list_1 = tx_add_signature_1['transaction']['outputs'][1]
 
-pp_object(signature_1)
+print "Current scores: " + str(json.loads(signature_1)['scores'])
 
-# print "\nSecond signature\n"
-# tx_add_signature_2 = petition_contract.add_signature((signature_1,), None, None, json.dumps([0, 1]))
-# post_transaction("add_signature", tx_add_signature_2)
-# signature_2 = tx_add_signature_2['transaction']['outputs'][0]
-#
-# print "\nThird signature\n"
-# tx_add_signature_3 = petition_contract.add_signature((signature_2,), None, None, json.dumps([1, 0]))
-# post_transaction("add_signature", tx_add_signature_3)
-# signature_3 = tx_add_signature_3['transaction']['outputs'][0]
-#
+print "\nSecond signature\n"
+(priv_signer_2, sig_2) = generate_signature()
+tx_add_signature_2 = petition_contract.sign((signature_1, list_1), None, (json.dumps([0, 1]), ), priv_signer_2, sig_2, vvk)
+post_transaction("sign", tx_add_signature_2)
+signature_2 = tx_add_signature_2['transaction']['outputs'][0]
+list_2 = tx_add_signature_2['transaction']['outputs'][1]
+
+print "Current scores: " + str(json.loads(signature_2)['scores'])
+
+print "\nThird signature\n"
+(priv_signer_3, sig_3) = generate_signature()
+tx_add_signature_3 = petition_contract.sign((signature_2, list_2), None, (json.dumps([1, 0]), ), priv_signer_3, sig_3, vvk)
+post_transaction("sign", tx_add_signature_3)
+signature_3 = tx_add_signature_3['transaction']['outputs'][0]
+list_3 = tx_add_signature_3['transaction']['outputs'][1]
+
+
+print "Current scores: " + str(json.loads(signature_3)['scores'])
 
 # Tally the results
 # tx_tally = petition_contract.tally((signature_3,), None, None, pack(tally_priv), pack(tally_pub))
