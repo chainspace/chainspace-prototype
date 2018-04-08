@@ -366,7 +366,7 @@ public class MapClient implements Map<String, String> {
                     }
                 }, reqType);
 
-                logMsg(strLabel, strModule, "Sent a request to shard ID " + shardID);
+                logMsg(strLabel, strModule, "Sent CREATE_OBJECT request to shard " + shardID);
             }
         } catch (Exception e) {
             logMsg(strLabel, strModule, "Experienced Exception " + e.getMessage());
@@ -452,7 +452,7 @@ public class MapClient implements Map<String, String> {
 
                 if (!targetShards.contains(shardId)) {
                     targetShards.add(shardId);
-                    int requestId = send_SUBMIT_T_toShard(UNORDERED_REQUEST, shardId, tx);
+                    int requestId = send_TRANSACTION_SUBMIT_toShard(UNORDERED_REQUEST, shardId, tx);
                     shardToRequestId.put(shardId, requestId);
                 }
             }
@@ -461,7 +461,7 @@ public class MapClient implements Map<String, String> {
                 logMsg(strLabel, strModule, "\n>> SUBMITTING INIT FUNCTION TO SHARD 0");
 
                 targetShards.add(0); // Add this shard to the list to be checked later
-                int requestId = send_SUBMIT_T_toShard(UNORDERED_REQUEST, 0, tx);
+                int requestId = send_TRANSACTION_SUBMIT_toShard(UNORDERED_REQUEST, 0, tx);
                 shardToRequestId.put(0, requestId);
             }
 
@@ -510,7 +510,7 @@ public class MapClient implements Map<String, String> {
         return shardResponseMap;
     }
 
-    private int send_SUBMIT_T_toShard(TOMMessageType reqType, int shardID, Transaction t) throws IOException {
+    private int send_TRANSACTION_SUBMIT_toShard(TOMMessageType reqType, int shardID, Transaction t) throws IOException {
         String strModule = "SUBMIT_T (DRIVER): ";
         logMsg(strLabel, strModule, "Sending SUBMIT_T to shard ID " + shardID);
         logMsg(strLabel, strModule, "The view of client is: " + clientProxyAsynch.get(shardID).getViewManager().getCurrentView());
@@ -589,7 +589,7 @@ public class MapClient implements Map<String, String> {
             ServiceProxy serviceProxy = clientProxy.get(shardID);
             byte[] reply = serviceProxy.invokeOrdered(bs.toByteArray());
             String strReply = (reply == null) ? "<null>" : new String(reply, "UTF-8");
-            logMsg(strLabel, strModule, "\n>>> Reply from shard ID " + shardID + " is [" + strReply + "]");
+            logMsg(strLabel, strModule, ">>> Reply from shard ID " + shardID + " is [" + strReply + "]");
             return reply;
         } catch (Exception e) {
             e.printStackTrace();

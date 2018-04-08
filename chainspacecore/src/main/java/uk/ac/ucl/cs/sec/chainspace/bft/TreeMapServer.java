@@ -332,7 +332,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
                     for(String object: objects) {
                         table.put(object, status);
 
-                        logMsg(strLabel,strModule,"Created object "+object);
+                        logMsg(strLabel,strModule,"Added object to TreeMap Table "+object);
 
                     }
                 }
@@ -503,7 +503,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
                                 slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs) + " " + countUniqueInputShards(t));
                             }
-                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strAcceptCommitReply);
+
                             finalResponse = strAcceptCommitReply;
                         } else {
                             logMsg(strLabel,strModule,"Unknown error in processing PREPARE_T");
@@ -589,7 +589,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
             t.print();
 
 
-            client.createObjects(t.outputs);
+            client.createObjects(t.outputs); // Sends the CREATE_OBJECT request to all shards
         }
 
         sequences.get(t.id).ACCEPTED_T_COMMIT = true;
@@ -717,6 +717,9 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
     }
 
 
+    /**
+     * @todo - this needs to also update the datastore?
+     */
     public boolean setTransactionInputStatus(Transaction t, String status) {
         List<String> inputObjects = t.inputs;
 
