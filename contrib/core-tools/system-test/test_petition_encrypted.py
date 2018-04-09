@@ -35,7 +35,7 @@ def post_transaction(tx):
     client_latency = (datetime.now() - start_tx)
     print response.text
     json_response = json.loads(response.text)
-    results.append((json_response['success'], response.url, str(client_latency)))
+    results.append((json_response['success'], response.url, tx['transaction']['methodID'], str(client_latency)))
 
 
 start_time = datetime.now()
