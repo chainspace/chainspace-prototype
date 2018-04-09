@@ -109,11 +109,13 @@ public class Transaction implements Serializable {
 
         // extract transaction
         try { this.csTransaction = CSTransaction.fromJson(requestJson.getJSONObject("transaction")); }
-        catch (Exception e) { throw new AbortTransactionException("Malformed transaction."); }
+        catch (Exception e) {
+            throw new AbortTransactionException("Malformed transaction. [[" + request +"]]" , e);
+        }
 
         // extract id-value store
         try { this.store = Store.fromJson(requestJson.getJSONObject("store")); }
-        catch (Exception e) { throw new AbortTransactionException("Malformed id-value store."); }
+        catch (Exception e) { throw new AbortTransactionException("Malformed id-value store.", e); }
 
         // init
         init();

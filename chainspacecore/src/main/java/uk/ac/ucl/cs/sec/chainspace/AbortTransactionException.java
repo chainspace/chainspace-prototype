@@ -16,4 +16,8 @@ public class AbortTransactionException extends Exception {
         super("[ERROR_TRANSACTIONABORT] " + message);
 
     }
+
+    public AbortTransactionException(String message, Throwable cause) {
+        super("[ERROR_TRANSACTIONABORT] " + message + " (see cause)", cause);
+    }
 }
