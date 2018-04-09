@@ -20,7 +20,7 @@ public class CSTransaction implements Serializable {
     private String[] inputIDs;
     private String methodID;
     private String[] outputs;
-    private String[] parameters;
+    private Object[] parameters;
     private String[] referenceInputIDs;
     private String[] returns;
 
@@ -91,7 +91,7 @@ public class CSTransaction implements Serializable {
         return referenceInputIDs;
     }
 
-    String[] getParameters() {
+    Object[] getParameters() {
         return parameters;
     }
 
