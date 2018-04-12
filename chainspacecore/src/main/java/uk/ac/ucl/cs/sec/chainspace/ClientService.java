@@ -23,8 +23,10 @@ import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.ACCEPTED_T_COMMIT;
 class ClientService {
 
     private final int port;
-    private final InetAddress host;
+    private final String externalHostName;
     private final String databaseName;
+
+    static String HOST_IP_SYSTEM_PROPERTY_NAME = "client.api.hostip";
 
     /**
      * Constructor
@@ -36,15 +38,30 @@ class ClientService {
         // start service on given port
         addRoutes(Service.ignite().port(port));
 
-        host = InetAddress.getLocalHost();
+        externalHostName = discoverExternalIPAddrress();
         this.port = port;
 
-        this.databaseName = dbNameFromSystemProperty("client.api.database");
+        this.databaseName = dbNameFromSystemProperty(HOST_IP_SYSTEM_PROPERTY_NAME);
 
         printInitMessage();
 
 
     }
+
+    static String discoverExternalIPAddrress()  {
+        String systemPropertyValue = System.getProperty(HOST_IP_SYSTEM_PROPERTY_NAME);
+        try {
+            if (systemPropertyValue != null) {
+                return systemPropertyValue;
+            }
+
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            System.out.println("Could not discover externalHostName, defaulting to 'localhost' - Unable to resolve  host [" + e.getMessage() + "]");
+            return "localhost";
+        }
+    }
+
 
     private static String dbNameFromSystemProperty(String systemProperty) {
         String databaseName = System.getProperty(systemProperty);
@@ -303,7 +320,7 @@ class ClientService {
     }
 
     private String getExternalUrl(String path) {
-        return String.format("http://%s:%d/api/%s%s", host.getHostAddress(), port, Main.VERSION, path);
+        return String.format("http://%s:%d/api/%s%s", externalHostName, port, Main.VERSION, path);
     }
 
 
