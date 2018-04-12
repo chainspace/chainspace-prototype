@@ -41,7 +41,7 @@ class ClientService {
         externalHostName = discoverExternalIPAddrress();
         this.port = port;
 
-        this.databaseName = dbNameFromSystemProperty(HOST_IP_SYSTEM_PROPERTY_NAME);
+        this.databaseName = dbNameFromSystemProperty("client.api.database");
 
         printInitMessage();
 
@@ -66,7 +66,7 @@ class ClientService {
     private static String dbNameFromSystemProperty(String systemProperty) {
         String databaseName = System.getProperty(systemProperty);
         if (databaseName == null) {
-            throw new RuntimeException("Could not read system property -Dclient.api.database - you need to specify this when running the service");
+            throw new RuntimeException("Could not read system property -D" + systemProperty + " - you need to specify this when running the service");
         }
         File databaseFile = new File(databaseName +".sqlite");
         if (!databaseFile.exists()) {
