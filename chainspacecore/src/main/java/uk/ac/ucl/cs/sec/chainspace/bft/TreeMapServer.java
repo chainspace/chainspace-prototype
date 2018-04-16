@@ -85,7 +85,7 @@ public class TreeMapServer extends DefaultRecoverable implements RequestVerifier
 
         logMsg(strLabel, "TreeMapServer<init> ", "Starting ServiceReplica for shard " + thisShard + ", replica " + thisReplica + " with config from [" + configHome.getAbsolutePath() + "]");
         new ServiceReplica(thisReplica, configHome.getAbsolutePath(), this, this, null, new DefaultReplier()); // Create the server
-
+        logMsg(strLabel, "TreeMapServer<init> ", "ServiceReplica started");
         try {
             Thread.sleep(5000);
         }
