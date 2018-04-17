@@ -15,7 +15,7 @@ public class TransactionForChecker {
     private String   contractID;
     private String[] inputs;
     private String[] referenceInputs;
-    private String[] parameters;
+    private Object[] parameters;
     private String[] returns;
     private String[] outputs;
     private String[] dependencies;
@@ -28,7 +28,7 @@ public class TransactionForChecker {
             String   contractID,
             String[] inputs,
             String[] referenceInputs,
-            String[] parameters,
+            Object[] parameters,
             String[] returns,
             String[] outputs,
             String[] dependencies,

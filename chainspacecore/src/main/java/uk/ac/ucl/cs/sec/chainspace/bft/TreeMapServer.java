@@ -3,6 +3,7 @@ package uk.ac.ucl.cs.sec.chainspace.bft;
 // These are the classes which receive requests from clients
 import bftsmart.tom.MessageContext;
 import bftsmart.tom.ServiceReplica;
+import bftsmart.tom.server.RequestVerifier;
 import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 
 // Classes that need to be declared to implement this
@@ -10,6 +11,7 @@ import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
@@ -19,11 +21,16 @@ import java.util.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
+import bftsmart.tom.server.defaultservices.DefaultReplier;
 import uk.ac.ucl.cs.sec.chainspace.Core;
 import uk.ac.ucl.cs.sec.chainspace.SimpleLogger;
+import uk.ac.ucl.cs.sec.chainspace.SystemProcess;
+
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARED_T_ABORT;
+import static uk.ac.ucl.cs.sec.chainspace.bft.ResponseType.PREPARE_T_SYSTEM_ERROR;
 
 
-public class TreeMapServer extends DefaultRecoverable {
+public class TreeMapServer extends DefaultRecoverable implements RequestVerifier {
 
     SimpleLogger slogger;
     Map<String, String> table;
@@ -31,15 +38,22 @@ public class TreeMapServer extends DefaultRecoverable {
     int thisShard; // the shard this replica is part of
     int thisReplica; // ID of this replica within thisShard
     MapClient client;
-    String strLabel;
+    String strLabel = "[s?n?]";
     HashMap<String,String> configData;
     String shardConfigFile; // Contains info about shards and corresponding config files.
                             // This info should be passed on the client class.
 
     private Core core;
 
-    public TreeMapServer(String configFile) {
+    public TreeMapServer(String configFileName) {
         this.slogger = new SimpleLogger();
+
+        SystemProcess.writeProcessIdToFile("chainspace.node.process.id");
+
+        File configFile = new File(configFileName);
+        if (!configFile.exists()) {
+            throw new RuntimeException("No config file @ [" + configFile.getAbsolutePath() + "] - cannot start TreeMapServer!");
+        }
 
         try { core = new Core(); }
         catch (ClassNotFoundException | SQLException e) {
@@ -48,7 +62,7 @@ public class TreeMapServer extends DefaultRecoverable {
         }
 
         configData = new HashMap<String,String>(); // will be filled with config data by readConfiguration()
-        readConfiguration(configFile);
+        readConfiguration(configFileName);
         if(!loadConfiguration()) {
             System.out.println("Could not load configuration. Now exiting.");
             System.exit(0);
@@ -59,8 +73,19 @@ public class TreeMapServer extends DefaultRecoverable {
         strLabel = "[s"+thisShard+"n"+ thisReplica+"] "; // This string is used in debug messages
 
 
-        ServiceReplica server = new ServiceReplica(thisReplica, this, this); // Create the server
+        File shardConfig = new File(shardConfigFile);
+        if (!shardConfig.exists()) {
+            throw new RuntimeException("Could not locate shard config file @ [" + shardConfig.getAbsolutePath() +"] - cannot start TreeMapServer!");
+        }
 
+        Map<Integer, File> shardConfigDirs = loadShardConfigDirs(shardConfig);
+
+
+        File configHome = shardConfigDirs.get(thisShard);
+
+        logMsg(strLabel, "TreeMapServer<init> ", "Starting ServiceReplica for shard " + thisShard + ", replica " + thisReplica + " with config from [" + configHome.getAbsolutePath() + "]");
+        new ServiceReplica(thisReplica, configHome.getAbsolutePath(), this, this, null, new DefaultReplier()); // Create the server
+        logMsg(strLabel, "TreeMapServer<init> ", "ServiceReplica started");
         try {
             Thread.sleep(5000);
         }
@@ -68,8 +93,44 @@ public class TreeMapServer extends DefaultRecoverable {
             System.out.println("Error initializing the server. Now exiting.");
             System.exit(-1);
         }
-
+        logMsg(strLabel, "TreeMapServer<init> ", "Starting MapClient with shardConfigFile [" + shardConfigFile + "]");
         client = new MapClient(shardConfigFile, thisShard, thisReplica); // Create clients for talking with other shards
+    }
+
+    private static Map<Integer, File> loadShardConfigDirs(File shardConfigFile) {
+        // The format pf configFile is <shardID> \t <pathToShardConfigFile>
+
+        // Shard-to-Configuration Mapping
+        Map<Integer, File> shardConfigFileDirs = new HashMap<>();
+
+
+        try {
+            BufferedReader lineReader = new BufferedReader(new FileReader(shardConfigFile));
+            String line;
+            int countLine = 0;
+            int limit = 2; //Split a line into two tokens, the key and value
+
+            while ((line = lineReader.readLine()) != null) {
+                countLine++;
+                String[] tokens = line.split("\\s+", limit);
+
+                if (tokens.length == 2) {
+                    int shardID = Integer.parseInt(tokens[0]);
+                    File shardConfigDir = new File(tokens[1]);
+                    if (!shardConfigDir.exists()) {
+                        throw new RuntimeException("No such shard config dir @ [" + shardConfigDir.getAbsolutePath() + "] - cannot start TreeMapServer!");
+                    }
+                    shardConfigFileDirs.put(shardID, shardConfigDir);
+                } else {
+                    System.out.println("Skipping Line # " + countLine + " in config file: Insufficient tokens");
+                }
+            }
+            lineReader.close();
+            return shardConfigFileDirs;
+        } catch (Exception e) {
+            throw new RuntimeException("Could not load shard config files (See cause)", e);
+        }
+
     }
 
     private boolean loadConfiguration() {
@@ -145,11 +206,19 @@ public class TreeMapServer extends DefaultRecoverable {
             System.exit(0);
         }
 
+
         new TreeMapServer(args[0]);
     }
 
+    /**
+     * Entry point for BFTSmart to call us
+     * */
     @Override
     public byte[][] appExecuteBatch(byte[][] command, MessageContext[] mcs) {
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "======================================================================================");
+
+        logMsg(strLabel, strModule, "Incoming request - appExecuteBatch");
 
         byte[][] replies = new byte[command.length][];
         for (int i = 0; i < command.length; i++) {
@@ -161,12 +230,14 @@ public class TreeMapServer extends DefaultRecoverable {
 
     private byte[] executeSingle(byte[] command, MessageContext msgCtx) {
         int reqType;
-        String strModule = "executeSingle: ";
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "executeSingle");
+
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
             reqType = ois.readInt();
-            //logMsg(strLabel,strModule,"Received a request of type "+ RequestType.getReqName(reqType));
+            logMsg(strLabel,strModule,"executing a request of type "+ RequestType.getReqName(reqType));
             if (reqType == RequestType.PUT) {
                 String key = ois.readUTF();
                 String value = ois.readUTF();
@@ -187,7 +258,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 return resultBytes;
             }
             else if (reqType == RequestType.PREPARE_T) {
-                strModule = "PREPARE_T (MAIN): ";
+                strModule = "PREPARE_T (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     logMsg(strLabel,strModule,"Received request for transaction "+t.id);
@@ -206,7 +277,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     // Run checkPrepareT function only when there is no information present in local sequences
                     else {
                     */
-                    reply = checkPrepareT(t);
+                    reply = checkPrepareT(t); // Verify and store the transaction
                     logMsg(strLabel,strModule,"checkPrepare responding with "+reply);
                     //}
                     return reply.getBytes("UTF-8");
@@ -214,12 +285,12 @@ public class TreeMapServer extends DefaultRecoverable {
                 catch (Exception  e) {
                     logMsg(strLabel,strModule," Exception " + e.getMessage());
                     e.printStackTrace();
-                    return ResponseType.PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
+                    return PREPARE_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
 
             }
             else if (reqType == RequestType.ACCEPT_T_COMMIT) {
-                strModule = "ACCEPT_T_COMMIT (MAIN): ";
+                strModule = "ACCEPT_T_COMMIT (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
                     logMsg(strLabel,strModule,"Received request for transaction "+t.id);
@@ -236,7 +307,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 }
             }
             else if (reqType == RequestType.ACCEPT_T_ABORT) {
-                strModule = "ACCEPT_T_ABORT (MAIN): ";
+                strModule = "ACCEPT_T_ABORT (MAIN) - SINGLE: ";
                 try {
                     Transaction t = (Transaction) ois.readObject();
 
@@ -261,7 +332,7 @@ public class TreeMapServer extends DefaultRecoverable {
                     for(String object: objects) {
                         table.put(object, status);
 
-                        logMsg(strLabel,strModule,"Created object "+object);
+                        logMsg(strLabel,strModule,"Added object to TreeMap Table "+object);
 
                     }
                 }
@@ -285,7 +356,11 @@ public class TreeMapServer extends DefaultRecoverable {
     @Override
     public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
         int reqType;
-        String strModule = " ";
+        String strModule = "TREEMAP_SERVER ";
+        logMsg(strLabel, strModule, "======================================================================================");
+        logMsg(strLabel, strModule, "Incoming request - appExecuteUnordered");
+
+
         try {
             ByteArrayInputStream in = new ByteArrayInputStream(command);
             ObjectInputStream ois = new ObjectInputStream(in);
@@ -364,39 +439,47 @@ public class TreeMapServer extends DefaultRecoverable {
                         sequences.get(t.id).PREPARE_T = true;
 
                         // Send PREPARE_T
+                        logMsg(strLabel,strModule,"--------------------------------------------------------------------");
                         logMsg(strLabel,strModule,"Sending PREPARE_T");
 
                         // Ask client to do PREPARE_T
                         byte[] replyPrepareT = client.prepare_t(t,this.thisShard);
 
-                        // Process response to PREPARE_T, and send ACCEPT_T
-                        String strReplyAcceptT;
-
                         // Process reply to PREPARE_T
-                        String strReplyPrepareT = "";
+                        String strReplyPrepareT = null;
                         if (replyPrepareT != null) {
                             strReplyPrepareT = new String(replyPrepareT, "UTF-8");
                             logMsg(strLabel,strModule,"Reply to PREPARE_T is " + strReplyPrepareT);
-                        } else
-                            logMsg(strLabel,strModule,"Reply to PREPARE_T is null");
+                        } else {
+                            logMsg(strLabel, strModule, "Reply to PREPARE_T is null - this will mean we send an ABORT - setting to PREPARED_T_ABORT");
+                            strReplyPrepareT = PREPARED_T_ABORT;
+                        }
+
+                        logMsg(strLabel,strModule,"--------------------------------------------------------------------");
+
+                        String finalResponse;
 
                         // PREPARED_T_ABORT, ACCEPT_T_ABORT
-                        if (replyPrepareT == null || strReplyPrepareT.equals(ResponseType.PREPARED_T_ABORT) || strReplyPrepareT.equals(ResponseType.PREPARE_T_SYSTEM_ERROR)) {
+                        if (strReplyPrepareT.equals(PREPARED_T_ABORT)
+                                || strReplyPrepareT.equals(PREPARE_T_SYSTEM_ERROR)) {
 
                             client.broadcastBFTDecision(RequestType.PREPARED_T_ABORT, t, this.thisShard);
 
                             // TODO: Can we skip BFT here and return to client?
                             sequences.get(t.id).ACCEPT_T_ABORT = true;
 
-                            logMsg(strLabel,strModule, "Sending ACCEPT_T_ABORT");
-                            strReplyAcceptT = client.accept_t_abort(t);
+                            logMsg(strLabel,strModule, "Broadcasting PREPARES_T_ABORT...");
+                            String abortPrepareReply = client.accept_t_abort(t);
 
                             // TODO: If this shard is the one initiating ACCEPT_T_ABORT then
                             // TODO: it will always abort this transaction.
                             if (true) {
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
                             }
-                            logMsg(strLabel,strModule,"ABORTED. Reply to ACCEPT_T_ABORT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"ABORTED. Reply to aborting the PREPARE_T is " + abortPrepareReply);
+                            logMsg(strLabel,strModule,"ABORTED. Shards have accepted the abort, returning " + strReplyPrepareT);
+
+                            finalResponse = strReplyPrepareT;
                         }
                         // PREPARED_T_COMMIT, ACCEPT_T_COMMIT
                         else if (strReplyPrepareT.equals(ResponseType.PREPARED_T_COMMIT)) {
@@ -406,28 +489,36 @@ public class TreeMapServer extends DefaultRecoverable {
                             sequences.get(t.id).ACCEPT_T_COMMIT = true;
 
                             logMsg(strLabel,strModule, "Sending ACCEPT_T_COMMIT");
-                            strReplyAcceptT = client.accept_t_commit(t);
+                            String strAcceptCommitReply = client.accept_t_commit(t);
 
-                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strAcceptCommitReply);
 
-                            if (strReplyAcceptT.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR) || strReplyAcceptT.equals(ResponseType.ACCEPTED_T_ABORT)) {
+                            if (strAcceptCommitReply.equals(ResponseType.ACCEPT_T_SYSTEM_ERROR)
+                                    || strAcceptCommitReply.equals(ResponseType.ACCEPTED_T_ABORT)) {
+
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_ABORT, t, this.thisShard);
-                            } else if (strReplyAcceptT.equals(ResponseType.ACCEPTED_T_COMMIT)) {
+
+                            } else if (strAcceptCommitReply.equals(ResponseType.ACCEPTED_T_COMMIT)) {
+
                                 client.broadcastBFTDecision(RequestType.ACCEPTED_T_COMMIT, t, this.thisShard);
                                 slogger.log(String.join(",", t.inputs) + "-" + String.join(",", t.outputs) + " " + countUniqueInputShards(t));
                             }
-                            logMsg(strLabel,strModule,"Reply to ACCEPT_T_COMMIT is " + strReplyAcceptT);
+
+                            finalResponse = strAcceptCommitReply;
                         } else {
                             logMsg(strLabel,strModule,"Unknown error in processing PREPARE_T");
-                            strReplyAcceptT = ResponseType.PREPARE_T_SYSTEM_ERROR;
+                            finalResponse = PREPARE_T_SYSTEM_ERROR;
                         }
-                        logMsg(strLabel,strModule,"Finally replying to client: " + strReplyAcceptT);
+
                         // TODO: The final response should contain proof (bundle of signatures)
                         // TODO: from replicas to convince the client that all replicas in the
                         // TODO: shard agree on the final decision
 
-                        strReplyAcceptT = strReplyAcceptT + ";" + t.getCsTransaction().getInputIDs()[0];
-                        return strReplyAcceptT.getBytes("UTF-8");
+                        String inputIds =  (t.getCsTransaction().getInputIDs().length == 0) ? "<no inputs>" : t.getCsTransaction().getInputIDs()[0];
+                        finalResponse = finalResponse+ ";" + t.id + ";" + inputIds;
+
+                        logMsg(strLabel,strModule,"Finally replying to client: [" + finalResponse + "]");
+                        return finalResponse.getBytes("UTF-8");
 
                     }
                     // If it is a non-BFTInitiator Replica
@@ -441,6 +532,7 @@ public class TreeMapServer extends DefaultRecoverable {
 
                 catch (Exception  e) {
                     logMsg(strLabel,strModule,"Exception " + e.getMessage());
+                    e.printStackTrace();
                     return ResponseType.SUBMIT_T_SYSTEM_ERROR.getBytes("UTF-8");
                 }
             }
@@ -497,7 +589,7 @@ public class TreeMapServer extends DefaultRecoverable {
             t.print();
 
 
-            client.createObjects(t.outputs);
+            client.createObjects(t.outputs); // Sends the CREATE_OBJECT request to all shards
         }
 
         sequences.get(t.id).ACCEPTED_T_COMMIT = true;
@@ -524,16 +616,16 @@ public class TreeMapServer extends DefaultRecoverable {
                 nManagedObj++;
             if(managedObj && readValue == null) {
                 strErr = Transaction.INVALID_NOOBJECT;
-                reply = ResponseType.PREPARED_T_ABORT;
+                reply = PREPARED_T_ABORT;
             }
             else if(managedObj && readValue != null) {
                 if (readValue.equals(ObjectStatus.LOCKED)) {
                     strErr = Transaction.REJECTED_LOCKEDOBJECT;
-                    reply = ResponseType.PREPARED_T_ABORT;
+                    reply = PREPARED_T_ABORT;
                 }
                 else if (managedObj && readValue.equals(ObjectStatus.INACTIVE)) {
                     strErr = Transaction.INVALID_INACTIVEOBJECT;
-                    reply = ResponseType.PREPARED_T_ABORT;
+                    reply = PREPARED_T_ABORT;
                 }
             }
             // debug option -- should be removed
@@ -551,7 +643,7 @@ public class TreeMapServer extends DefaultRecoverable {
                 System.out.println(Arrays.toString(out));
             } catch (Exception e) {
                 strErr = e.getMessage();
-                reply = ResponseType.PREPARED_T_ABORT;
+                reply = PREPARED_T_ABORT;
                 e.printStackTrace();
             }
         }
@@ -560,10 +652,10 @@ public class TreeMapServer extends DefaultRecoverable {
         // AND the transaction isn't an init transaction
         if(nManagedObj == 0 && t.inputs.size() != 0) {
             strErr = Transaction.INVALID_NOMANAGEDOBJECT;
-            reply = ResponseType.PREPARED_T_ABORT;
+            reply = PREPARED_T_ABORT;
         }
 
-        if(reply.equals(ResponseType.PREPARED_T_ABORT))
+        if(reply.equals(PREPARED_T_ABORT))
             System.out.println("PREPARE_T (checkPrepareT): Returning PREPARED_T_ABORT->"+strErr);
 
         return reply;
@@ -625,6 +717,9 @@ public class TreeMapServer extends DefaultRecoverable {
     }
 
 
+    /**
+     * @todo - this needs to also update the datastore?
+     */
     public boolean setTransactionInputStatus(Transaction t, String status) {
         List<String> inputObjects = t.inputs;
 
@@ -685,7 +780,7 @@ public class TreeMapServer extends DefaultRecoverable {
     }
 
     void logMsg(String id, String module, String msg ) {
-        System.out.println(id+module+msg);
+        System.out.println(id + " " + System.currentTimeMillis() + " [thread-" + Thread.currentThread().getId() + "] " + module+msg);
     }
 
     @Override
@@ -721,5 +816,11 @@ public class TreeMapServer extends DefaultRecoverable {
             e.printStackTrace();
             return new byte[0];
         }
+    }
+
+
+    @Override
+    public boolean isValidRequest(byte[] request) {
+        return true;
     }
 }

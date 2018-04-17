@@ -35,7 +35,7 @@ public class Main {
      All debug options should be set to false when running in production environment.
 
      */
-    static final boolean DEBUG_ALLOW_REPEAT         = true;
+    static final boolean DEBUG_ALLOW_REPEAT         = false;
     static final boolean DEBUG_SKIP_CHECKER         = false;
     static final boolean DEBUG_IGNORE_DEPENDENCIES  = true;
 

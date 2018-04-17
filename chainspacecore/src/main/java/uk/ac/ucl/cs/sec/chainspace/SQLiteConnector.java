@@ -4,6 +4,10 @@ package uk.ac.ucl.cs.sec.chainspace;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 
+import static uk.ac.ucl.cs.sec.chainspace.Main.DEBUG_ALLOW_REPEAT;
+import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.Constraints.DISABLE_CONSTRAINTS;
+import static uk.ac.ucl.cs.sec.chainspace.SQLiteConnector.Constraints.ENABLE_CONSTRAINTS;
+
 
 /**
  *
@@ -11,70 +15,89 @@ import java.sql.*;
  */
 class SQLiteConnector extends DatabaseConnector {
 
-    // instance variables
     private Connection connection;
+
+    enum Constraints {
+        ENABLE_CONSTRAINTS, DISABLE_CONSTRAINTS
+    }
 
     /**
      * constructor
      * Initialise the database connection and create a table to store object (if it does not already exist).
      */
     SQLiteConnector() throws SQLException, ClassNotFoundException {
+        this.connection = openConnection(Main.DATABASE_NAME);
+        initialiseDbSchema(this.connection);
 
-        // create database connection
+    }
+
+    static Connection openConnection(String databaseName) throws ClassNotFoundException, SQLException {
+
         Class.forName("org.sqlite.JDBC");
-        this.connection = DriverManager.getConnection("jdbc:sqlite:" +Main.DATABASE_NAME+ ".sqlite");
-        Statement statement = connection.createStatement();
+        return DriverManager.getConnection("jdbc:sqlite:" + databaseName + ".sqlite");
 
-        // don't wait for data to reach disk
-        String sql = "PRAGMA synchronous=OFF";
-        statement.execute(sql);
+    }
 
-        if (! Main.DEBUG_ALLOW_REPEAT) {
-            // create table to store objects
-            sql = "CREATE TABLE IF NOT EXISTS data (" +
-                    "object_id CHAR(32) NOT NULL UNIQUE," +
-                    "object TEXT NOT NULL," +
-                    "status INTEGER NOT NULL)";
-            statement.executeUpdate(sql);
+    /**
+     * This method used to do this
+     *  // don't wait for data to reach disk
+     * sql = "PRAGMA synchronous=OFF";
+     * statement.execute(sql);
+     * But I think that is a performance nehancement and for now want more integrity
+     */
+    static void initialiseDbSchema(Connection connection) throws ClassNotFoundException, SQLException {
 
-            // create table to store logs
-            sql = "CREATE TABLE IF NOT EXISTS logs (" +
-                    "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
-                    "transaction_id CHAR(32) NOT NULL UNIQUE," +
-                    "transaction_json TEXT NOT NULL)";
-            statement.executeUpdate(sql);
+        Constraints constraints = (DEBUG_ALLOW_REPEAT) ? DISABLE_CONSTRAINTS : ENABLE_CONSTRAINTS;
 
-            // create table to store logs head
-            sql = "CREATE TABLE IF NOT EXISTS head (" +
-                    "ID INTEGER PRIMARY KEY," +
-                    "digest CHAR(32) NOT NULL UNIQUE)";
-            statement.executeUpdate(sql);
+        createTable_data(connection, constraints);
+
+        createTable_logs(connection, constraints);
+
+        createTable_head(connection, constraints);
+
+
+    }
+
+    private static void createTable_data(Connection connection, Constraints constraints) throws SQLException {
+        String constraint = (ENABLE_CONSTRAINTS.equals(constraints)) ? " UNIQUE" : "";
+
+        String sql = "CREATE TABLE IF NOT EXISTS data (" +
+                "object_id CHAR(32) NOT NULL" + constraint + "," +
+                "object TEXT NOT NULL," +
+                "status INTEGER NOT NULL)";
+
+        executeUpdateSql(connection, sql);
+    }
+
+    private static void createTable_logs(Connection connection, Constraints constraints) throws SQLException {
+        String constraint = (ENABLE_CONSTRAINTS.equals(constraints)) ? " UNIQUE" : "";
+
+        String sql = "CREATE TABLE IF NOT EXISTS logs (" +
+                "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
+                "transaction_id CHAR(32) NOT NULL " + constraint + "," +
+                "transaction_json TEXT NOT NULL)";
+        executeUpdateSql(connection, sql);
+
+    }
+
+    private static void createTable_head(Connection connection, Constraints constraints) throws SQLException {
+        String constraint = (ENABLE_CONSTRAINTS.equals(constraints)) ? " UNIQUE" : "";
+
+        String sql = "CREATE TABLE IF NOT EXISTS head (" +
+                "ID INTEGER PRIMARY KEY," +
+                "digest CHAR(32) NOT NULL " + constraint + ")";
+
+        executeUpdateSql(connection, sql);
+
+    }
+
+
+    private static void executeUpdateSql(Connection connection, String sql) throws SQLException {
+
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(sql);
         }
-        else {
-            // removed all unique constraints for debug mode
-            // create table to store objects
-            sql = "CREATE TABLE IF NOT EXISTS data (" +
-                    "object_id CHAR(32) NOT NULL," +
-                    "object TEXT NOT NULL," +
-                    "status INTEGER NOT NULL)";
-            statement.executeUpdate(sql);
 
-            // create table to store logs
-            sql = "CREATE TABLE IF NOT EXISTS logs (" +
-                    "time_stamp TIMESTAMP DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))," +
-                    "transaction_id CHAR(32) NOT NULL," +
-                    "transaction_json TEXT NOT NULL)";
-            statement.executeUpdate(sql);
-
-            // create table to store logs head
-            sql = "CREATE TABLE IF NOT EXISTS head (" +
-                    "ID INTEGER PRIMARY KEY," +
-                    "digest CHAR(32) NOT NULL)";
-            statement.executeUpdate(sql);
-        }
-
-        // close statement
-        statement.close();
     }
 
 

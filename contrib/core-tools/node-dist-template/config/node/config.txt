@@ -1,0 +1,4 @@
+shardConfigFile config/shards/shard_config.txt
+# Need to update these to whatever your node is
+thisShard 0
+thisReplica REPLICA_ID

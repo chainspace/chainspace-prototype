@@ -1,5 +1,6 @@
 package uk.ac.ucl.cs.sec.chainspace;
 
+import bftsmart.tom.util.Logger;
 import uk.ac.ucl.cs.sec.chainspace.bft.ClientConfig;
 import uk.ac.ucl.cs.sec.chainspace.bft.MapClient;
 import uk.ac.ucl.cs.sec.chainspace.bft.RequestType;
@@ -23,7 +24,7 @@ public class Client {
 
 
     // CONFIG -- port number
-    public static final int PORT = 5000;
+    public static final int PORT = initialisePort();
 
     private static SimpleLogger slogger;
 
@@ -36,6 +37,10 @@ public class Client {
     static MapClient client;
 
 
+
+    private static int initialisePort() {
+        return new Integer(System.getProperty("client.api.port", "5000"));
+    }
     /**
      * loadConfiguration
      * Load the configuration file.
@@ -119,6 +124,8 @@ public class Client {
             System.exit(0);
         }
 
+        SystemProcess.writeProcessIdToFile("chainspace.client.api.process.id");
+
         // get filepath
         String configFile = args[0];
 
@@ -130,12 +137,19 @@ public class Client {
             System.exit(0);
         }
 
-        // create clients for talking with other shards
+        // create clients for talking with other shards - connects directly to replica 0
         client = new MapClient(shardConfigFile, 0, 0);
         client.defaultShardID = 0;
+        System.out.println("Initialised MapClient to talk to shard 0, replica 0");
 
         // start webservice
-        startClientService();
+        try {
+            startClientService();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("FATAL ERROR!!! Could not start webservice, shutting down.");
+            System.exit(-1);
+        }
 
 
         /*
@@ -181,10 +195,11 @@ public class Client {
         if (Main.VERBOSE) { Utils.printHeader("Starting Chainspace..."); }
 
         // run chainspace service
-        try {new ClientService(PORT);}
+        try {
+            new ClientService(PORT);
+        }
         catch (Exception e) {
-            if (Main.VERBOSE) { Utils.printStacktrace(e); }
-            else { err.println("[ERROR] Node service failed to start on port " + PORT); }
+            throw new RuntimeException("client-api service failed to start on port " + PORT +" - see cause", e);
         }
 
         // verbose print
@@ -200,6 +215,9 @@ public class Client {
 
     }
 
+    /**
+     * Has no timeout configured to wait for replies
+     */
     static void submitTransactionNoWait(String request) throws AbortTransactionException, NoSuchAlgorithmException {
 
         out.println("\n>> SUBMITTING TRANSACTION...");

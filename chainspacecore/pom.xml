@@ -6,7 +6,13 @@
     <groupId>uk.ac.ucl.cs.sec.chainspace</groupId>
     <artifactId>chainspace</artifactId>
     <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <bft-smart-jar>bft-smart-1.2.1-UCL.jar</bft-smart-jar>
+    </properties>
+
     <build>
+        <testSourceDirectory>src/test/java/junit</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -99,11 +105,11 @@
             <version>1.7.25</version>
         </dependency>
         <dependency>
-            <groupId>BFT-SMaRt</groupId>
-            <artifactId>BFT-SMaRt</artifactId>
-            <version>1.0</version>
+            <groupId>bft-smart</groupId>
+            <artifactId>bft-smart</artifactId>
+            <version>1.1</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/BFT-SMaRt.jar</systemPath>
+            <systemPath>${project.basedir}/lib/${bft-smart-jar}</systemPath>
         </dependency>
     </dependencies>
 </project>

@@ -153,12 +153,15 @@ class ChainspaceContract(object):
                         result[key] = tuple()
 
                 result['parameters'] = parameters + result['extra_parameters']
+
                 del result['extra_parameters']
 
                 if checker_mode:
                     result['inputs'] = inputs
                     result['referenceInputs'] = reference_inputs
                 else:
+                    print "inputs: " + str(inputs)
+                    print "reference_inputs: " + str(reference_inputs)
                     store = {}
                     for obj in inputs + reference_inputs:
                         store[obj.object_id] = obj
