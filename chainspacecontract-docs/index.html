@@ -1,0 +1,402 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to chainspacecontract’s documentation! &#8212; chainspacecontract 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-chainspacecontract-s-documentation">
+<h1>Welcome to chainspacecontract’s documentation!<a class="headerlink" href="#welcome-to-chainspacecontract-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="the-chainspace-architecture">
+<h2>The Chainspace architecture<a class="headerlink" href="#the-chainspace-architecture" title="Permalink to this headline">¶</a></h2>
+<p>Chainspace is a distributed computation platform (a <em>Distributed Ledger</em>). <em>Smart Contracts</em> are user defined. They create and manage contract state, in the form of <em>objects</em>. Chainspace is designed to allow for scalability, by allowing objects to be stored and processed across multiple shards. However, this imposes some constraints on the definition of contracts, which the <em>chainspacecontract</em> python library abstracts.</p>
+<p>A smart contract is defined by three components:</p>
+<dl class="docutils">
+<dt>Init</dt>
+<dd>An <strong>init</strong> function that is executed upon initializing the contract, that creates a set of
+initial objects for the contract.</dd>
+<dt>Methods</dt>
+<dd>One or more <strong>methods</strong> (also called <em>procedures</em>). Each takes a set of contract objects as
+inputs or references, as well as other helper variables, and output contract objects and other information. A method may be an arbitrary piece of code that performs a computation.</dd>
+<dt>Checkers</dt>
+<dd>Each method is paired with a <strong>checker</strong> function. The checker takes inputs, references, and
+outputs, and public local variables input and output from the corresponding method, and returns True or False. Checkers must be <strong>deterministic and side-effect free</strong> (pure functions).</dd>
+</dl>
+<p>A contract is correct if all inputs and outputs of valid invocations of methods, return True when passed to the corresponding checker. The checker must return False for invocations that violate the contract invariants.</p>
+<p>Checkers are loaded as contracts in the Chainspace infrastructure, for clients to use them to process contract objects. Clients use the methods to manipulate objects, and construct transactions – and submit those to the chainspace infrastructure for processing. The infrastructure commits or aborts transactions depending on whether they are valid, according to the contract checkers, and also according to whether the objects they use as inputs and references are unused.</p>
+<p>All inputs to a committed transactions become ‘used’, and cannot be reused again in a new transactions. This is the key mechanism to prevent ‘double spending’. Chainspace ensures that at most one of two transactions unsing the same input commits, and the other aborts.</p>
+<p>More information on the Chainspace system can be found in the Chainspace technical paper:</p>
+<ul class="simple">
+<li>Chainspace: A Sharded Smart Contracts Platform.
+Mustafa Al-Bassam, Alberto Sonnino, Shehar Bano, Dave Hrycyszyn and George Danezis. NDSS 2018.
+<a class="reference external" href="https://arxiv.org/pdf/1708.03778.pdf">https://arxiv.org/pdf/1708.03778.pdf</a></li>
+</ul>
+</div>
+<div class="section" id="tutorial-a-first-chainspace-smart-contract">
+<h2>Tutorial: A first Chainspace smart contract<a class="headerlink" href="#tutorial-a-first-chainspace-smart-contract" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">chainspacecontract</span></code> framework provides a number of helper functions and classes to define contracts. A new smart contract is first defined using the <code class="docutils literal notranslate"><span class="pre">ChainspaceContract</span></code> constructor.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">hello.py</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
+<span class="kn">from</span> <span class="nn">chainspacecontract</span> <span class="kn">import</span> <span class="n">ChainspaceContract</span>
+
+<span class="n">contract</span> <span class="o">=</span> <span class="n">ChainspaceContract</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>All contracts must define an <code class="docutils literal notranslate"><span class="pre">init</span></code> method, that returns a set of initial objects. Those are delivered in a dictionary keyed by <code class="docutils literal notranslate"><span class="pre">output</span></code>. Note that all output objects need to be strings, and we use <code class="docutils literal notranslate"><span class="pre">json</span></code> to marshal them.</p>
+<p>This returns an object that can be used to define methods and checkers. An <code class="docutils literal notranslate"><span class="pre">init</span></code> method has no checker, and takes no arguments. Yet is is decorated with the <code class="docutils literal notranslate"><span class="pre">&#64;contract.method('init')</span></code> decorator.</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">hello.py</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="nd">@contract.method</span><span class="p">(</span><span class="s1">&#39;init&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+	<span class="k">return</span> <span class="p">{</span> <span class="s1">&#39;outputs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;HelloToken&#39;</span><span class="p">}),)</span> <span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>We then define an actual procedure called <em>hello</em>, through the decorator <code class="docutils literal notranslate"><span class="pre">&#64;contract.method('hello')</span></code>. This simply takes the contract token (output by the init function), and creates a new object of type <em>HelloMessage</em>, as well as a new copy of the token. Note that methods that create output objects must always consume at least one input object, and the contract token pattern is a common way to satisfy this requirement.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">hello.py</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="nd">@contract.method</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+
+    <span class="c1"># Checks that the first input is a token.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">loads</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;HelloToken&#39;</span><span class="p">}):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Expected a contract token as a first input.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create a new &quot;HelloMessage&quot; object, just containing a message.</span>
+    <span class="n">HelloMessage</span> <span class="o">=</span> <span class="n">dumps</span><span class="p">({</span>
+        <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;HelloMessage&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;message&#39;</span> <span class="p">:</span> <span class="s1">&#39;Hello, world!&#39;</span>
+    <span class="p">})</span>
+
+    <span class="c1"># Return both a fresh token and a HelloMessage.</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s1">&#39;outputs&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">HelloMessage</span><span class="p">)</span> <span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>Note that <em>hello</em> can be an arbitrary function, as long as its first three arguments correspond to lists of inputs, references and public parameters. Other parameters are considered secrets, and will not be used to check the method. The output of a method is a dictionary that contains a tuple of output objects under ‘outputs’, and optionally a tuple of public ‘returns’.</p>
+<p>The checker for <em>hello</em> is defined through the decorator <code class="docutils literal notranslate"><span class="pre">&#64;contract.checker('hello')</span></code>. Checkers take as parameters a sequence of tuples <em>inputs, reference_inputs, parameters, outputs, returns, dependencies</em>. Inputs and references are the same as those passed to the corresponding method. The <em>parameters</em> tuple contains all public parameters and returns. The <em>outputs</em> are the sequence of objects returned by the method. Dependencies are an advanced concept allowing for contract composition. A checker must always return a boolean.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">hello.py</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="nd">@contract.checker</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello_checker</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c1"># parse inputs</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span> <span class="n">reference_inputs</span> <span class="o">==</span> <span class="p">()</span> <span class="ow">and</span> <span class="n">returns</span> <span class="o">==</span> <span class="p">()</span> <span class="ow">and</span> <span class="n">dependencies</span> <span class="o">==</span> <span class="p">[]</span>
+
+        <span class="c1"># check input format</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">token</span> <span class="o">=</span> <span class="n">loads</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="n">loads</span><span class="p">(</span><span class="n">outputs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># check types</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span>  <span class="n">token</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HelloToken&#39;</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span>  <span class="n">instance</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HelloMessage&#39;</span>
+
+        <span class="c1"># check content</span>
+        <span class="n">ret</span> <span class="o">&amp;=</span>  <span class="n">instance</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Hello, world!&#39;</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">chainspacecontract</span></code> framework provides facilities for testing contracts. We recommend the use of the <code class="docutils literal notranslate"><span class="pre">pytest</span></code> testing library, but the facilities should work with other frameworks.</p>
+<p>Testing code should import the contract and helper functions, as well as a library to do HTTP posts. We use here the <code class="docutils literal notranslate"><span class="pre">requests</span></code> library:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">test_hello.py</span><a class="headerlink" href="#id5" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">json</span> <span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="c1"># chainspace</span>
+<span class="kn">from</span> <span class="nn">chainspacecontract</span> <span class="kn">import</span> <span class="n">transaction_to_solution</span>
+<span class="kn">from</span> <span class="nn">chainspacecontract.examples.hello</span> <span class="kn">import</span> <span class="n">contract</span> <span class="k">as</span> <span class="n">hello_contract</span>
+<span class="kn">from</span> <span class="nn">chainspacecontract.examples</span> <span class="kn">import</span> <span class="n">hello</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>Each contract provides a context manager, accessed through <code class="docutils literal notranslate"><span class="pre">.test_service()</span></code>. Internally it spins a webserver (using <code class="docutils literal notranslate"><span class="pre">flask</span></code>) listening on port 5000, for requests to the checker. This expects a JSON encoded POST to the endpoint corresponding to the method to be checked. The transaction needs to be encoded via the <code class="docutils literal notranslate"><span class="pre">transaction_to_solution</span></code> helper function.</p>
+<p>We can test the <code class="docutils literal notranslate"><span class="pre">init</span></code> method first – this simply executes it.</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">test_hello.py</span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_init</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">hello_contract</span><span class="o">.</span><span class="n">test_service</span><span class="p">():</span>
+
+        <span class="c1">## create transaction</span>
+        <span class="n">transaction</span> <span class="o">=</span> <span class="n">hello</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+        <span class="c1">## submit transaction</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s1">&#39;http://127.0.0.1:5000/&#39;</span> <span class="o">+</span> <span class="n">hello_contract</span><span class="o">.</span><span class="n">contract_name</span> 
+            <span class="o">+</span> <span class="s1">&#39;/init&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">transaction_to_solution</span><span class="p">(</span><span class="n">transaction</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;success&#39;</span><span class="p">]</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>A more meaningful test involves the checker for <em>hello</em>. The method may be invoked to create a transaction, and then the transaction is packaged and sent to the web checker as a JSON POST. As expected the response reports “success”.</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">test_hello.py</span><a class="headerlink" href="#id7" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_hello</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">hello_contract</span><span class="o">.</span><span class="n">test_service</span><span class="p">():</span>
+        
+        <span class="n">init_transaction</span> <span class="o">=</span> <span class="n">hello</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">init_transaction</span><span class="p">[</span><span class="s1">&#39;transaction&#39;</span><span class="p">][</span><span class="s1">&#39;outputs&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># create instance</span>
+        <span class="n">transaction</span> <span class="o">=</span> <span class="n">hello</span><span class="o">.</span><span class="n">hello</span><span class="p">(</span> <span class="p">(</span><span class="n">token</span><span class="p">,),</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="c1">## submit transaction</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s1">&#39;http://127.0.0.1:5000/&#39;</span> <span class="o">+</span> <span class="n">hello_contract</span><span class="o">.</span><span class="n">contract_name</span> 
+            <span class="o">+</span> <span class="s1">&#39;/hello&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">transaction_to_solution</span><span class="p">(</span><span class="n">transaction</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;success&#39;</span><span class="p">]</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>This concludes the tutorial, however there are a number of advanced features we did not cover:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Cross contract calls, dependent transactions and callbacks.</li>
+<li>Trivial checkers.</li>
+<li>Performance tips, and distribution for checkers.</li>
+<li>How to upload the contracts into Chainspace, and run them.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="api-documentation">
+<h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="chainspacecontract.ChainspaceContract">
+<em class="property">class </em><code class="descclassname">chainspacecontract.</code><code class="descname">ChainspaceContract</code><span class="sig-paren">(</span><em>contract_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.checker">
+<code class="descname">checker</code><span class="sig-paren">(</span><em>method_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.checker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.checker" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator declaring a function to be a checker for a particular contract procedure.
+The function is expected to have a checker signature of:</p>
+<blockquote>
+<div>checker(inputs, reference_inputs, parameters, outputs, returns, dependencies)</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.method">
+<code class="descname">method</code><span class="sig-paren">(</span><em>method_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.method" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decordator declaring a function to be a procedure with a certain method_name. 
+The function must have the signature:</p>
+<blockquote>
+<div>method(inputs, reference_inputs, parameters)</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.register_dependency">
+<code class="descname">register_dependency</code><span class="sig-paren">(</span><em>contract</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.register_dependency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.register_dependency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers another contract, that can be used as a library for this one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.register_standard_checker">
+<code class="descname">register_standard_checker</code><span class="sig-paren">(</span><em>method_name</em>, <em>function</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.register_standard_checker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.register_standard_checker" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that registers a simple procedure into a checker. 
+This can only work if the checker simply re-runs the procedure and checks outputs are equal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the checker service (flask application) CLI (default on port 5000).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.run_checker_service">
+<code class="descname">run_checker_service</code><span class="sig-paren">(</span><em>port=5000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.run_checker_service"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.run_checker_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the flash app on ‘port’ providing a checker service for the contract.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="chainspacecontract.ChainspaceContract.test_service">
+<code class="descname">test_service</code><span class="sig-paren">(</span><em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#ChainspaceContract.test_service"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.ChainspaceContract.test_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>A test service context manager that spins up and down a service on a port (default 5000).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="chainspacecontract.transaction_inline_objects">
+<code class="descclassname">chainspacecontract.</code><code class="descname">transaction_inline_objects</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chainspacecontract/contract.html#transaction_inline_objects"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chainspacecontract.transaction_inline_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a dictionary containing a ‘transcation’ and a store of object IDs to json objects, 
+and returns a transaction with all object IDs substituted with the actual objects.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">chainspacecontract</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, UCL InfoSec group & contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

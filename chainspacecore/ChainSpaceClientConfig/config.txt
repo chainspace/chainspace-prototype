@@ -1,2 +1,0 @@
-shardConfigFile ChainSpaceClientConfig/shardConfig.txt
-thisClient 0

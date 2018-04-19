@@ -1,0 +1,404 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>chainspacecontract.contract &#8212; chainspacecontract 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for chainspacecontract.contract</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+
+
+<span class="kn">import</span> <span class="nn">click</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">jsonify</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">request</span>
+
+<div class="viewcode-block" id="ChainspaceContract"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract">[docs]</a><span class="k">class</span> <span class="nc">ChainspaceContract</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contract_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes a new contract by name. &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">contract_name</span> <span class="o">=</span> <span class="n">contract_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flask_app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">contract_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">methods_original</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">checkers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependent_transactions_log</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_populate_empty_checkers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">method_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkers</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">register_standard_checker</span><span class="p">(</span><span class="n">method_name</span><span class="p">,</span> <span class="n">function</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_trigger_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transaction</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">callback_function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+            <span class="n">callback_function</span><span class="p">(</span><span class="n">transaction</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback_function</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback_function</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">local_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transaction</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependent_transactions_log</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transaction</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChainspaceContract.register_dependency"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.register_dependency">[docs]</a>    <span class="k">def</span> <span class="nf">register_dependency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contract</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Registers another contract, that can be used as a library for this one. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contract</span><span class="p">)</span>
+        <span class="n">contract</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_callback</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChainspaceContract.run"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Runs the checker service (flask application) CLI (default on port 5000). &quot;&quot;&quot;</span>
+
+        <span class="nd">@click</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s1">&#39;Chainspace contract: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contract_name</span><span class="p">))</span>
+        <span class="k">def</span> <span class="nf">cli</span><span class="p">():</span>
+            <span class="k">pass</span>
+
+        <span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+        <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;-p&#39;</span><span class="p">,</span> <span class="s1">&#39;--port&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Port to listen on.&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">checker</span><span class="p">(</span><span class="n">port</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Run checker service.&quot;&quot;&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_checker_service</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+
+        <span class="n">cli</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ChainspaceContract.run_checker_service"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.run_checker_service">[docs]</a>    <span class="k">def</span> <span class="nf">run_checker_service</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Runs the flash app on &#39;port&#39; providing a checker service for the contract. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_populate_empty_checkers</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flask_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChainspaceContract.test_service"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.test_service">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">test_service</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A test service context manager that spins up and down a service on a port (default 5000).&quot;&quot;&quot;</span>
+        
+        <span class="c1"># We import these here to only burden test code with dependencies</span>
+        <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Process</span>
+        <span class="kn">import</span> <span class="nn">time</span>
+
+        <span class="c1"># Start web server</span>
+        <span class="n">checker_service_process</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_checker_service</span><span class="p">)</span>
+        <span class="n">checker_service_process</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">checker_service_process</span>
+    
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Tear down web server</span>
+            <span class="n">checker_service_process</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+            <span class="n">checker_service_process</span><span class="o">.</span><span class="n">join</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ChainspaceContract.checker"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.checker">[docs]</a>    <span class="k">def</span> <span class="nf">checker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A decorator declaring a function to be a checker for a particular contract procedure.</span>
+<span class="sd">        The function is expected to have a checker signature of: </span>
+
+<span class="sd">            checker(inputs, reference_inputs, parameters, outputs, returns, dependencies)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">checker_decorator</span><span class="p">(</span><span class="n">function</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">checkers</span><span class="p">[</span><span class="n">method_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">function</span>
+
+            <span class="k">def</span> <span class="nf">function_wrapper</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s1">&#39;success&#39;</span><span class="p">:</span> <span class="n">function</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">)})</span>
+
+            <span class="nd">@self</span><span class="o">.</span><span class="n">flask_app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">contract_name</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">],</span> <span class="n">endpoint</span><span class="o">=</span><span class="n">method_name</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">checker_request</span><span class="p">():</span>
+                <span class="n">dependencies</span> <span class="o">=</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;dependencies&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span> <span class="k">else</span> <span class="p">())</span>
+                <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
+                    <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span>
+                    <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">])</span>
+                    <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">])</span>
+                    <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">])</span>
+                    <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;returns&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;returns&#39;</span><span class="p">])</span>
+
+                <span class="k">return</span> <span class="n">function_wrapper</span><span class="p">(</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]),</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]),</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]),</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]),</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;returns&#39;</span><span class="p">]),</span>
+                    <span class="n">dependencies</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">function_wrapper</span>
+
+        <span class="k">return</span> <span class="n">checker_decorator</span></div>
+
+<div class="viewcode-block" id="ChainspaceContract.method"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.method">[docs]</a>    <span class="k">def</span> <span class="nf">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A decordator declaring a function to be a procedure with a certain method_name. </span>
+<span class="sd">        The function must have the signature:</span>
+
+<span class="sd">            method(inputs, reference_inputs, parameters)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">method_decorator</span><span class="p">(</span><span class="n">function</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">function_wrapper</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="s1">&#39;__checker_mode&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;__checker_mode&#39;</span><span class="p">]:</span>
+                        <span class="n">_checker_mode</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;__checker_mode&#39;</span><span class="p">]</span>
+                <span class="n">checker_mode</span> <span class="o">=</span> <span class="n">_checker_mode</span><span class="o">.</span><span class="n">on</span>
+
+                <span class="c1"># Cleanup defaults.</span>
+                <span class="n">inputs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="k">if</span> <span class="n">inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">()</span>
+                <span class="n">reference_inputs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">reference_inputs</span><span class="p">)</span> <span class="k">if</span> <span class="n">reference_inputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">()</span>
+                <span class="n">parameters</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">()</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">dependent_transactions_log</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods_original</span><span class="p">[</span><span class="s1">&#39;init&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">function</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">function</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">function</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;outputs&#39;</span><span class="p">,</span> <span class="s1">&#39;returns&#39;</span><span class="p">,</span> <span class="s1">&#39;extra_parameters&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span> <span class="ow">or</span> <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameters</span> <span class="o">+</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;extra_parameters&#39;</span><span class="p">]</span>
+
+                <span class="k">del</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;extra_parameters&#39;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">checker_mode</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reference_inputs</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span> <span class="s2">&quot;inputs: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+                    <span class="nb">print</span> <span class="s2">&quot;reference_inputs: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">reference_inputs</span><span class="p">)</span>
+                    <span class="n">store</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="o">+</span> <span class="n">reference_inputs</span><span class="p">:</span>
+                        <span class="n">store</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">object_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span>
+
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;inputIDs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">object_id</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">]</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;referenceInputIDs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">object_id</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">reference_inputs</span><span class="p">]</span>
+
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;contractID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contract_name</span>
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;methodID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">method_name</span>
+
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dependent_transactions_log</span>
+
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Outputs objects must be strings.&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">checker_mode</span><span class="p">:</span>
+                    <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
+                        <span class="n">dependencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;solution&#39;</span><span class="p">])</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dependencies</span>
+                    
+                    <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
+                        <span class="k">del</span> <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span>
+                    <span class="n">return_value</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;solution&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">}</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
+                        <span class="n">store</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;store&#39;</span><span class="p">])</span>
+                        <span class="n">dependencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;transaction&#39;</span><span class="p">])</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dependencies</span>
+                    
+                    <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">output_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">])):</span>
+                        <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ChainspaceObject</span><span class="o">.</span><span class="n">from_transaction</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">output_index</span><span class="p">))</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+                    <span class="n">return_value</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;transaction&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span> <span class="s1">&#39;store&#39;</span><span class="p">:</span> <span class="n">store</span><span class="p">}</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trigger_callbacks</span><span class="p">(</span><span class="n">return_value</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">__debug__</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_checker_mode</span><span class="o">.</span><span class="n">on</span><span class="p">:</span>
+                    <span class="c1"># Automatically run the checker to ensure procedure output passes check.</span>
+                    <span class="k">if</span> <span class="n">method_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkers</span> <span class="ow">and</span> <span class="n">method_name</span> <span class="o">!=</span> <span class="s2">&quot;init&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;POTENTIAL ERROR: &#39;</span><span class="si">%s</span><span class="s2">&#39; method has no checker.&quot;</span> <span class="o">%</span> <span class="n">method_name</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">method_name</span> <span class="o">!=</span> <span class="s2">&quot;init&quot;</span><span class="p">:</span>
+                        <span class="n">txt</span> <span class="o">=</span> <span class="n">transaction_inline_objects</span><span class="p">(</span><span class="n">return_value</span><span class="p">)</span>
+
+                        <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flask_app</span><span class="o">.</span><span class="n">test_client</span><span class="p">()</span>
+                        <span class="n">args</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">contract_name</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">method_name</span><span class="p">,</span> 
+                                 <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">txt</span><span class="p">),</span>
+                                 <span class="n">content_type</span><span class="o">=</span><span class="s1">&#39;application/json&#39;</span><span class="p">)</span>
+                        
+                        <span class="n">result</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">data</span><span class="p">)[</span><span class="s2">&quot;success&quot;</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;POTENTIAL ERROR: &#39;</span><span class="si">%s</span><span class="s2">&#39; method output does not satify checker.&quot;</span> <span class="o">%</span> <span class="n">method_name</span><span class="p">)</span>
+
+                <span class="n">_checker_mode</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">return</span> <span class="n">return_value</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">method_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">function_wrapper</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">methods_original</span><span class="p">[</span><span class="n">method_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">function</span>
+
+            <span class="k">return</span> <span class="n">function_wrapper</span>
+        <span class="k">return</span> <span class="n">method_decorator</span></div>
+
+
+<div class="viewcode-block" id="ChainspaceContract.register_standard_checker"><a class="viewcode-back" href="../../index.html#chainspacecontract.ChainspaceContract.register_standard_checker">[docs]</a>    <span class="k">def</span> <span class="nf">register_standard_checker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A function that registers a simple procedure into a checker. </span>
+<span class="sd">        This can only work if the checker simply re-runs the procedure and checks outputs are equal.&quot;&quot;&quot;</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">checker</span><span class="p">(</span><span class="n">method_name</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">checker</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">returns</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">function</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reference_inputs</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">__checker_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">solution</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;solution&#39;</span><span class="p">]</span>
+
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">solution</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">outputs</span>
+                <span class="ow">and</span> <span class="n">solution</span><span class="p">[</span><span class="s1">&#39;returns&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">returns</span>
+                <span class="ow">and</span> <span class="n">solution</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dependencies</span>
+            <span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">ChainspaceObject</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A string that remembers an object_id. &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">object_id</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ChainspaceObject</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">object_id</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object_id</span> <span class="o">=</span> <span class="n">object_id</span>
+
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ChainspaceObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object_id</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ChainspaceObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object_id</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_transaction</span><span class="p">(</span><span class="n">transaction</span><span class="p">,</span> <span class="n">output_index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a ChainspaceObject from a transaction output.</span>
+
+<span class="sd">        transaction: the transaction.</span>
+<span class="sd">        output_index: the index of the output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">transaction</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">][</span><span class="n">output_index</span><span class="p">]</span>
+        <span class="n">transaction_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">transaction</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">))</span>
+        <span class="n">transaction_digest</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">transaction_json</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="n">object_digest</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">transaction</span><span class="p">[</span><span class="s1">&#39;outputs&#39;</span><span class="p">][</span><span class="n">output_index</span><span class="p">])</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="n">object_id</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">|</span><span class="si">{}</span><span class="s1">|</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">transaction_digest</span><span class="p">,</span> <span class="n">object_digest</span><span class="p">,</span> <span class="n">output_index</span><span class="p">)</span>
+        <span class="n">object_id</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">object_id</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ChainspaceObject</span><span class="p">(</span><span class="n">object_id</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_CheckerMode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">_checker_mode</span> <span class="o">=</span> <span class="n">_CheckerMode</span><span class="p">()</span>
+
+<div class="viewcode-block" id="transaction_inline_objects"><a class="viewcode-back" href="../../index.html#chainspacecontract.transaction_inline_objects">[docs]</a><span class="k">def</span> <span class="nf">transaction_inline_objects</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Takes a dictionary containing a &#39;transcation&#39; and a store of object IDs to json objects, </span>
+<span class="sd">    and returns a transaction with all object IDs substituted with the actual objects. &quot;&quot;&quot;</span>
+    
+    <span class="n">store</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;store&#39;</span><span class="p">])</span>
+    <span class="n">transaction</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;transaction&#39;</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">transaction</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]:</span>
+        <span class="k">del</span> <span class="n">dependency</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">single_transaction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">transaction</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">transaction</span><span class="p">[</span><span class="s1">&#39;dependencies&#39;</span><span class="p">]):</span>
+        <span class="c1"># Transform &#39;inputs&#39;.</span>
+        <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">object_id</span> <span class="ow">in</span> <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputIDs&#39;</span><span class="p">]:</span>
+            <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="p">[</span><span class="n">object_id</span><span class="p">])</span>
+        <span class="k">del</span> <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputIDs&#39;</span><span class="p">]</span>
+        <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">])</span>
+        
+        <span class="c1"># Transform &#39;references&#39;.</span>
+        <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">object_id</span> <span class="ow">in</span> <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputIDs&#39;</span><span class="p">]:</span>
+            <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="p">[</span><span class="n">object_id</span><span class="p">])</span>
+        <span class="k">del</span> <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputIDs&#39;</span><span class="p">]</span>
+        <span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">single_transaction</span><span class="p">[</span><span class="s1">&#39;referenceInputs&#39;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">transaction</span></div>
+
+<span class="c1"># This is the legacy name. Deprecated.</span>
+<span class="n">transaction_to_solution</span> <span class="o">=</span> <span class="n">transaction_inline_objects</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">chainspacecontract</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, UCL InfoSec group & contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
