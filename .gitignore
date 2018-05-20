@@ -21,3 +21,8 @@ tasks.xml
 *.iml
 *.sqlite
 *.process.id
+chainspacecore/.swo
+chainspacecore/.swp
+chainspacemeasurements/build/
+chainspacemeasurements/dist/
+

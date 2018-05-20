@@ -6,6 +6,7 @@
 # general
 from multiprocessing import Process
 from json            import dumps, loads
+import time
 import unittest
 import requests
 # chainspace
@@ -26,27 +27,27 @@ class TestIncrement(unittest.TestCase):
     # --------------------------------------------------------------
     def test(self):
 
-        ## create packet
-        packet = {
-            'transaction': {
-                'inputIDs': ['hash_value'], 
-                'methodID': 'increment', 
-                'parameters': (), 
-                'outputs': ['1'], 
-                'returns': (), 
-                'dependencies': [], 
-                'referenceInputIDs': [], 
-                'contractID': 'addition'
-            }, 
-            'store': {
-                'hash_value': '0'
-            }
-        }
-
-        ## send transaction
-        response = requests.post('http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=packet)
-        print response.json()
+        ##
+        ## init
+        ##
+        transaction = increment.init()
+        response = requests.post('http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction)
         self.assertTrue(response.json()['success'] == 'True')
+        time.sleep(1)
+
+
+        ##
+        ## increment
+        ##
+        token = transaction['transaction']['outputs'][0]
+        transaction = increment.increment(
+            (token,),
+            None,
+            None
+        )
+        response = requests.post('http://127.0.0.1:' +port+ '/api/' +version+ '/transaction/process', json=transaction)
+        self.assertTrue(response.json()['success'] == 'True')
+
 
 
 ####################################################################

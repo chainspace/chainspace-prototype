@@ -1,143 +1,113 @@
 """Performance measurements for authenticated bank contract."""
-import time
-import numpy
 
+###############################################################
+# imports
+###############################################################
+from tester import tester
+from json import dumps, loads
 from chainspacecontract import transaction_to_solution
 from chainspacecontract.examples import bank_authenticated
 from chainspacecontract.examples.utils import setup, key_gen, pack
 
-RUNS = 1000
+
+###############################################################
+# config
+###############################################################
+RUNS = 10000
 
 
+###############################################################
+# main -- run the tests
+###############################################################
 def main():
+    ## get contract and init pint
     bank_authenticated.contract._populate_empty_checkers()
     print "operation\t\tmean (s)\t\tsd (s)\t\truns"
 
-    # gen init tx
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        bank_authenticated.init()
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen init tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
 
-    # check init tx
+    # ---------------------------------------------------------
+    # get functions
+    # ---------------------------------------------------------
+    # params
+    params = setup()
+    (alice_priv, alice_pub) = key_gen(params)
+    (_, bob_pub) = key_gen(params)
+
+    # init
     init_tx = bank_authenticated.init()
-    solution = transaction_to_solution(init_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        bank_authenticated.contract.checkers['init'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check init tx\t\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+    token = init_tx['transaction']['outputs'][0]
 
-    # gen create_account tx
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        (_, alice_pub) = key_gen(setup())
-        bank_authenticated.create_account(
-            (init_tx['transaction']['outputs'][0],),
-            None,
-            None,
-            pack(alice_pub)
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen create_account tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
-
-    # check create_account tx
-    (a_priv, a_pub) = key_gen(setup())
-    create_account_tx = bank_authenticated.create_account(
-        (init_tx['transaction']['outputs'][0],),
+    # create accounts
+    create_alice_account_tx = bank_authenticated.create_account(
+        (token,),
         None,
         None,
-        pack(a_pub)
+        pack(alice_pub)
     )
-    solution = transaction_to_solution(create_account_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        bank_authenticated.contract.checkers['create_account'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check create_account tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
-
-    # gen auth_transfer tx
-    create_account_a_tx = create_account_tx
-    (b_priv, b_pub) = key_gen(setup())
-    create_account_b_tx = bank_authenticated.create_account(
-        (create_account_a_tx['transaction']['outputs'][0],),
+    create_bob_account_tx = bank_authenticated.create_account(
+        (token,),
         None,
         None,
-        pack(b_pub)
+        pack(bob_pub)
     )
-    a_account = create_account_a_tx['transaction']['outputs'][1]
-    b_account = create_account_b_tx['transaction']['outputs'][1]
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        bank_authenticated.auth_transfer(
-            [a_account, b_account],
-            None,
-            ['3'],
-            pack(a_priv)
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "gen auth_transfer tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+    alice_account = create_alice_account_tx['transaction']['outputs'][1]
+    bob_account = create_bob_account_tx['transaction']['outputs'][1]
 
-    # check auth_transfer tx
+    # make transfer
     auth_transfer_tx = bank_authenticated.auth_transfer(
-        [a_account, b_account],
+        (alice_account, bob_account),
         None,
-        ['3'],
-        pack(a_priv)
+        ('3',),
+        pack(alice_priv)
     )
+
+
+    # ---------------------------------------------------------
+    # test create_account
+    # ---------------------------------------------------------
+    # [gen]
+    tester(RUNS, "create_account [g]", bank_authenticated.create_account, 
+        (token,),
+        None,
+        None,
+        pack(alice_pub)
+    )
+    # [check]
+    solution = transaction_to_solution(create_alice_account_tx)
+    tester(RUNS, "create_account [c]", bank_authenticated.contract.checkers['create_account'],
+        solution['inputs'],
+        solution['referenceInputs'],
+        solution['parameters'],
+        solution['outputs'],
+        solution['returns'],
+        solution['dependencies'],
+    )
+
+
+    # ---------------------------------------------------------
+    # test transfer
+    # ---------------------------------------------------------
+    # [gen]
+    tester(RUNS, "auth_transfer [g]", bank_authenticated.auth_transfer, 
+        (alice_account, bob_account),
+        None,
+        ('3',),
+        pack(alice_priv)
+    )
+    # [gen]
     solution = transaction_to_solution(auth_transfer_tx)
-    times = []
-    for i in range(RUNS):
-        start_time = time.time()
-        bank_authenticated.contract.checkers['auth_transfer'](
-            solution['inputs'],
-            solution['referenceInputs'],
-            solution['parameters'],
-            solution['outputs'],
-            solution['returns'],
-            solution['dependencies'],
-        )
-        end_time = time.time()
-        times.append(end_time-start_time)
-    mean = numpy.mean(times)
-    sd = numpy.std(times)
-    print "check auth_transfer tx\t{:.10f}\t\t{:.10f}\t{}".format(mean, sd, RUNS)
+    tester(RUNS, "auth_transfer [c]", bank_authenticated.contract.checkers['auth_transfer'],
+        solution['inputs'],
+        solution['referenceInputs'],
+        solution['parameters'],
+        solution['outputs'],
+        solution['returns'],
+        solution['dependencies'],
+    )
+    
 
-
+###############################################################
+# starting point
+###############################################################
 if __name__ == '__main__':
     main()

@@ -103,7 +103,7 @@ public class CSTransaction implements Serializable {
         return outputs;
     }
 
-    CSTransaction[] getDependencies() {
+    public CSTransaction[] getDependencies() {
         return dependencies;
     }
 

@@ -1,7 +1,7 @@
 """An example smart contract to demonstrate cross-contract calls."""
 
 from chainspacecontract import ChainspaceContract
-from chainspacecontract.examples.increment import contract as increment_contract
+from chainspacecontract.examples.addition import contract as increment_contract
 
 contract = ChainspaceContract('increment_twice')
 contract.register_dependency(increment_contract)
