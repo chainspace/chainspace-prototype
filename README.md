@@ -1,4 +1,4 @@
-*Please note: this is prototype code which serves as a validation of the ideas expressed in the [Chainspace S-BAC](https://arxiv.org/abs/1708.03778) peer-reviewed academic paper submitted to NDSS 2018. We are currently building out our production codebase in Go, and the Go codebase will be used going forward. We will replace this Java code with the Go code when it's feature-equivalent.*
+*Please note: this is prototype code which serves as a validation of the ideas expressed in the [Chainspace S-BAC](https://arxiv.org/abs/1708.03778) peer-reviewed academic paper accepted by [NDSS 2018](https://www.youtube.com/watch?v=bYwIxPWyuD4&list=PLgLMkKEt7E3i1cvelsFwTJ2i2RwasarNd). We are currently building out our production codebase in Go, and the Go codebase will be used going forward. We will replace this Java code with the Go code when it's feature-equivalent.*
 
 
 # Chainspace
