@@ -91,14 +91,14 @@ class ChainspaceContract(object):
         """ A decorator declaring a function to be a checker for a particular contract procedure.
         The function is expected to have a checker signature of: 
 
-            checker(inputs, reference_inputs, parameters, outputs, labels, returns, dependencies)
+            checker(inputs, reference_inputs, parameters, outputs, returns, dependencies)
 
         """
         def checker_decorator(function):
             self.checkers[method_name] = function
 
-            def function_wrapper(inputs, reference_inputs, parameters, outputs, labels, returns, dependencies):
-                return jsonify({'success': function(inputs, reference_inputs, parameters, outputs, labels, returns, dependencies)})
+            def function_wrapper(inputs, reference_inputs, parameters, outputs, returns, dependencies):
+                return jsonify({'success': function(inputs, reference_inputs, parameters, outputs, returns, dependencies)})
 
             @self.flask_app.route('/' + self.contract_name + '/' + method_name, methods=['POST'], endpoint=method_name)
             def checker_request():
@@ -107,7 +107,6 @@ class ChainspaceContract(object):
                     dependency['inputs'] = tuple(dependency['inputs'])
                     dependency['referenceInputs'] = tuple(dependency['referenceInputs'])
                     dependency['outputs'] = tuple(dependency['outputs'])
-                    dependency['labels'] = tuple(dependency['labels'])
                     dependency['parameters'] = tuple(dependency['parameters'])
                     dependency['returns'] = tuple(dependency['returns'])
 
@@ -116,7 +115,6 @@ class ChainspaceContract(object):
                     tuple(request.json['referenceInputs']),
                     tuple(request.json['parameters']),
                     tuple(request.json['outputs']),
-                    tuple(request.json['labels']),
                     tuple(request.json['returns']),
                     dependencies
                 )
@@ -150,7 +148,7 @@ class ChainspaceContract(object):
                 else:
                     result = function(inputs, reference_inputs, parameters, *args, **kwargs)
 
-                for key in ('outputs', 'labels', 'returns', 'extra_parameters'):
+                for key in ('outputs', 'returns', 'extra_parameters'):
                     if key not in result or result[key] is None:
                         result[key] = tuple()
 
@@ -176,7 +174,7 @@ class ChainspaceContract(object):
 
                 result['dependencies'] = self.dependent_transactions_log
 
-                for obj in result['outputs'] + result['labels']:
+                for obj in result['outputs']:
                     if not isinstance(obj, str):
                         raise ValueError("Outputs objects must be strings.")
 
@@ -236,13 +234,12 @@ class ChainspaceContract(object):
         This can only work if the checker simply re-runs the procedure and checks outputs are equal."""
 
         @self.checker(method_name)
-        def checker(inputs, reference_inputs, parameters, outputs, labels, returns, dependencies):
+        def checker(inputs, reference_inputs, parameters, outputs, returns, dependencies):
             result = function(inputs, reference_inputs, parameters, __checker_mode=True)
             solution = result['solution']
 
             return (
                 solution['outputs'] == outputs
-                and solution['labels'] == labels
                 and solution['returns'] == returns
                 and solution['dependencies'] == dependencies
             )
