@@ -140,6 +140,7 @@ class ChainspaceNetwork(object):
         command += 'export DEBIAN_PRIORITY=critical;'
         command += 'until '
         command += 'sudo -E apt update'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade'
         command += '&& sudo -E apt install -t jessie-backports openjdk-8-jdk -y'
         command += '&& sudo -E apt install git python-pip maven screen psmisc -y'
         command += '; do :; done'
