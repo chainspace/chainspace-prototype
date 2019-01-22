@@ -160,8 +160,6 @@ class ChainspaceContract(object):
                     result['inputs'] = inputs
                     result['referenceInputs'] = reference_inputs
                 else:
-                    print "inputs: " + str(inputs)
-                    print "reference_inputs: " + str(reference_inputs)
                     store = {}
                     for obj in inputs + reference_inputs:
                         store[obj.object_id] = obj
