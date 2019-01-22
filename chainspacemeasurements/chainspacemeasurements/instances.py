@@ -136,7 +136,8 @@ class ChainspaceNetwork(object):
 
     def install_deps(self):
         self._log("Installing Chainspace dependencies on all nodes...")
-        command = 'until '
+        command = 'export DEBIAN_FRONTEND=noninteractive;'
+        command += 'until '
         command += 'sudo apt update'
         command += '&& sudo apt install -t jessie-backports openjdk-8-jdk -y'
         command += '&& sudo apt install git python-pip maven screen psmisc -y'
