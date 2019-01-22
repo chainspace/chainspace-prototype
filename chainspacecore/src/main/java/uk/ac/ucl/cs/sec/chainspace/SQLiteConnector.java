@@ -38,13 +38,6 @@ class SQLiteConnector extends DatabaseConnector {
 
     }
 
-    /**
-     * This method used to do this
-     *  // don't wait for data to reach disk
-     * sql = "PRAGMA synchronous=OFF";
-     * statement.execute(sql);
-     * But I think that is a performance nehancement and for now want more integrity
-     */
     static void initialiseDbSchema(Connection connection) throws ClassNotFoundException, SQLException {
 
         Constraints constraints = (DEBUG_ALLOW_REPEAT) ? DISABLE_CONSTRAINTS : ENABLE_CONSTRAINTS;
@@ -55,7 +48,9 @@ class SQLiteConnector extends DatabaseConnector {
 
         createTable_head(connection, constraints);
 
-
+        // don't wait for data to reach disk
+        String sql = "PRAGMA synchronous=OFF";
+        executeUpdateSql(connection, sql);
     }
 
     private static void createTable_data(Connection connection, Constraints constraints) throws SQLException {
