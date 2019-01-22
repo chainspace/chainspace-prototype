@@ -498,7 +498,9 @@ public class MapClient implements Map<String, String> {
             if ((System.currentTimeMillis() - startWait) >= invokeTimeoutAsynch) {
                 respondedOrTimedOut = true;
             }
-            Thread.sleep(200); // @todo make this configurable
+            if (!respondedOrTimedOut) {
+                Thread.sleep(200); // @todo make this configurable
+            }
         }
         return shardResponseMap;
     }
