@@ -136,10 +136,13 @@ class ChainspaceNetwork(object):
 
     def install_deps(self):
         self._log("Installing Chainspace dependencies on all nodes...")
-        command = 'until '
-        command += 'sudo apt update'
-        command += '&& sudo apt install -t jessie-backports openjdk-8-jdk -y'
-        command += '&& sudo apt install git python-pip maven screen psmisc -y'
+        command = 'export DEBIAN_FRONTEND=noninteractive;'
+        command += 'export DEBIAN_PRIORITY=critical;'
+        command += 'until '
+        command += 'sudo -E apt update'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -t jessie-backports openjdk-8-jdk'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install git python-pip maven screen psmisc'
         command += '; do :; done'
         self.ssh_exec(command)
         self._log("Installed Chainspace dependencies on all nodes.")

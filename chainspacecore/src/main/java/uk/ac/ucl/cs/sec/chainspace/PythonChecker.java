@@ -27,7 +27,7 @@ class PythonChecker {
     }
 
     private static String initialisePythonExectutable() {
-        return System.getProperty("checker.python.bin", "../.chainspace.env/bin/python");
+        return System.getProperty("checker.python.bin", "python");
     }
 
     private final int port;
