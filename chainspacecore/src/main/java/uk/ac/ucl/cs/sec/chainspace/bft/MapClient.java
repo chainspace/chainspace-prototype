@@ -95,16 +95,8 @@ public class MapClient implements Map<String, String> {
     }
 
     static int objectToShardAlgorithm(String objectId, int numShards) {
-
-        /*
-
         BigInteger iObject = new BigInteger(objectId, 16);
-
         return iObject.mod(new BigInteger(Integer.toString(numShards))).intValue();
-
-         */
-        // For now always put all the objects into shard 0 because we need them to stay together
-        return 0;
     }
 
     // This function returns a unique client ID every time it is called
