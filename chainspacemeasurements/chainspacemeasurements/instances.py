@@ -141,8 +141,8 @@ class ChainspaceNetwork(object):
         command += 'until '
         command += 'sudo -E apt update'
         command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade'
-        command += '&& sudo -E apt install -t jessie-backports openjdk-8-jdk -y'
-        command += '&& sudo -E apt install git python-pip maven screen psmisc -y'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -t jessie-backports openjdk-8-jdk'
+        command += '&& sudo -E apt --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install git python-pip maven screen psmisc'
         command += '; do :; done'
         self.ssh_exec(command)
         self._log("Installed Chainspace dependencies on all nodes.")
