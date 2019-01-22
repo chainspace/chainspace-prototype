@@ -11,6 +11,7 @@ import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.core.messages.TOMMessageType;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.*;
 
